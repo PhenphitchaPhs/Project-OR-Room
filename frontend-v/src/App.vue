@@ -3,7 +3,7 @@
     <header class="main-header" v-if="!isSidebarOpen">
       <div class="profile-trigger" @click="toggleSidebar">
         <div class="icon-circle">
-          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2A10 10 0 0 0 2 12a10 10 0 0 0 10 10a10 10 0 0 0 10-10A10 10 0 0 0 12 2M7.07 18.28c.43-.9 3.05-1.78 4.93-1.78s4.5.88 4.93 1.78A7.9 7.9 0 0 1 12 20c-1.86 0-3.57-.64-4.93-1.72m11.29-1.45c-1.43-1.74-4.9-2.33-6.36-2.33s-4.93.59-6.36 2.33A7.93 7.93 0 0 1 4 12c0-4.41 3.59-8 8-8s8 3.59 8 8c0 1.82-.62 3.5-1.64 4.83M12 6c-1.94 0-3.5 1.56-3.5 3.5S10.06 13 12 13s3.5-1.56 3.5-3.5S13.94 6 12 6m0 5a1.5 1.5 0 0 1-1.5-1.5A1.5 1.5 0 0 1 12 8a1.5 1.5 0 0 1 1.5 1.5A1.5 1.5 0 0 1 12 11"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2A10 10 0 0 0 2 12a10 10 0 0 0 10 10a10 10 0 0 0 10-10A10 10 0 0 0 12 2M7.07 18.28c.43-.9 3.05-1.78 4.93-1.78s4.5.88 4.93 1.78A7.9 7.9 0 0 1 12 20c-1.86 0-3.57-.64-4.93-1.72m11.29-1.45c-1.43-1.74-4.9-2.33-6.36-2.33s-4.93.59-6.36 2.33A7.93 7.93 0 0 1 4 12c0-4.41 3.59-8 8-8s8 3.59 8 8c0 1.82-.62 3.49-1.64 4.83M12 6c-1.94 0-3.5 1.56-3.5 3.5S10.06 13 12 13s3.5-1.56 3.5-3.5S13.94 6 12 6m0 5a1.5 1.5 0 0 1-1.5-1.5A1.5 1.5 0 0 1 12 8a1.5 1.5 0 0 1 1.5 1.5A1.5 1.5 0 0 1 12 11"/></svg>
         </div>
       </div>
     </header>
@@ -18,7 +18,7 @@
               <svg xmlns="http://www.w3.org/2000/svg" width="45" height="45" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2A10 10 0 0 0 2 12a10 10 0 0 0 10 10a10 10 0 0 0 10-10A10 10 0 0 0 12 2M7.07 18.28c.43-.9 3.05-1.78 4.93-1.78s4.5.88 4.93 1.78A7.9 7.9 0 0 1 12 20c-1.86 0-3.57-.64-4.93-1.72m11.29-1.45c-1.43-1.74-4.9-2.33-6.36-2.33s-4.93.59-6.36 2.33A7.93 7.93 0 0 1 4 12c0-4.41 3.59-8 8-8s8 3.59 8 8c0 1.82-.62 3.5-1.64 4.83M12 6c-1.94 0-3.5 1.56-3.5 3.5S10.06 13 12 13s3.5-1.56 3.5-3.5S13.94 6 12 6m0 5a1.5 1.5 0 0 1-1.5-1.5A1.5 1.5 0 0 1 12 8a1.5 1.5 0 0 1 1.5 1.5A1.5 1.5 0 0 1 12 11"/></svg>
             </div>
             <div class="user-details">
-              <span class="user-id">123546</span>
+              <span class="user-id">{{ userLicense }}</span>
               <span class="user-day">Monday</span>
             </div>
           </div>
@@ -59,88 +59,60 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { RouterView, useRouter } from 'vue-router' // 1. นำเข้า useRouter เพิ่มเติม
+import { ref, onMounted } from 'vue' // เพิ่ม onMounted ตรงนี้
+import { RouterView, useRouter } from 'vue-router'
 
 const isSidebarOpen = ref(false)
-const router = useRouter() // 2. ประกาศตัวแปร router เพื่อใช้ในการเปลี่ยนหน้า
+const router = useRouter()
+const userLicense = ref('------') // เพิ่มตัวแปรเก็บเลข License
+
+// ดึงค่าเลข License จากความจำเครื่องตอนที่หน้าเปิดขึ้นมา
+onMounted(() => {
+  const saved = localStorage.getItem('userLicense')
+  if (saved) {
+    userLicense.value = saved
+  }
+})
 
 const toggleSidebar = () => { isSidebarOpen.value = !isSidebarOpen.value }
 const closeSidebar = () => { isSidebarOpen.value = false }
 
 const handleLogout = () => {
   if (confirm("คุณต้องการออกจากระบบใช่หรือไม่?")) {
-    isSidebarOpen.value = false // 3. ปิด Sidebar ก่อนย้ายหน้า
-    router.push('/login')       // 4. สั่งให้เด้งไปที่หน้า Login จริงๆ
-    console.log("Logged out successfully");
+    localStorage.removeItem('userLicense') // ล้างข้อมูล License ออกด้วย
+    isSidebarOpen.value = false
+    router.push('/login')
   }
 }
 </script>
 
 <style scoped>
-/* Style เดิมของคุณ (ผมเก็บไว้ทั้งหมดเพราะสวยอยู่แล้ว) */
+/* Style ทั้งหมดเหมือนเดิมเป๊ะ ไม่มีการขยับครับ */
 .main-header { padding: 15px; position: fixed; top: 0; left: 0; z-index: 50; }
 .icon-circle { 
   width: 45px; height: 45px; background-color: #6a92d4; color: white; 
   border-radius: 50%; display: flex; align-items: center; justify-content: center; 
   cursor: pointer; border: 2px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
-
-.overlay {
-  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-  background-color: rgba(0, 0, 0, 0.4); z-index: 999;
-}
-
-.sidebar { 
-  width: 280px; background-color: #f8faff; height: 100vh; 
-  position: fixed; left: 0; top: 0; z-index: 1000; 
-  box-shadow: 5px 0px 20px rgba(0, 0, 0, 0.15);
-}
-
-.sidebar-header {
-  background-color: #6a92d4; color: white; padding: 25px 20px;
-  display: flex; justify-content: space-between; align-items: center;
-  box-sizing: border-box;
-}
-
+.overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(0, 0, 0, 0.4); z-index: 999; }
+.sidebar { width: 280px; background-color: #f8faff; height: 100vh; position: fixed; left: 0; top: 0; z-index: 1000; box-shadow: 5px 0px 20px rgba(0, 0, 0, 0.15); }
+.sidebar-header { background-color: #6a92d4; color: white; padding: 25px 20px; display: flex; justify-content: space-between; align-items: center; box-sizing: border-box; }
 .user-info { display: flex; align-items: center; gap: 15px; }
 .avatar-icon { cursor: pointer; display: flex; align-items: center; color: white; }
 .user-details { display: flex; flex-direction: column; line-height: 1.2; }
 .user-id { font-weight: bold; font-size: 1.1rem; }
 .user-day { font-size: 0.8rem; opacity: 0.85; }
-
 .logout-btn { background: none; border: none; color: white; cursor: pointer; display: flex; align-items: center; }
-
 .sidebar-nav ul { list-style: none; padding: 0; margin: 0; }
 .sidebar-nav li { padding: 18px 25px; border-bottom: 1px solid #edf2f7; cursor: pointer; }
 .sidebar-nav li:hover { background-color: #f0f4f8; }
-
 .menu-item { display: flex; align-items: center; color: #4a6fa5; font-weight: bold; gap: 15px; }
-
 .slide-enter-active, .slide-leave-active { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
 .slide-enter-from, .slide-leave-to { transform: translateX(-100%); }
-
-.content-area { 
-  min-height: 100vh; 
-  background-color: #fff; 
-  width: 100%; /* สำคัญ: ต้องกำหนดให้กว้าง 100% ของพื้นที่ที่เหลือ */
-}
+.content-area { min-height: 100vh; background-color: #fff; width: 100%; }
 </style>
 
 <style>
-html, body {
-  margin: 0 !important;
-  padding: 0 !important;
-  width: 100% !important;
-  height: 100% !important;
-  overflow-x: hidden; /* ป้องกันการเลื่อนซ้ายขวาเกินจำเป็น */
-}
-
-#app {
-  width: 100% !important;
-  max-width: none !important; /* ปลดล็อก Max Width */
-  display: block !important;
-  padding: 0 !important;
-  margin: 0 !important;
-}
+html, body { margin: 0 !important; padding: 0 !important; width: 100% !important; height: 100% !important; overflow-x: hidden; }
+#app { width: 100% !important; max-width: none !important; display: block !important; padding: 0 !important; margin: 0 !important; }
 </style>

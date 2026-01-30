@@ -1,8 +1,7 @@
 <template>
   <div class="page">
     <div class="card">
-      <img src="/logo.png" class="logo" />
-
+      <img src="../assets/logo.png" class="logo" />
 
       <h2 class="title">Hospital</h2>
 
@@ -12,10 +11,17 @@
       <div class="links">
         <span>Admin mode</span>
         <span class="divider">|</span>
-        <span>Forgot Password</span>
+
+        <span class="link" @click="$emit('go-forgot')">
+          Forgot password
+        </span>
+
+
+
         <span class="divider">|</span>
         <span>Sign up</span>
       </div>
+
 
       <button class="btn" @click="login">Log in</button>
     </div>
@@ -24,9 +30,7 @@
 
 <script setup>
 import { ref } from "vue";
-import { useRouter } from "vue-router"; // 1. นำเข้า useRouter
 
-const router = useRouter(); // 2. สร้างตัวแปรไว้ใช้งาน
 const license = ref("");
 const password = ref("");
 
@@ -35,8 +39,7 @@ const login = () => {
     alert("กรุณากรอก License และ Password");
     return;
   }
-  // 3. เปลี่ยนจาก alert เป็นการเปลี่ยนหน้า
-  router.push('/'); 
+  alert("Login (demo)");
 };
 </script>
 
@@ -88,6 +91,28 @@ const login = () => {
   border: 1px solid #b8f1c9;
   background: #eafff1;
 }
+
+.link {
+  color: #2a7de1;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.link:hover {
+  text-decoration: none;
+}
+
+.links a {
+  text-decoration: none;
+  color: #2a7de1;
+}
+
+.links a:hover {
+  text-decoration: none;
+}
+
+
+
 
 .links {
   font-size: 12px;
