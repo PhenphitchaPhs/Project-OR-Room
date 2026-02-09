@@ -1,25 +1,16 @@
 <template>
   <div class="page">
     <div class="card">
-      <!-- back -->
-      <button class="back">←</button>
+      <button class="back" @click="$router.push('/login')">←</button>
 
-      <!-- logo -->
       <div class="logo">
-        <img src="/logo.png" alt="Hospital" />
-        <h3>Hospital</h3>
+        <img src="../assets/logo.png" alt="Hospital" />
+        <h3>Sign up</h3>
       </div>
 
-      <!-- form -->
       <input type="text" placeholder="License" v-model="license" />
-
       <input type="password" placeholder="Password" v-model="password" />
-
-      <input
-        type="password"
-        placeholder="Confirm password"
-        v-model="confirmPassword"
-      />
+      <input type="password" placeholder="Confirm password" v-model="confirmPassword" />
 
       <select v-model="day">
         <option value="" disabled>Choose your day</option>
@@ -29,7 +20,7 @@
       </select>
 
       <button class="submit" @click="submitForm">
-        Sign in
+        Sign up
       </button>
     </div>
   </div>
@@ -37,7 +28,9 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 
+const router = useRouter()
 const license = ref('')
 const password = ref('')
 const confirmPassword = ref('')
@@ -46,45 +39,69 @@ const day = ref('')
 const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
 
 const submitForm = () => {
+  if (password.value !== confirmPassword.value) {
+    alert('รหัสผ่านไม่ตรงกัน!')
+    return
+  }
+
   console.log({
     license: license.value,
     password: password.value,
-    confirmPassword: confirmPassword.value,
     day: day.value
   })
+
+  alert('สมัครสมาชิกสำเร็จ!')
+  router.push('/login')
 }
 </script>
 
 <style scoped>
 .page {
-  min-height: 100vh;
-  background: #eaf4ff;
+  width: 100vw;
+  height: 100vh;
+  background: #ffffff;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: center; /* ยัง center เหมือนเดิม */
 }
 
 .card {
   width: 320px;
-  background: #fff;
+  background: #ffffff;
   border-radius: 16px;
   padding: 20px;
+  box-shadow: none;
+  position: relative;
+
+  transform: translateY(-60px); /* ⭐ ขยับขึ้น */
 }
+
 
 .back {
   background: none;
   border: none;
-  font-size: 20px;
+  font-size: 24px;
   cursor: pointer;
+  color: #2a7de1;
+
+  position: absolute; /* ✅ เพิ่ม */
+  top: 12px;           /* ✅ เพิ่ม */
+  left: 12px;          /* ✅ เพิ่ม */
 }
 
 .logo {
   text-align: center;
-  margin: 20px 0;
+  margin-bottom: 20px;
+  margin-top: -10px; /* ✅ เพิ่ม เพื่อขยับขึ้น */
 }
 
 .logo img {
   width: 60px;
+}
+
+.logo h3 {
+  color: #2a7de1;
+  margin-top: 10px;
 }
 
 input,
@@ -95,16 +112,22 @@ select {
   border-radius: 10px;
   border: 1px solid #c7e7d6;
   background: #e9fff3;
+  box-sizing: border-box;
 }
 
 .submit {
   width: 100%;
   padding: 12px;
-  background: #fafbfd;
+  background: #6c95d9;
   color: #fff;
   border: none;
   border-radius: 12px;
   font-size: 16px;
   cursor: pointer;
+  margin-top: 10px;
+}
+
+.submit:hover {
+  background: #5a84c5;
 }
 </style>

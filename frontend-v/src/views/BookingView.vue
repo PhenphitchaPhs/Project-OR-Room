@@ -62,6 +62,9 @@
 
 <script setup>
 import { reactive } from 'vue';
+import { useRouter } from 'vue-router'; // 1. เพิ่มการ Import useRouter
+
+const router = useRouter(); // 2. สร้างตัวแปรสำหรับใช้งาน router
 
 const form = reactive({
   hn: '', fullName: '', age: '', disease: '',
@@ -69,29 +72,28 @@ const form = reactive({
 });
 
 const submitForm = () => {
+  // 3. แจ้งเตือน และสั่งให้เปลี่ยนหน้า
   alert('Booking Confirmed!');
+  router.push('/'); // เด้งไปหน้า Home (ใช้ path '/')
 };
 </script>
 
 <style scoped>
-/* พื้นหลังหน้า */
+/* ส่วน CSS คงเดิมตามที่คุณส่งมาครับ */
 .page-wrapper {
   display: flex; justify-content: center; padding: 20px; width: 100%; box-sizing: border-box;
 }
 
-/* การ์ดฟอร์ม */
 .card {
-  background: white; width: 100%; max-width: 500px; /* เริ่มต้นที่มือถือ */
+  background: white; width: 100%; max-width: 500px;
   padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);
   transition: max-width 0.3s ease;
 }
 
-/* หัวข้อและ Label */
 .title { color: #2c4a85; text-align: center; font-size: 24px; margin-bottom: 25px; }
 .group-label { display: block; color: #586b8f; margin-bottom: 8px; font-weight: 600; }
 .section-group { margin-bottom: 20px; }
 
-/* Input Fields */
 .input-field {
   width: 100%; padding: 12px; border-radius: 8px; border: 1px solid transparent;
   margin-bottom: 12px; box-sizing: border-box; font-size: 14px;
@@ -100,7 +102,6 @@ const submitForm = () => {
 .blue-theme { background: #eef6ff; color: #5a8ab3; }
 .textarea-field { height: 100px; resize: vertical; }
 
-/* Radio Buttons */
 .gender-wrapper { display: flex; gap: 10px; margin-bottom: 15px; }
 .gender-box {
   flex: 1; padding: 10px; text-align: center; border-radius: 8px;
@@ -109,22 +110,17 @@ const submitForm = () => {
 .gender-box.male { background: #dbeafe; color: #3b5d92; }
 .gender-box.female { background: #fce7f3; color: #db4c7e; }
 
-/* Button */
 .confirm-btn {
   width: 100%; padding: 14px; background: #6a93cb; color: white;
   border: none; border-radius: 10px; font-size: 16px; cursor: pointer; font-weight: bold;
 }
 
-/* --- RESPONSIVE: จุดสำคัญที่ทำให้จอคอมกว้างขึ้น --- */
 @media (min-width: 1024px) {
-  .card { max-width: 1000px; padding: 40px; } /* ขยายการ์ด */
-  
+  .card { max-width: 1000px; padding: 40px; }
   .grid-2-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
   .input-field { margin-bottom: 0; }
-
   .flex-row-desktop { display: flex; gap: 30px; align-items: flex-start; margin-bottom: 20px; }
   .flex-item { flex: 1; }
-
   .confirm-btn { width: 200px; margin: 0 auto; display: block; }
 }
 </style>

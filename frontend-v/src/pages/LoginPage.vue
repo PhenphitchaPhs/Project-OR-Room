@@ -19,7 +19,9 @@
 
 
         <span class="divider">|</span>
-        <span>Sign up</span>
+        <router-link to="/signup" class="signup-link">
+          <span>Sign up</span>
+        </router-link>
       </div>
 
 
