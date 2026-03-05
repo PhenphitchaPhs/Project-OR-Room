@@ -1,6 +1,7 @@
 <template>
   <div class="app-container">
-    <header class="main-header" v-if="!isSidebarOpen">
+    
+    <header class="main-header" v-if="showLayout && !isSidebarOpen">
       <div class="profile-trigger" @click="toggleSidebar">
         <div class="icon-circle">
           <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2A10 10 0 0 0 2 12a10 10 0 0 0 10 10a10 10 0 0 0 10-10A10 10 0 0 0 12 2M7.07 18.28c.43-.9 3.05-1.78 4.93-1.78s4.5.88 4.93 1.78A7.9 7.9 0 0 1 12 20c-1.86 0-3.57-.64-4.93-1.72m11.29-1.45c-1.43-1.74-4.9-2.33-6.36-2.33s-4.93.59-6.36 2.33A7.93 7.93 0 0 1 4 12c0-4.41 3.59-8 8-8s8 3.59 8 8c0 1.82-.62 3.49-1.64 4.83M12 6c-1.94 0-3.5 1.56-3.5 3.5S10.06 13 12 13s3.5-1.56 3.5-3.5S13.94 6 12 6m0 5a1.5 1.5 0 0 1-1.5-1.5A1.5 1.5 0 0 1 12 8a1.5 1.5 0 0 1 1.5 1.5A1.5 1.5 0 0 1 12 11"/></svg>
@@ -8,10 +9,10 @@
       </div>
     </header>
 
-    <div v-if="isSidebarOpen" class="overlay" @click="closeSidebar"></div>
+    <div v-if="showLayout && isSidebarOpen" class="overlay" @click="closeSidebar"></div>
 
     <transition name="slide">
-      <aside v-if="isSidebarOpen" class="sidebar">
+      <aside v-if="showLayout && isSidebarOpen" class="sidebar">
         <div class="sidebar-header">
           <div class="user-info">
             <div class="avatar-icon" @click="toggleSidebar">
@@ -59,12 +60,26 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue' // เพิ่ม onMounted ตรงนี้
-import { RouterView, useRouter } from 'vue-router'
+import { ref, onMounted, computed } from 'vue' // เพิ่ม computed
+import { RouterView, useRouter, useRoute } from 'vue-router' // เพิ่ม useRoute
 
 const isSidebarOpen = ref(false)
 const router = useRouter()
-const userLicense = ref('------') // เพิ่มตัวแปรเก็บเลข License
+const route = useRoute() // เรียกใช้งานตัวดึงข้อมูล URL ปัจจุบัน
+const userLicense = ref('------')
+
+// 🔥 คำนวณว่าควรแสดงเลย์เอาต์ (เมนู/แถบข้าง) ไหม
+const showLayout = computed(() => {
+  // ใส่ Path ที่คุณอยาก "ซ่อน" เมนูทั้งหมดไว้ใน Array นี้
+  const hiddenPages = [
+    '/login', 
+    '/signup', 
+    '/forgot-password', 
+    '/admin/login'
+  ]
+  // ถ้า Path ปัจจุบันไม่ได้อยู่ในลิสต์ด้านบน ก็แสดงเลย์เอาต์ตามปกติ
+  return !hiddenPages.includes(route.path)
+})
 
 // ดึงค่าเลข License จากความจำเครื่องตอนที่หน้าเปิดขึ้นมา
 onMounted(() => {
@@ -79,7 +94,7 @@ const closeSidebar = () => { isSidebarOpen.value = false }
 
 const handleLogout = () => {
   if (confirm("คุณต้องการออกจากระบบใช่หรือไม่?")) {
-    localStorage.removeItem('userLicense') // ล้างข้อมูล License ออกด้วย
+    localStorage.removeItem('userLicense')
     isSidebarOpen.value = false
     router.push('/login')
   }
