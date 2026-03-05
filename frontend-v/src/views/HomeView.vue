@@ -7,6 +7,7 @@
 
         <Transition name="slide">
             <aside v-if="isDrawerOpen" class="side-drawer">
+                
                 <div class="drawer-header">
                     <div class="drawer-user-info">
                         <div class="avatar-circle">
@@ -126,7 +127,7 @@
                             <h3>No upcoming surgery cases</h3>
                             <p class="sub-text">Please ensure all patient records are updated.</p>
                         </div>
-
+                        
                         <div v-else>
                             <div v-for="item in upcomingCases" :key="item.id" class="case-card"
                                 @click="toggleDetail(item.id)">
@@ -259,94 +260,121 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 
-const expandedId = ref(null)
-
-const toggleDetail = (id) => {
-    expandedId.value = expandedId.value === id ? null : id
-}
-
 const router = useRouter()
+const API_URL = 'http://localhost:8787/api/bookings'
+
+// --- State ---
+const bookings = ref([])
 const userLicense = ref('123546')
+const filter = ref('Upcoming')
+const expandedId = ref(null)
+const isLoading = ref(false)
 
 const FILTERS = {
     UPCOMING: 'Upcoming',
     SUCCEED: 'Succeed'
 }
 
-const filter = ref(FILTERS.UPCOMING)
-const expandedCaseId = ref(null)
-
-const toggleExpand = (id) => {
-    expandedCaseId.value = expandedCaseId.value === id ? null : id
+// ================= 1. โหลดข้อมูลจาก Backend =================
+const fetchBookings = async () => {
+    isLoading.value = true
+    try {
+        const response = await fetch(API_URL)
+        if (!response.ok) throw new Error('API Error')
+        const data = await response.json()
+        bookings.value = Array.isArray(data) ? data : []
+    } catch (error) {
+        console.error("❌ ดึงข้อมูลไม่สำเร็จ:", error)
+        // Fallback: ถ้าติดต่อ Backend ไม่ได้ ให้ดึงจาก Local ไปก่อน
+        const saved = JSON.parse(localStorage.getItem('bookings'))
+        bookings.value = Array.isArray(saved) ? saved : []
+    } finally {
+        isLoading.value = false
+    }
 }
 
-// 🔥 state เก็บเคส
-const bookings = ref([])
-
-// ================= โหลดข้อมูล =================
 onMounted(() => {
     const savedLicense = localStorage.getItem('userLicense')
     if (savedLicense) userLicense.value = savedLicense
-
-    try {
-        const savedBookings = JSON.parse(localStorage.getItem('bookings'))
-        bookings.value = Array.isArray(savedBookings) ? savedBookings : []
-    } catch (error) {
-        bookings.value = []
-    }
+    fetchBookings() // เรียกดึงข้อมูลจาก Cloudflare ทันทีที่เปิดหน้า
 })
 
-// ================= computed =================
-
-// 🔥 เรียงวันที่ใกล้สุดก่อน
-const sortByDate = (arr) => {
+// ================= 2. ระบบจัดเรียงคิว (Smart Priority Sorting) =================
+const sortCases = (arr) => {
+    const urgencyScore = { 'Emergency': 3, 'Urgent': 2, 'Normal': 1 }
+    
     return [...arr].sort((a, b) => {
-        return new Date(a.date) - new Date(b.date)
+        // 1. เรียงตามวันที่ก่อน (ใกล้วันปัจจุบันที่สุดขึ้นก่อน)
+        if (a.date !== b.date) return new Date(a.date) - new Date(b.date)
+        
+        // 2. กฎเคสติดเชื้อ (Infection): ถ้ามีเชื้อต้องไปคิวสุดท้ายของวัน (อบโอโซนห้อง)
+        if (a.isInfected !== b.isInfected) return a.isInfected ? 1 : -1
+        
+        // 3. กฎความฉุกเฉิน (Urgency): Emergency แซงคิวคนอื่นในระดับเดียวกัน
+        const scoreA = urgencyScore[a.urgency] || 0
+        const scoreB = urgencyScore[b.urgency] || 0
+        if (scoreA !== scoreB) return scoreB - scoreA
+        
+        // 4. กฎ NPO Risk: ใครต้องงดน้ำงดอาหาร (เด็ก/เบาหวาน) ให้ได้ทำก่อน
+        if (a.isNpoRisk !== b.isNpoRisk) return a.isNpoRisk ? -1 : 1
+        
+        // 5. กฎตามอาจารย์สั่ง: อายุมากได้ก่อน
+        if (a.age !== b.age) return b.age - a.age
+        
+        // 6. กฎตามอาจารย์สั่ง: เพศหญิงได้ก่อน
+        if (a.gender !== b.gender) return a.gender === 'female' ? -1 : 1
+        
+        return 0
     })
 }
 
-const upcomingCases = computed(() =>
-    sortByDate(
-        bookings.value.filter(item => item.status === FILTERS.UPCOMING)
-    )
+const upcomingCases = computed(() => 
+    sortCases(bookings.value.filter(item => item.status === FILTERS.UPCOMING || !item.status))
 )
 
-const succeedCases = computed(() =>
-    sortByDate(
-        bookings.value.filter(item => item.status === FILTERS.SUCCEED)
-    )
+const succeedCases = computed(() => 
+    sortCases(bookings.value.filter(item => item.status === FILTERS.SUCCEED))
 )
 
-// ================= localStorage =================
-const saveToStorage = () => {
-    localStorage.setItem('bookings', JSON.stringify(bookings.value))
+// ================= 3. Actions (จัดการข้อมูล) =================
+
+const toggleDetail = (id) => {
+    expandedId.value = expandedId.value === id ? null : id
 }
 
-// ================= actions =================
-
-// 🔥 ลบเคส (มี confirm)
-const deleteCase = (id) => {
-    const confirmDelete = confirm('ยืนยันการลบเคสนี้?')
+// ลบเคส (ลบจาก Backend)
+const deleteCase = async (id) => {
+    const confirmDelete = confirm('ยืนยันการลบเคสนี้จากฐานข้อมูล Cloudflare?')
     if (!confirmDelete) return
 
-    bookings.value = bookings.value.filter(item => item.id !== id)
-    saveToStorage()
-}
-
-// 🔥 เปลี่ยนสถานะเป็น Succeed แล้วสลับแท็บทันที
-const markAsSucceed = (id) => {
-    const target = bookings.value.find(item => item.id === id)
-
-    if (target) {
-        target.status = FILTERS.SUCCEED
-        saveToStorage()
-
-        // 🔥 สลับไปแท็บ Succeed เลย
-        filter.value = FILTERS.SUCCEED
+    try {
+        // อัปเดต UI ทันทีเพื่อความรวดเร็ว
+        bookings.value = bookings.value.filter(item => item.id !== id)
+        
+        // ยิงไปลบที่ Backend (ควรทำ API DELETE ที่ฝั่ง Hono รองรับด้วย)
+        await fetch(`${API_URL}/${id}`, { method: 'DELETE' })
+    } catch (error) {
+        console.error("ลบไม่สำเร็จ:", error)
     }
 }
 
-// ================= modal / drawer เดิม =================
+// เปลี่ยนสถานะเป็น Succeed
+const markAsSucceed = (id) => {
+    const target = bookings.value.find(item => item.id === id)
+    if (target) {
+        target.status = FILTERS.SUCCEED
+        filter.value = FILTERS.SUCCEED
+        // หมายเหตุ: เพื่อให้สถานะใน DB เปลี่ยนถาวร ควรเพิ่ม API Update ใน Backend ครับ
+    }
+}
+
+const clearSucceedCases = () => {
+    if (confirm("ต้องการล้างประวัติที่สำเร็จแล้วทั้งหมดหรือไม่?")) {
+        bookings.value = bookings.value.filter(item => item.status !== FILTERS.SUCCEED)
+    }
+}
+
+// ================= 4. Modal / Navigation (เหมือนเดิม) =================
 const isDrawerOpen = ref(false)
 const isDayModalOpen = ref(false)
 const isLogoutModalOpen = ref(false)
@@ -356,72 +384,19 @@ const selectedDay = ref('Monday')
 const tempSelectedDay = ref('Monday')
 const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
 
-const openDayModal = () => {
-    isDrawerOpen.value = false
-    tempSelectedDay.value = selectedDay.value
-    isDayModalOpen.value = true
-}
+const openDayModal = () => { isDrawerOpen.value = false; tempSelectedDay.value = selectedDay.value; isDayModalOpen.value = true }
+const confirmDayChange = () => { selectedDay.value = tempSelectedDay.value; isDayModalOpen.value = false }
+const closeAllOverlays = () => { isDrawerOpen.value = isDayModalOpen.value = isLogoutModalOpen.value = isDeleteAccModalOpen.value = false }
+const goToCalendar = () => { isDrawerOpen.value = false; router.push('/calendar') }
+const goAddPatient = () => { isDrawerOpen.value = false; router.push('/booking') }
+const handleLogout = () => { localStorage.removeItem('isLoggedIn'); router.push('/login') }
+const handleDeleteAccount = () => { localStorage.clear(); router.push('/login') }
 
-const confirmDayChange = () => {
-    selectedDay.value = tempSelectedDay.value
-    isDayModalOpen.value = false
-}
-
-const closeAllOverlays = () => {
-    isDrawerOpen.value = false
-    isDayModalOpen.value = false
-    isLogoutModalOpen.value = false
-    isDeleteAccModalOpen.value = false
-}
-
-const goToCalendar = () => {
-    isDrawerOpen.value = false
-    router.push('/calendar')
-}
-
-const goAddPatient = () => {
-    isDrawerOpen.value = false
-    router.push('/booking')
-}
-
-const handleLogout = () => {
-    localStorage.removeItem('isLoggedIn')
-    localStorage.removeItem('userLicense')
-    router.push('/login')
-}
-
-const handleDeleteAccount = () => {
-    localStorage.clear()
-    router.push('/login')
-}
-
-// ===== Case Detail Modal =====
+// Case Detail Modal
 const isDetailModalOpen = ref(false)
 const selectedCase = ref(null)
-
-const openCaseDetail = (item) => {
-    selectedCase.value = item
-    isDetailModalOpen.value = true
-}
-
-const closeDetailModal = () => {
-    isDetailModalOpen.value = false
-}
-
-// ==========ลบ===================
-const clearSucceedCases = () => {
-    const confirmClear = confirm("Are you sure you want to clear all succeeded cases?")
-    if (!confirmClear) return
-
-    const existing = JSON.parse(localStorage.getItem('bookings')) || []
-
-    // 🔥 ลบเฉพาะ status = Succeed
-    const filtered = existing.filter(item => item.status !== 'Succeed')
-
-    localStorage.setItem('bookings', JSON.stringify(filtered))
-
-    bookings.value = filtered
-}
+const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.value = true }
+const closeDetailModal = () => { isDetailModalOpen.value = false }
 </script>
 
 <style scoped>
@@ -1133,5 +1108,28 @@ const clearSucceedCases = () => {
 
 .clear-btn:hover {
     background-color: #ffd500;
+}
+/* 🔥 แก้ไข Checkbox ให้เกาะกลุ่มกันสวยๆ */
+.checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-left: 10px;
+}
+
+.check-label {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important; /* บังคับชิดซ้าย */
+    gap: 10px !important; /* ระยะห่างระหว่างกล่องกับข้อความ */
+    width: fit-content !important; /* 👈 สำคัญ: ไม่ให้กล่องยาวเต็มบรรทัด */
+    cursor: pointer;
+}
+
+input[type="checkbox"] {
+    width: 20px !important;
+    height: 20px !important;
+    margin: 0 !important;
+    flex-shrink: 0;
 }
 </style>

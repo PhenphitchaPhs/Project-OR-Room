@@ -1,0 +1,8 @@
+name = "or-room-backend"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+
+[[d1_databases]]
+binding = "DB" 
+database_name = "or_room_db"
+database_id = "6ef0230c-8100-4b18-81c1-d263cad15792"

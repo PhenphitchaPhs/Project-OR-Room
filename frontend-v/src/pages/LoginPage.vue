@@ -41,11 +41,17 @@ const router = useRouter();
 const license = ref("");
 const password = ref("");
 
-// ถ้า login อยู่แล้ว ให้เด้งไป home
+// ถ้า login อยู่แล้ว ให้เด้งไปหน้าที่ถูกต้องตาม Role
 onMounted(() => {
   const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+  const userRole = localStorage.getItem("userRole");
+  
   if (isLoggedIn) {
-    router.push("/home");
+      if (userRole === 'admin') {
+          router.push("/admin-home"); // ถ้าเป็นแอดมิน ให้ไปหน้าแอดมิน
+      } else {
+          router.push("/home"); // ถ้าเป็นหมอ/พยาบาล ให้ไปหน้าโฮม
+      }
   }
 });
 
@@ -67,15 +73,16 @@ const login = () => {
     return;
   }
 
+  // ✅ ขั้นตอนนี้คือการจำลองว่า "ล็อกอินสำเร็จในฐานะ User ธรรมดา"
+  // (เดี๋ยวพอมี Backend ตรงนี้จะเป็นการยิง API แทนครับ)
   localStorage.setItem("isLoggedIn", "true");
-  localStorage.setItem("userLicense", license.value); // ✅ แก้ให้ตรงกับ Home
+  localStorage.setItem("userLicense", license.value); 
+  localStorage.setItem("userRole", "user"); // 👈 ประกาศตัวชัดเจนว่าเป็นแค่ User ธรรมดา
 
+  alert("ล็อกอินสำเร็จ ยินดีต้อนรับเข้าสู่ระบบ!");
   router.push("/home");
 };
 </script>
-
-
-
 
 <style scoped>
 * {

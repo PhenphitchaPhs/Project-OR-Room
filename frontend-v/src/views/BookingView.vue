@@ -15,11 +15,14 @@
                     <label class="group-label">Patient Information</label>
                     <div class="grid-2-col">
                         <input type="text" v-model="form.hn" placeholder="HN" class="input-field green-theme" />
-                        <input type="text" v-model="form.fullName" placeholder="Full Name"
-                            class="input-field green-theme" />
-                        <input type="number" v-model="form.age" placeholder="Age" class="input-field green-theme" />
-                        <textarea v-model="form.disease" placeholder="Underlying Disease(s)"
-                            class="input-field green-theme textarea-auto" rows="1" @input="autoResize"></textarea>
+                        <input type="text" v-model="form.fullName" placeholder="Full Name" class="input-field green-theme" />
+                        
+                        <div class="split-input-row">
+                            <input type="date" v-model="form.dob" :max="maxDobDate" class="input-field green-theme date-box" title="Date of Birth" />
+                            <input type="text" :value="calculatedAge !== '' ? calculatedAge + ' ปี' : 'อายุ'" readonly class="input-field age-read-only" title="อายุคำนวณอัตโนมัติ" />
+                        </div>
+
+                        <textarea v-model="form.disease" placeholder="Underlying Disease(s)" class="input-field green-theme textarea-auto" rows="1"></textarea>
                     </div>
                 </div>
 
@@ -28,13 +31,10 @@
                         <label class="group-label">Gender</label>
                         <div class="gender-wrapper">
                             <label class="gender-box male" :class="{ active: form.gender === 'male' }">
-                                <input type="radio" name="gender" value="male" v-model="form.gender" />
-                                Male
+                                <input type="radio" name="gender" value="male" v-model="form.gender" /> Male
                             </label>
-
                             <label class="gender-box female" :class="{ active: form.gender === 'female' }">
-                                <input type="radio" name="gender" value="female" v-model="form.gender" />
-                                Female
+                                <input type="radio" name="gender" value="female" v-model="form.gender" /> Female
                             </label>
                         </div>
                     </div>
@@ -44,23 +44,45 @@
                         <div class="select-wrapper">
                             <select v-model="form.procedure" class="input-field green-theme">
                                 <option value="" disabled>Surgery list</option>
-                                <option v-for="proc in procedureList" :key="proc" :value="proc">
-                                    {{ proc }}
+                                <option v-for="proc in procedureList" :key="proc.name" :value="proc.name">
+                                    {{ proc.name }}
                                 </option>
                             </select>
                         </div>
                     </div>
                 </div>
 
+                <div class="section-group extra-options">
+                    <label class="group-label">Triage & Special Requirements</label>
+                    <div class="grid-2-col">
+                        <div class="select-wrapper">
+                            <select v-model="form.urgency" class="input-field orange-theme">
+                                <option value="Normal">🟢 Normal (รอได้)</option>
+                                <option value="Urgent">🟡 Urgent (เร่งด่วน)</option>
+                                <option value="Emergency">🔴 Emergency (ฉุกเฉินช่วยชีวิต!)</option>
+                            </select>
+                        </div>
+                        <div class="checkbox-group">
+                            <label class="check-label">
+                                <input type="checkbox" v-model="form.isNpoRisk" />
+                                🍼 เสี่ยงขาดอาหาร (NPO Risk)
+                            </label>
+                            <label class="check-label red-text">
+                                <input type="checkbox" v-model="form.isInfected" />
+                                🦠 โรคติดเชื้อ (Infection)
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="section-group">
-                    <label class="group-label">Date</label>
-                    <input type="date" v-model="form.date" class="input-field green-theme" />
+                    <label class="group-label">Surgery Date</label>
+                    <input type="date" v-model="form.date" :min="minDate" @change="checkValidDate" class="input-field green-theme" />
                 </div>
 
                 <div class="section-group">
                     <label class="group-label">Notes</label>
-                    <textarea v-model="form.notes" placeholder="Remarks" class="input-field blue-theme note-box"
-                        rows="3" @input="autoResize"></textarea>
+                    <textarea v-model="form.notes" placeholder="Remarks" class="input-field blue-theme note-box" rows="2"></textarea>
                 </div>
 
                 <div class="btn-area">
@@ -73,341 +95,196 @@
 </template>
 
 <script setup>
-import { reactive, computed, ref } from 'vue'
+import { reactive, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
-const currentDoctor = {
-    name: 'Dr. Smith',
-    dutyDay: 1 // 1 = Monday
-}
 
-// 🏥 รายการประเภทการผ่าตัดยอดฮิตในไทย (ดึงมาทำเป็นตัวแปรแบบนี้ อนาคตเพิ่มลดง่าย)
 const procedureList = ref([
-    "Appendectomy (ผ่าตัดไส้ติ่ง) - 60 min",
-    "Laparoscopic Cholecystectomy / LC (ผ่าตัดถุงน้ำดี) - 120 min",
-    "Cesarean Section / C-Section (ผ่าคลอด) - 60 min",
-    "Herniorrhaphy (ผ่าตัดไส้เลื่อน) - 90 min",
-    "Total Knee Arthroplasty / TKA (เปลี่ยนข้อเข่า) - 180 min",
-    "Thyroidectomy (ผ่าตัดต่อมไทรอยด์) - 120 min",
-    "Modified Radical Mastectomy / MRM (ผ่าตัดเต้านม) - 120 min",
-    "Cataract Surgery (ผ่าตัดต้อกระจก) - 30 min",
-    "Hemorrhoidectomy (ผ่าตัดริดสีดวงทวาร) - 45 min",
-    "Exploratory Laparotomy (ผ่าตัดเปิดช่องท้องฉุกเฉิน) - 180 min"
+    { name: "Appendectomy (ผ่าตัดไส้ติ่ง) - 60 min", min: 60 },
+    { name: "Laparoscopic Cholecystectomy / LC - 120 min", min: 120 },
+    { name: "Cesarean Section / C-Section - 60 min", min: 60 },
+    { name: "Herniorrhaphy (ผ่าตัดไส้เลื่อน) - 90 min", min: 90 },
+    { name: "Total Knee Arthroplasty / TKA - 180 min", min: 180 },
+    { name: "Thyroidectomy (ผ่าตัดต่อมไทรอยด์) - 120 min", min: 120 },
+    { name: "Modified Radical Mastectomy / MRM - 120 min", min: 120 },
+    { name: "Cataract Surgery (ผ่าตัดต้อกระจก) - 30 min", min: 30 },
+    { name: "Hemorrhoidectomy (ผ่าตัดริดสีดวง) - 45 min", min: 45 },
+    { name: "Exploratory Laparotomy (เปิดช่องท้อง) - 180 min", min: 180 }
 ])
 
-/* 🚫 วันหยุด */
-const holidays = [
-    '2026-01-01',
-    '2026-04-13',
-    '2026-04-14',
-    '2026-04-15',
-    '2026-12-31'
+const officialHolidays = [
+    "01-01", "04-06", "04-13", "04-14", "04-15", "05-01", 
+    "05-04", "06-03", "07-28", "08-12", "10-13", "10-23", 
+    "12-05", "12-10", "12-31"
 ]
 
-/* 🔁 แปลงเลขวันเป็นชื่อ */
-const dutyDayName = computed(() => {
-    const days = [
-        'Sunday', 'Monday', 'Tuesday',
-        'Wednesday', 'Thursday', 'Friday', 'Saturday'
-    ]
-    return days[currentDoctor.dutyDay]
+const form = reactive({
+    hn: '', fullName: '', dob: '', disease: '', gender: '', procedure: '', date: '', notes: '',
+    urgency: 'Normal', isNpoRisk: false, isInfected: false
 })
 
-/* 🔒 ตรวจสอบวัน */
-const validateDate = () => {
-    if (!form.date) return
+const goHome = () => router.push('/home')
 
-    const selected = new Date(form.date)
+const today = new Date();
+today.setHours(0, 0, 0, 0);
+const offset = today.getTimezoneOffset() * 60000;
+const todayStr = new Date(today.getTime() - offset).toISOString().split('T')[0];
+
+const minDate = ref(todayStr); 
+const maxDobDate = ref(todayStr); 
+
+const calculatedAge = computed(() => {
+    if (!form.dob) return '';
+    
+    const birthDate = new Date(form.dob);
+    const referenceDate = form.date ? new Date(form.date) : new Date();
+    
+    let age = referenceDate.getFullYear() - birthDate.getFullYear();
+    const monthDiff = referenceDate.getMonth() - birthDate.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && referenceDate.getDate() < birthDate.getDate())) {
+        age--;
+    }
+    
+    return age >= 0 ? age : 0;
+})
+
+const isHolidayOrWeekend = (dateString) => {
+    const selected = new Date(dateString)
     const day = selected.getDay()
-
-    if (day !== currentDoctor.dutyDay) {
-        form.date = ''
-        return
-    }
-
-    if (holidays.includes(form.date)) {
-        form.date = ''
-        return
-    }
+    const monthDay = dateString.substring(5)
+    return day === 0 || day === 6 || officialHolidays.includes(monthDay)
 }
 
-const form = reactive({
-    hn: '',
-    fullName: '',
-    age: '',
-    disease: '',
-    gender: '',
-    procedure: '',
-    date: '',
-    notes: ''
-})
-
-const goHome = () => {
-    router.push('/home')
+const checkValidDate = () => {
+    if (!form.date) return;
+    if (isHolidayOrWeekend(form.date)) {
+        alert('❌ วันหยุดราชการ หรือ วันเสาร์-อาทิตย์ ห้องผ่าตัดปิดให้บริการครับ กรุณาเลือกวันอื่น');
+        form.date = ''; 
+    }
 }
 
 const submitForm = () => {
-
-    if (!form.hn || !form.fullName || !form.gender || !form.procedure || !form.date) {
+    if (!form.hn || !form.fullName || !form.dob || !form.gender || !form.procedure || !form.date) {
         alert('กรุณากรอกข้อมูลให้ครบ')
         return
     }
 
-    // 🔹 ดึงข้อมูลเดิม
-    const existing = JSON.parse(localStorage.getItem('bookings')) || []
+    if (isHolidayOrWeekend(form.date)) {
+        alert('❌ ไม่สามารถจองคิวในวันหยุดราชการหรือเสาร์-อาทิตย์ได้ครับ')
+        return
+    }
 
-    // 🔹 สร้างเคสใหม่ตาม format ที่ Home ต้องใช้
+    let existing = JSON.parse(localStorage.getItem('bookings')) || []
+
+    const selectedProc = procedureList.value.find(p => p.name === form.procedure)
+    const newProcTime = selectedProc ? selectedProc.min : 0
+    const bookedTimeInDay = existing.filter(b => b.date === form.date).reduce((sum, b) => {
+        const procInfo = procedureList.value.find(p => p.name === b.procedure)
+        return sum + (procInfo ? procInfo.min : 0)
+    }, 0)
+
+    if (bookedTimeInDay + newProcTime > 420) {
+        alert(`❌ คิวเต็มแล้ว! วันนี้เหลือเวลาว่างแค่ ${420 - bookedTimeInDay} นาที (คุณเลือกผ่าตัด ${newProcTime} นาที)`)
+        return
+    }
+
     const newCase = {
         id: Date.now(),
+        createdAt: Date.now(),
         status: 'Upcoming',
-
-        // 🔹 ข้อมูลการ์ดย่อ
-        date: form.date,
-        patientName: form.fullName,
-        procedure: form.procedure,
-        doctor: 'Dr. Smith',
-        room: 'OR-01',
-
-        // 🔥 ข้อมูล detail เต็ม
-        hn: form.hn,
-        fullName: form.fullName,
-        age: form.age,
-        gender: form.gender,
-        underlying: form.disease,
-        notes: form.notes
+        date: form.date, patientName: form.fullName, procedure: form.procedure, doctor: 'Dr. Smith', room: 'OR-01',
+        hn: form.hn, fullName: form.fullName, dob: form.dob, age: calculatedAge.value, 
+        gender: form.gender, underlying: form.disease, notes: form.notes,
+        urgency: form.urgency, isNpoRisk: form.isNpoRisk, isInfected: form.isInfected
     }
 
     existing.push(newCase)
 
+    const urgencyScore = { 'Emergency': 3, 'Urgent': 2, 'Normal': 1 }
+
+    existing.sort((a, b) => {
+        if (a.date !== b.date) return new Date(a.date) - new Date(b.date); 
+        if (a.isInfected !== b.isInfected) return a.isInfected ? 1 : -1;
+        if (urgencyScore[a.urgency] !== urgencyScore[b.urgency]) {
+            return urgencyScore[b.urgency] - urgencyScore[a.urgency];
+        }
+        if (a.isNpoRisk !== b.isNpoRisk) return a.isNpoRisk ? -1 : 1;
+        
+        if (a.age !== b.age) return b.age - a.age; 
+        
+        if (a.gender !== b.gender) return a.gender === 'female' ? -1 : 1;
+        return a.createdAt - b.createdAt;
+    });
+
     localStorage.setItem('bookings', JSON.stringify(existing))
-
-    // 🔹 reset form
-    Object.keys(form).forEach(key => form[key] = '')
-
-    // 🔹 กลับหน้า Home
+    
+    Object.keys(form).forEach(key => form[key] = (typeof form[key] === 'boolean' ? false : (key === 'urgency' ? 'Normal' : '')))
+    
+    alert("✅ จองคิวสำเร็จ! ระบบจัดลำดับคิวและคำนวณอายุผู้ป่วยเรียบร้อยแล้ว")
     router.push('/home')
 }
 </script>
 
 <style scoped>
 /* ===== GLOBAL FIX ===== */
-* {
-    box-sizing: border-box;
-}
+* { box-sizing: border-box; }
+.page-wrapper { display: flex; justify-content: center; padding: 20px; width: 100%; min-height: 100vh; background: linear-gradient(135deg, #0f2a47, #1e3a5f); }
+.card { position: relative; background: #ffffff; width: 100%; max-width: 500px; padding: 25px; border-radius: 14px; box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15); }
+.title { color: #0f2a47; text-align: center; font-size: 24px; font-weight: 700; margin-bottom: 25px; }
+.group-label { display: block; color: #1e3a5f; margin-bottom: 8px; font-weight: 600; }
+.section-group { margin-bottom: 20px; }
+input, textarea, select { width: 100%; box-sizing: border-box; }
 
-.page-wrapper {
-    display: flex;
-    justify-content: center;
-    padding: 20px;
-    width: 100%;
-    min-height: 100vh;
-    overflow-x: hidden;
-    background: linear-gradient(135deg, #0f2a47, #1e3a5f);
-}
+.input-field { padding: 12px; border-radius: 10px; border: 1px solid #d6e2f1; background: #f4f8fd; font-size: 14px; margin-bottom: 12px; transition: 0.25s; }
+.input-field:focus { outline: none; border: 1px solid #0f2a47; background: #ffffff; }
 
-/* ===== CARD ===== */
-.card {
-    position: relative;
-    background: #ffffff;
-    width: 100%;
-    max-width: 500px;
-    padding: 25px;
-    border-radius: 14px;
-    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+/* 🔴 โซนใหม่: ตกแต่งกล่อง DOB และ Age ให้อยู่คู่กัน */
+.split-input-row { 
+    display: flex; 
+    gap: 12px; 
+    width: 100%; 
 }
-
-/* ===== TITLE ===== */
-.title {
-    color: #0f2a47;
-    text-align: center;
-    font-size: 24px;
-    font-weight: 700;
-    margin-bottom: 25px;
+.date-box { 
+    flex: 2; /* ให้กล่องปฏิทินกว้างกว่านิดนึง */
 }
-
-/* ===== LABEL ===== */
-.group-label {
-    display: block;
-    color: #1e3a5f;
-    margin-bottom: 8px;
+.age-read-only { 
+    flex: 1; /* ให้กล่องอายุกะทัดรัดลง */
+    background: #e9ecef !important; /* สีเทาอ่อนให้รู้ว่าพิมพ์ไม่ได้ */
+    color: #495057; 
+    text-align: center; 
     font-weight: 600;
+    cursor: not-allowed; /* เปลี่ยนเมาส์เป็นเครื่องหมายห้าม */
+    border: 1px solid #ced4da;
 }
 
-.section-group {
-    margin-bottom: 20px;
-}
+/* โซนใหม่: ตกแต่ง Extra Options */
+.extra-options { background: #fffcf0; padding: 15px; border-radius: 12px; border: 1px dashed #f5b041; }
+.orange-theme { background: #fff8e1; border: 1px solid #f5b041; }
+.checkbox-group { display: flex; flex-direction: column; justify-content: center; gap: 15px; padding-left: 10px; }
+.check-label { display: flex !important; align-items: center !important; justify-content: flex-start !important; gap: 12px !important; font-size: 14.5px; font-weight: 600; color: #444; cursor: pointer; margin: 0 !important; width: 100% !important; }
 
-/* ===== INPUT / SELECT / TEXTAREA ===== */
-input,
-textarea,
-select {
-    width: 100%;
-    max-width: 100%;
-    box-sizing: border-box;
-}
+input[type="checkbox"] { width: 22px !important; height: 22px !important; margin: 0 !important; cursor: pointer; flex-shrink: 0 !important; accent-color: #d32f2f; -webkit-appearance: auto !important; appearance: auto !important; }
 
-.input-field {
-    padding: 12px;
-    border-radius: 10px;
-    border: 1px solid #d6e2f1;
-    background: #f4f8fd;
-    font-size: 14px;
-    margin-bottom: 12px;
-    transition: 0.25s;
-}
+textarea { resize: none; overflow-wrap: break-word; }
+.textarea-auto { overflow: hidden; min-height: 40px; }
+.gender-wrapper { display: flex; gap: 10px; margin-bottom: 15px; }
+.gender-box { flex: 1; padding: 10px; text-align: center; border-radius: 10px; cursor: pointer; font-weight: 600; border: 2px solid transparent; transition: 0.3s ease; }
+.gender-box.male { background: #e0f2fe; color: #1d4ed8; }
+.gender-box.male.active { background: #1d4ed8; color: white; border: 2px solid #1e40af; }
+.gender-box.female { background: #fce7f3; color: #db2777; }
+.gender-box.female.active { background: #db2777; color: white; border: 2px solid #be185d; }
 
-.input-field:focus {
-    outline: none;
-    border: 1px solid #0f2a47;
-    box-shadow: 0 0 0 3px rgba(15, 42, 71, 0.15);
-    background: #ffffff;
-}
+.confirm-btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #0f2a47, #1e3a5f); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; }
+.back-btn { position: absolute; top: 20px; left: 20px; z-index: 100; width: 40px; height: 40px; border-radius: 50%; border: none; background: #eef3fb; display: flex; justify-content: center; align-items: center; cursor: pointer; color: #0f2a47; }
 
-/* ===== TEXTAREA FIX ===== */
-textarea {
-    resize: none;
-    overflow-wrap: break-word;
-}
-
-.textarea-auto {
-    resize: none;
-    overflow: hidden;
-    min-height: 40px;
-}
-
-.note-box {
-    background: #eef4fb;
-}
-
-/* ===== GENDER ===== */
-.gender-wrapper {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 15px;
-}
-
-.gender-box {
-    flex: 1;
-    padding: 10px;
-    text-align: center;
-    border-radius: 10px;
-    cursor: pointer;
-    font-weight: 600;
-    border: 2px solid transparent;
-    transition: 0.3s ease;
-}
-
-/* Male */
-.gender-box.male {
-    background: #e0f2fe;
-    color: #1d4ed8;
-}
-
-.gender-box.male.active {
-    background: #1d4ed8;
-    color: white;
-    border: 2px solid #1e40af;
-    box-shadow: 0 6px 18px rgba(29, 78, 216, 0.35);
-}
-
-/* Female */
-.gender-box.female {
-    background: #fce7f3;
-    color: #db2777;
-}
-
-.gender-box.female.active {
-    background: #db2777;
-    color: white;
-    border: 2px solid #be185d;
-    box-shadow: 0 6px 18px rgba(219, 39, 119, 0.35);
-}
-
-/* ===== CONFIRM BUTTON ===== */
-.confirm-btn {
-    width: 100%;
-    padding: 14px;
-    background: linear-gradient(135deg, #0f2a47, #1e3a5f);
-    color: white;
-    border: none;
-    border-radius: 12px;
-    font-size: 16px;
-    cursor: pointer;
-    font-weight: bold;
-    transition: 0.3s;
-}
-
-.confirm-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 25px rgba(15, 42, 71, 0.4);
-}
-
-/* ===== BACK BUTTON ===== */
-/* 🔴 อัปเดต: เปลี่ยนเป็น fixed และขยับลงให้หลบ App.vue จะได้กดติด */
-.back-btn {
-    position: absolute;
-    top: 20px;
-    left: 20px;
-    z-index: 100;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    border: none;
-    background: #eef3fb;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    color: #0f2a47;
-    transition: 0.3s;
-}
-
-.back-btn:hover {
-    background: #0f2a47;
-    color: white;
-}
-
-/* ===== MOBILE GRID FIX ===== */
-@media (max-width: 768px) {
-    .grid-2-col {
-        display: block;
-    }
-}
-
-/* ===== DESKTOP ===== */
 @media (min-width: 1024px) {
-
-    .card {
-        max-width: 1000px;
-        padding: 40px;
-    }
-
-    .grid-2-col {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 20px;
-    }
-
-    .input-field {
-        margin-bottom: 0;
-    }
-
-    .flex-row-desktop {
-        display: flex;
-        gap: 30px;
-        align-items: flex-start;
-        margin-bottom: 20px;
-    }
-
-    .flex-item {
-        flex: 1;
-    }
-
-    .confirm-btn {
-        width: 200px;
-        margin: 0 auto;
-        display: block;
-    }
+    .card { max-width: 1000px; padding: 40px; }
+    .grid-2-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .input-field { margin-bottom: 0; }
+    .flex-row-desktop { display: flex; gap: 30px; margin-bottom: 20px; }
+    .flex-item { flex: 1; }
+    .confirm-btn { width: 200px; margin: 0 auto; display: block; }
 }
 </style>

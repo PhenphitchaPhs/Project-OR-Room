@@ -1,83 +1,51 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
-// ===== User Pages (ดึงจากโฟลเดอร์ views ตามในรูป) =====
+// ===== User Pages =====
 import HomeView from '../views/HomeView.vue'
 import CalendarView from '../views/CalendarView.vue'
 import BookingView from '../views/BookingView.vue'
-// ลบ import ChangeDays ออกแล้วครับ เพราะเราใช้ Pop-up ใน App.vue แทน
 
-// ===== Authentication Pages (ดึงจากโฟลเดอร์ pages) =====
+// ===== Authentication Pages =====
 import LoginPages from '../pages/LoginPage.vue' 
 import ForgotPassword from '../pages/email-ForgotPassword.vue'
 import SignUp from '../pages/signup.vue'
 
-// ===== Admin Pages (ดึงจากโฟลเดอร์ views/admin ตามในรูป) =====
+// ===== Admin Pages =====
 import LoginAdmin from '../views/admin/loginAdmin.vue'
 import AdminHome from '../views/admin/AdminHome.vue'
 import ChooseDoctorAdmin from '../views/admin/ChooseDoctorAdmin.vue'
 import AddPatientByAdmin from '../views/admin/AddPatientByAdmin.vue'
 
 const routes = [
-  {
-    path: '/',
-    redirect: '/login'
-  },
+  { path: '/', redirect: '/login' },
 
-  // ---------- USER ----------
-  {
-    path: '/login',
-    name: 'login',
-    component: LoginPages
-  },
-  {
-    path: '/signup',
-    name: 'signup',
-    component: SignUp
-  },
-  {
-    path: '/forgot-password',
-    name: 'forgot-password',
-    component: ForgotPassword
-  },
-  {
-    path: '/home',
-    name: 'home',
-    component: HomeView,
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/booking',
-    name: 'booking',
-    component: BookingView,
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/calendar',
-    name: 'calendar',
-    component: CalendarView,
-    meta: { requiresAuth: true }
-  },
+  // ---------- USER (ไม่ต้องใช้ Role Admin) ----------
+  { path: '/login', name: 'login', component: LoginPages },
+  { path: '/signup', name: 'signup', component: SignUp },
+  { path: '/forgot-password', name: 'forgot-password', component: ForgotPassword },
+  { path: '/home', name: 'home', component: HomeView, meta: { requiresAuth: true } },
+  { path: '/booking', name: 'booking', component: BookingView, meta: { requiresAuth: true } },
+  { path: '/calendar', name: 'calendar', component: CalendarView, meta: { requiresAuth: true } },
 
-  // ---------- ADMIN ----------
-  {
-    path: '/admin-login',
-    name: 'admin-login',
-    component: LoginAdmin
+  // ---------- ADMIN (ต้องล็อกอิน และต้องเป็น Admin เท่านั้น) ----------
+  { path: '/admin-login', name: 'admin-login', component: LoginAdmin }, // หน้าล็อกอินแอดมินไม่ต้องล็อก
+  { 
+    path: '/admin-home', 
+    name: 'admin-home', 
+    component: AdminHome,
+    meta: { requiresAuth: true, role: 'admin' } // 👈 เพิ่มสิทธิ์ตรงนี้
   },
-  {
-    path: '/admin-home',
-    name: 'admin-home',
-    component: AdminHome
+  { 
+    path: '/choose-doctor', 
+    name: 'choose-doctor', 
+    component: ChooseDoctorAdmin,
+    meta: { requiresAuth: true, role: 'admin' } // 👈 เพิ่มสิทธิ์ตรงนี้
   },
-  {
-    path: '/choose-doctor',
-    name: 'choose-doctor',
-    component: ChooseDoctorAdmin
-  },
-  {
-    path: '/admin-add-patient',
-    name: 'admin-add-patient',
-    component: AddPatientByAdmin
+  { 
+    path: '/admin-add-patient', 
+    name: 'admin-add-patient', 
+    component: AddPatientByAdmin,
+    meta: { requiresAuth: true, role: 'admin' } // 👈 เพิ่มสิทธิ์ตรงนี้
   }
 ]
 
@@ -86,13 +54,22 @@ const router = createRouter({
   routes
 })
 
-/* 🔐 Navigation Guard (เฉพาะ user) */
+/* 🔐 ยามรักษาความปลอดภัย (Navigation Guard) */
 router.beforeEach((to, from, next) => {
   const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true'
+  const userRole = localStorage.getItem('userRole') // 👈 ดึง Role ในเครื่องมาเช็ก
 
+  // 1. ถ้าหน้าไหนต้องล็อกอิน แต่ยังไม่ได้ล็อกอิน -> เตะไปหน้า Login
   if (to.meta.requiresAuth && !isLoggedIn) {
     next('/login')
-  } else {
+  } 
+  // 2. ถ้าหน้าไหนต้องการสิทธิ์ 'admin' แต่คนล็อกอินเข้ามาไม่ใช่ admin -> เตะกลับหน้า Home
+  else if (to.meta.role === 'admin' && userRole !== 'admin') {
+    alert('❌ คุณไม่มีสิทธิ์เข้าถึงหน้า Admin!')
+    next('/home')
+  } 
+  // 3. ถ้าถูกต้องหมด -> ปล่อยผ่าน
+  else {
     next()
   }
 })
