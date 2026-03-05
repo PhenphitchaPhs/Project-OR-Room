@@ -90,13 +90,13 @@ const handleLogout = () => {
 /* Style ทั้งหมดเหมือนเดิมเป๊ะ ไม่มีการขยับครับ */
 .main-header { padding: 15px; position: fixed; top: 0; left: 0; z-index: 50; }
 .icon-circle { 
-  width: 45px; height: 45px; background-color: #6a92d4; color: white; 
+  width: 45px; height: 45px; background-color: #1a3a5f; color: white; 
   border-radius: 50%; display: flex; align-items: center; justify-content: center; 
   cursor: pointer; border: 2px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
 .overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(0, 0, 0, 0.4); z-index: 999; }
 .sidebar { width: 280px; background-color: #f8faff; height: 100vh; position: fixed; left: 0; top: 0; z-index: 1000; box-shadow: 5px 0px 20px rgba(0, 0, 0, 0.15); }
-.sidebar-header { background-color: #6a92d4; color: white; padding: 25px 20px; display: flex; justify-content: space-between; align-items: center; box-sizing: border-box; }
+.sidebar-header { background-color: #1a3a5f; color: white; padding: 25px 20px; display: flex; justify-content: space-between; align-items: center; box-sizing: border-box; }
 .user-info { display: flex; align-items: center; gap: 15px; }
 .avatar-icon { cursor: pointer; display: flex; align-items: center; color: white; }
 .user-details { display: flex; flex-direction: column; line-height: 1.2; }

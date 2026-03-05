@@ -1,19 +1,21 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
+// ===== User Pages (ดึงจากโฟลเดอร์ views ตามในรูป) =====
+import HomeView from '../views/HomeView.vue'
+import CalendarView from '../views/CalendarView.vue'
+import BookingView from '../views/BookingView.vue'
 
-// ===== User Pages =====
-import HomeView from '../pages/HomeView.vue'
-import CalendarView from '../pages/CalendarView.vue'
-import LoginPages from '../pages/loginPages.vue'
+// ===== Authentication Pages (ดึงจากโฟลเดอร์ pages) =====
+// หมายเหตุ: เช็กชื่อไฟล์ LoginPage.vue อีกครั้งนะครับว่าตัวพิมพ์เล็ก/ใหญ่ตรงกันไหม (ผมยึดตาม git status ก่อนหน้านี้)
+import LoginPages from '../pages/LoginPage.vue' 
 import ForgotPassword from '../pages/email-ForgotPassword.vue'
 import SignUp from '../pages/signup.vue'
-import BookingView from '../pages/BookingView.vue'
 
-// ===== Admin Pages =====
-import LoginAdmin from '../pages/admin/loginAdmin.vue'
-import AdminHome from '../pages/admin/AdminHome.vue'
-import ChooseDoctorAdmin from '../pages/admin/ChooseDoctorAdmin.vue'
-import AddPatientByAdmin from '../pages/admin/AddPatientByAdmin.vue'
+// ===== Admin Pages (ดึงจากโฟลเดอร์ views/admin ตามในรูป) =====
+import LoginAdmin from '../views/admin/loginAdmin.vue'
+import AdminHome from '../views/admin/AdminHome.vue'
+import ChooseDoctorAdmin from '../views/admin/ChooseDoctorAdmin.vue'
+import AddPatientByAdmin from '../views/admin/AddPatientByAdmin.vue'
 
 const routes = [
   {
