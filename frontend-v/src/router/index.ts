@@ -1,42 +1,99 @@
-// 1. ลบ RouteRecordRaw ออกจากการนำเข้า
 import { createRouter, createWebHistory } from 'vue-router'
-import HomeView from '../views/HomeView.vue'
-import BookingView from '../views/BookingView.vue'
-import LoginPage from '../pages/LoginPage.vue'
-import Signup from '../pages/signup.vue' 
-//import PageDelete from '../pages/PageDelete.vue' 
+
+
+// ===== User Pages =====
+import HomeView from '../pages/HomeView.vue'
+import CalendarView from '../pages/CalendarView.vue'
+import LoginPages from '../pages/loginPages.vue'
+import ForgotPassword from '../pages/email-ForgotPassword.vue'
+import SignUp from '../pages/signup.vue'
+import BookingView from '../pages/BookingView.vue'
+
+// ===== Admin Pages =====
+import LoginAdmin from '../pages/admin/loginAdmin.vue'
+import AdminHome from '../pages/admin/AdminHome.vue'
+import ChooseDoctorAdmin from '../pages/admin/ChooseDoctorAdmin.vue'
+import AddPatientByAdmin from '../pages/admin/AddPatientByAdmin.vue'
 
 const routes = [
-  { 
-    path: '/', 
-    name: 'home', 
-    component: HomeView 
+  {
+    path: '/',
+    redirect: '/login'
   },
-  { 
-    path: '/login', 
-    name: 'login', 
-    component: LoginPage 
+
+  // ---------- USER ----------
+  {
+    path: '/login',
+    name: 'login',
+    component: LoginPages
   },
-  { 
-    path: '/booking', 
-    name: 'booking', 
-    component: BookingView 
+  {
+    path: '/signup',
+    name: 'signup',
+    component: SignUp
   },
-  { 
-    path: '/signup', 
-    name: 'signup', 
-    component: Signup 
+  {
+    path: '/forgot-password',
+    name: 'forgot-password',
+    component: ForgotPassword
   },
-  // {
-  //   path: "/delete-manage",
-  //   name: "delete-manage",
-  //   component: PageDelete,
-  // },
+  {
+    path: '/home',
+    name: 'home',
+    component: HomeView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/booking',
+    name: 'booking',
+    component: BookingView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/calendar',
+    name: 'calendar',
+    component: CalendarView,
+    meta: { requiresAuth: true }
+  },
+
+  // ---------- ADMIN ----------
+  {
+    path: '/admin-login',
+    name: 'admin-login',
+    component: LoginAdmin
+  },
+  {
+    path: '/admin-home',
+    name: 'admin-home',
+    component: AdminHome
+  },
+  {
+    path: '/choose-doctor',
+    name: 'choose-doctor',
+    component: ChooseDoctorAdmin
+  },
+  {
+    path: '/admin-add-patient',
+    name: 'admin-add-patient',
+    component: AddPatientByAdmin
+  }
 ]
 
+
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+  history: createWebHistory(),
   routes
+})
+
+/* 🔐 Navigation Guard (เฉพาะ user) */
+router.beforeEach((to, from, next) => {
+  const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true'
+
+  if (to.meta.requiresAuth && !isLoggedIn) {
+    next('/login')
+  } else {
+    next()
+  }
 })
 
 export default router
