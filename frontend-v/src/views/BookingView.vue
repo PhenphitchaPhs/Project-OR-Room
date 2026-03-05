@@ -44,11 +44,9 @@
                         <div class="select-wrapper">
                             <select v-model="form.procedure" class="input-field green-theme">
                                 <option value="" disabled>Surgery list</option>
-                                <option value="LC (120 min)">LC (120 min)</option>
-                                <option value="MRM (90 min)">MRM (90 min)</option>
-                                <option value="Thyroidectomy (90 min)">Thyroidectomy (90 min)</option>
-                                <option value="Herniorrhaphy (40 min)">Herniorrhaphy (40 min)</option>
-                                <option value="LAR (180 min)">LAR (180 min)</option>
+                                <option v-for="proc in procedureList" :key="proc" :value="proc">
+                                    {{ proc }}
+                                </option>
                             </select>
                         </div>
                     </div>
@@ -75,7 +73,7 @@
 </template>
 
 <script setup>
-import { reactive, computed } from 'vue'
+import { reactive, computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -83,6 +81,20 @@ const currentDoctor = {
     name: 'Dr. Smith',
     dutyDay: 1 // 1 = Monday
 }
+
+// 🏥 รายการประเภทการผ่าตัดยอดฮิตในไทย (ดึงมาทำเป็นตัวแปรแบบนี้ อนาคตเพิ่มลดง่าย)
+const procedureList = ref([
+    "Appendectomy (ผ่าตัดไส้ติ่ง) - 60 min",
+    "Laparoscopic Cholecystectomy / LC (ผ่าตัดถุงน้ำดี) - 120 min",
+    "Cesarean Section / C-Section (ผ่าคลอด) - 60 min",
+    "Herniorrhaphy (ผ่าตัดไส้เลื่อน) - 90 min",
+    "Total Knee Arthroplasty / TKA (เปลี่ยนข้อเข่า) - 180 min",
+    "Thyroidectomy (ผ่าตัดต่อมไทรอยด์) - 120 min",
+    "Modified Radical Mastectomy / MRM (ผ่าตัดเต้านม) - 120 min",
+    "Cataract Surgery (ผ่าตัดต้อกระจก) - 30 min",
+    "Hemorrhoidectomy (ผ่าตัดริดสีดวงทวาร) - 45 min",
+    "Exploratory Laparotomy (ผ่าตัดเปิดช่องท้องฉุกเฉิน) - 180 min"
+])
 
 /* 🚫 วันหยุด */
 const holidays = [
@@ -332,10 +344,12 @@ textarea {
 }
 
 /* ===== BACK BUTTON ===== */
+/* 🔴 อัปเดต: เปลี่ยนเป็น fixed และขยับลงให้หลบ App.vue จะได้กดติด */
 .back-btn {
     position: absolute;
     top: 20px;
     left: 20px;
+    z-index: 100;
     width: 40px;
     height: 40px;
     border-radius: 50%;

@@ -4,9 +4,9 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import CalendarView from '../views/CalendarView.vue'
 import BookingView from '../views/BookingView.vue'
+// ลบ import ChangeDays ออกแล้วครับ เพราะเราใช้ Pop-up ใน App.vue แทน
 
 // ===== Authentication Pages (ดึงจากโฟลเดอร์ pages) =====
-// หมายเหตุ: เช็กชื่อไฟล์ LoginPage.vue อีกครั้งนะครับว่าตัวพิมพ์เล็ก/ใหญ่ตรงกันไหม (ผมยึดตาม git status ก่อนหน้านี้)
 import LoginPages from '../pages/LoginPage.vue' 
 import ForgotPassword from '../pages/email-ForgotPassword.vue'
 import SignUp from '../pages/signup.vue'
@@ -80,7 +80,6 @@ const routes = [
     component: AddPatientByAdmin
   }
 ]
-
 
 const router = createRouter({
   history: createWebHistory(),

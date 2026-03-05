@@ -1,11 +1,7 @@
 <template>
     <div class="calendar-page">
         <header class="calendar-navbar">
-            <div class="nav-left">
-                <button @click="goHome" class="nav-icon-btn" title="Back to Home">
-                    <Icon icon="lucide:home" width="24" height="24" />
-                </button>
-            </div>
+            <div class="nav-left"></div>
 
             <div class="nav-center">
                 <div class="header-info">
@@ -29,7 +25,7 @@
 
         <div class="month-container">
             <div class="weekday-grid">
-                <div v-for="day in weekDaysFull" :key="day" class="weekday-item" :class="{ 'sun': day === 'Sunday' }">
+                <div v-for="day in weekDaysFull" :key="day" class="weekday-item" :class="{ 'sun': day === 'Sunday' || day === 'Saturday' }">
                     {{ day }}
                 </div>
             </div>
@@ -39,15 +35,17 @@
                     :class="{ 'dimmed': !date.isCurrentMonth }" @click="handleDateClick(date)">
                     <div class="box-top">
                         <span class="box-number" :class="{
-                            'holiday': isOfficialHoliday(date.fullDate) || date.dayOfWeek === 0,
+                            'holiday': isOfficialHoliday(date.fullDate) || date.dayOfWeek === 0 || date.dayOfWeek === 6,
                             'today-circle-large': date.fullDate === todayStr
                         }">
                             {{ date.dayNumber }}
                         </span>
                     </div>
                     <div class="box-content">
-                        <div v-if="isOfficialHoliday(date.fullDate) && date.dayNumber" class="strip holiday-bg">Holiday
+                        <div v-if="isOfficialHoliday(date.fullDate) && date.dayNumber" class="strip holiday-bg">
+                            {{ getHolidayName(date.fullDate) }}
                         </div>
+                        
                         <div v-if="hasNote(date.fullDate)" class="strip note-bg"
                             @click.stop="openDetailPopup(date.fullDate)">
                             {{ getSavedNote(date.fullDate).patientName }}
@@ -95,8 +93,8 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router' // ✅ สำหรับเชื่อมหน้า Home
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { Icon } from '@iconify/vue'
 
 const router = useRouter()
@@ -108,14 +106,50 @@ const todayStr = ref(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart
 const selectedFullDate = ref(todayStr.value)
 const isAddPopupOpen = ref(false)
 const isDetailPopupOpen = ref(false)
+
+// ตัวแปรเก็บข้อมูลคนไข้
 const userNotes = ref([])
 const tempNote = ref({ patientName: '', procedure: '' })
 
+// ดึงข้อมูลคนไข้ที่เคยบันทึกไว้ในเครื่องขึ้นมาแสดงตอนเปิดหน้าเว็บ
+onMounted(() => {
+    const savedData = localStorage.getItem('calendar_patients')
+    if (savedData) {
+        userNotes.value = JSON.parse(savedData)
+    }
+})
+
 const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
 const weekDaysFull = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-const officialHolidays = ["2026-01-01", "2026-03-03", "2026-04-13", "2026-04-14", "2026-04-15", "2026-05-01", "2026-08-12", "2026-12-05"]
 
-const isOfficialHoliday = (d) => officialHolidays.includes(d)
+// 🇹🇭 ข้อมูลวันหยุดราชการไทย (อิงปี 2026) 
+const officialHolidays = [
+    { date: "2026-01-01", name: "วันขึ้นปีใหม่" },
+    { date: "2026-03-03", name: "วันมาฆบูชา" },
+    { date: "2026-04-06", name: "วันจักรี" },
+    { date: "2026-04-13", name: "วันสงกรานต์" },
+    { date: "2026-04-14", name: "วันสงกรานต์" },
+    { date: "2026-04-15", name: "วันสงกรานต์" },
+    { date: "2026-05-01", name: "วันแรงงาน" },
+    { date: "2026-05-04", name: "วันฉัตรมงคล" },
+    { date: "2026-05-31", name: "วันวิสาขบูชา" },
+    { date: "2026-06-03", name: "วันเฉลิมฯ พระราชินี" },
+    { date: "2026-07-28", name: "วันเฉลิมฯ ร.10" },
+    { date: "2026-08-12", name: "วันแม่แห่งชาติ" },
+    { date: "2026-10-13", name: "วันนวมินทรมหาราช" },
+    { date: "2026-10-23", name: "วันปิยมหาราช" },
+    { date: "2026-12-05", name: "วันพ่อแห่งชาติ" },
+    { date: "2026-12-10", name: "วันรัฐธรรมนูญ" },
+    { date: "2026-12-31", name: "วันสิ้นปี" }
+]
+
+// ฟังก์ชันเช็กวันหยุด
+const isOfficialHoliday = (d) => officialHolidays.some(h => h.date === d)
+const getHolidayName = (d) => {
+    const holiday = officialHolidays.find(h => h.date === d)
+    return holiday ? holiday.name : 'Holiday'
+}
+
 const hasNote = (d) => userNotes.value.some(n => n.date === d)
 const getSavedNote = (d) => userNotes.value.find(n => n.date === d)
 
@@ -131,17 +165,44 @@ const calendarDays = computed(() => {
     return days
 })
 
-const goHome = () => router.push('/') // ✅ พาไปหน้าแรกจริง
 const goToToday = () => { currentMonth.value = now.getMonth(); currentYear.value = now.getFullYear(); selectedFullDate.value = todayStr.value; }
 const changeMonth = (v) => {
     currentMonth.value += v
     if (currentMonth.value > 11) { currentMonth.value = 0; currentYear.value++; }
     else if (currentMonth.value < 0) { currentMonth.value = 11; currentYear.value--; }
 }
-const handleDateClick = (date) => { if (date.isCurrentMonth) { selectedFullDate.value = date.fullDate; if (!hasNote(date.fullDate)) isAddPopupOpen.value = true; } }
+
+const handleDateClick = (date) => { 
+    if (date.isCurrentMonth) { 
+        // 🔴 อัปเดต: เช็กว่าเป็นวันหยุดราชการ หรือ เสาร์ (6) หรือ อาทิตย์ (0) ไหม
+        if (isOfficialHoliday(date.fullDate) || date.dayOfWeek === 0 || date.dayOfWeek === 6) {
+            alert('❌ ไม่สามารถเพิ่มคิวผ่าตัดในวันหยุดราชการ หรือเสาร์-อาทิตย์ได้');
+            return; // บล็อกการเปิด Pop-up
+        }
+
+        selectedFullDate.value = date.fullDate; 
+        if (!hasNote(date.fullDate)) isAddPopupOpen.value = true; 
+    } 
+}
 const openDetailPopup = (d) => { selectedFullDate.value = d; isDetailPopupOpen.value = true; }
-const saveNote = () => { if (tempNote.value.patientName) { userNotes.value.push({ date: selectedFullDate.value, ...tempNote.value }); isAddPopupOpen.value = false; tempNote.value = { patientName: '', procedure: '' }; } }
-const deleteNote = () => { userNotes.value = userNotes.value.filter(n => n.date !== selectedFullDate.value); isDetailPopupOpen.value = false; }
+
+// ฟังก์ชันบันทึกข้อมูล พร้อม Save ลงเครื่อง
+const saveNote = () => { 
+    if (tempNote.value.patientName) { 
+        userNotes.value.push({ date: selectedFullDate.value, ...tempNote.value }); 
+        localStorage.setItem('calendar_patients', JSON.stringify(userNotes.value)); // Save ลงคอม
+        isAddPopupOpen.value = false; 
+        tempNote.value = { patientName: '', procedure: '' }; 
+    } 
+}
+
+// ฟังก์ชันลบข้อมูล พร้อม Save ลงเครื่อง
+const deleteNote = () => { 
+    userNotes.value = userNotes.value.filter(n => n.date !== selectedFullDate.value); 
+    localStorage.setItem('calendar_patients', JSON.stringify(userNotes.value)); // อัปเดตข้อมูลในคอม
+    isDetailPopupOpen.value = false; 
+}
+
 const formatDateThai = (d) => `${monthNames[new Date(d).getMonth()]} ${new Date(d).getDate()}, ${new Date(d).getFullYear() + 543}`
 </script>
 
@@ -153,21 +214,19 @@ const formatDateThai = (d) => `${monthNames[new Date(d).getMonth()]} ${new Date(
     background: #f4f7f9;
 }
 
-/* พื้นหลังเทาจาง */
 .calendar-navbar {
     background: linear-gradient(135deg, #174983, #1a3a5f);
     height: 85px;
-    /* เดิม 70-75 → เพิ่มเป็น 85 */
     padding: 0 30px;
     display: flex;
     align-items: center;
-    /* สำคัญมาก */
     justify-content: space-between;
+    
+    /* 🔴 อัปเดต: เพิ่ม 2 บรรทัดนี้เข้าไป เพื่อให้ Navbar ถอยลงไปอยู่ใต้ไอคอน App.vue */
+    position: relative;
+    z-index: 10; 
 }
 
-
-/* ปุ่มไอคอน */
-.nav-icon-btn,
 .arrow-btn {
     width: 42px;
     height: 42px;
@@ -181,46 +240,20 @@ const formatDateThai = (d) => `${monthNames[new Date(d).getMonth()]} ${new Date(
     transition: all 0.2s ease;
 }
 
-.nav-icon-btn:hover,
-.nav-arrows {
-    display: flex;
-    flex-direction: row;
-    /* 🔥 บังคับให้อยู่แนวนอน */
-    gap: 8px;
-    align-items: center;
-}
+.nav-arrows { display: flex; flex-direction: row; gap: 8px; align-items: center; }
+.nav-left, .nav-right { display: flex; align-items: center; justify-content: flex-end; gap: 12px; }
+.nav-center { flex: 2; display: flex; justify-content: center; }
 
-
-
-.nav-left,
+/* 🔥 ดันเลเยอร์ปุ่มและข้อความขึ้นมาให้ลอยเหนือ App.vue จะได้กดได้ */
+.nav-center, 
 .nav-right {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 12px;
+    position: relative;
+    z-index: 100; 
 }
 
-
-.nav-center {
-    flex: 2;
-    display: flex;
-    justify-content: center;
-}
-
-.nav-right {
-    justify-content: flex-end;
-    gap: 12px;
-}
-
-.month-label {
-    font-size: 1.4rem;
-    margin: 0;
-    color: white;
-}
-
-.year-label {
-    color: white;
-}
+.nav-right { justify-content: flex-end; gap: 12px; }
+.month-label { font-size: 1.4rem; margin: 0; color: white; }
+.year-label { color: white; }
 
 .today-btn {
     background: rgba(255, 255, 255, 0.2);
@@ -259,16 +292,8 @@ const formatDateThai = (d) => `${monthNames[new Date(d).getMonth()]} ${new Date(
     text-transform: uppercase;
 }
 
-.sun {
-    color: #d9534f;
-}
-
-.days-grid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    flex-grow: 1;
-    color: #000000;
-}
+.sun { color: #d9534f; }
+.days-grid { display: grid; grid-template-columns: repeat(7, 1fr); flex-grow: 1; color: #000000; }
 
 .date-box {
     border-right: 1px solid #eee;
@@ -289,33 +314,22 @@ const formatDateThai = (d) => `${monthNames[new Date(d).getMonth()]} ${new Date(
     justify-content: center;
 }
 
-.today-circle-large {
-    background: #1a73e8;
-    color: white !important;
-    border-radius: 50%;
-    font-weight: bold;
-}
-
-.holiday {
-    color: #d9534f;
-    font-weight: bold;
-}
+.today-circle-large { background: #1a73e8; color: white !important; border-radius: 50%; font-weight: bold; }
+.holiday { color: #d9534f; font-weight: bold; }
 
 .strip {
-    font-size: 0.65rem;
-    padding: 3px 6px;
+    font-size: 0.7rem; 
+    padding: 4px 6px;
     border-radius: 4px;
     color: white;
     margin-top: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-.holiday-bg {
-    background: #d9534f;
-}
-
-.note-bg {
-    background: #56a394;
-}
+.holiday-bg { background: #e57373; }
+.note-bg { background: #56a394; }
 
 .fab-btn {
     position: fixed;
@@ -331,6 +345,7 @@ const formatDateThai = (d) => `${monthNames[new Date(d).getMonth()]} ${new Date(
     align-items: center;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     cursor: pointer;
+    z-index: 100; /* ดันปุ่มบวกให้ลอยขึ้นมาด้วยเผื่อกดไม่ได้ */
 }
 
 .overlay-modal {
@@ -362,29 +377,7 @@ const formatDateThai = (d) => `${monthNames[new Date(d).getMonth()]} ${new Date(
     box-sizing: border-box;
 }
 
-.btn-fill {
-    background: #2c4c87;
-    color: white;
-    border: none;
-    padding: 8px 20px;
-    border-radius: 10px;
-    cursor: pointer;
-    margin-left: 5%;
-}
-
-.btn-del {
-    background: #c2185b;
-    color: white;
-    border: none;
-    padding: 8px 20px;
-    border-radius: 10px;
-    cursor: pointer;
-}
-
-.btn-clear {
-    background: none;
-    border: none;
-    color: #999;
-    cursor: pointer;
-}
+.btn-fill { background: #2c4c87; color: white; border: none; padding: 8px 20px; border-radius: 10px; cursor: pointer; margin-left: 5%; }
+.btn-del { background: #c2185b; color: white; border: none; padding: 8px 20px; border-radius: 10px; cursor: pointer; }
+.btn-clear { background: none; border: none; color: #999; cursor: pointer; }
 </style>
