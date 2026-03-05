@@ -1,130 +1,137 @@
 <template>
     <div class="page">
         <div class="card">
-            <!-- logo -->
             <img src="../assets/logo.png" class="logo" />
-
-
-            <!-- title -->
             <h2 class="title">Hospital</h2>
 
-            <!-- description -->
-            <p class="desc">
-                *Enter your email to receive a password reset link.
+            <p class="subtitle">
+                Enter your email to receive a password reset link.
             </p>
 
-            <!-- email -->
             <input v-model="email" type="email" placeholder="Email" class="input" />
+            <button class="back-btn" @click="goBack">
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="15 18 9 12 15 6" />
+                </svg>
+            </button>
 
-            <!-- button -->
-            <button class="btn" @click="submit">Confirm</button>
+            <button class="btn" @click="handleSubmit">
+                Confirm
+            </button>
 
-            <!-- back -->
-            <router-link to="/" class="back">
-                Back to Login
-            </router-link>
         </div>
     </div>
 </template>
 
 <script setup>
 import { ref } from "vue";
+import { useRouter } from "vue-router";
 
-const emit = defineEmits(["next"]);
+const router = useRouter();
 const email = ref("");
+const goBack = () => {
+    router.replace("/");   // หรือ "/" แล้วแต่ route ของเธอ
+};
 
-const submit = () => {
+const handleSubmit = () => {
     if (!email.value) {
         alert("กรุณากรอก Email");
         return;
     }
 
-    emit("next"); // เด้งหน้าได้ แต่ยังไม่ได้เชื่อแบ้กเอน
+    alert("ส่งลิงก์รีเซ็ตรหัสผ่านแล้ว");
+    router.push("/");
 };
 </script>
-
 
 <style scoped>
 * {
     box-sizing: border-box;
 }
 
-/* ทั้งหน้าจอ ไม่เลื่อน */
 .page {
     height: 100dvh;
-    width: 100%;
-    overflow: hidden;
-
     display: flex;
     justify-content: center;
     align-items: flex-start;
-
-    padding-top: 90px;
-    /* ขยับขึ้นเล็กน้อย */
+    padding-top: 120px;
+    background: #f4f7fb;
 }
 
-/* การ์ดกลางจอ */
 .card {
     width: 100%;
     max-width: 390px;
-    /* iPhone 14 Pro Max */
-    padding: 16px;
     text-align: center;
+    padding: 24px;
+
+    background: #ffffff;
+    border-radius: 24px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
 }
 
-/* logo */
 .logo {
     width: 90px;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
 }
 
-/* title */
 .title {
-    color: #2a7de1;
-    margin-bottom: 16px;
+    color: #001F5B;
+    margin-bottom: 18px;
+    font-weight: 700;
 }
 
-/* description */
-.desc {
+.subtitle {
     font-size: 13px;
-    color: #2a7de1;
-    margin-bottom: 16px;
+    color: #001F5B;
+    margin-bottom: 18px;
 }
 
-/* input */
+/* Navy Input Style */
 .input {
     width: 100%;
-    padding: 14px;
-    margin-bottom: 24px;
+    height: 50px;
+    padding: 0 16px;
     border-radius: 12px;
-    border: 1px solid #b8f1c9;
-    background: #eafff1;
-    font-size: 14px;
+    border: 1px solid #ddd;
+    background: #ffffff;
+    font-size: 15px;
+    outline: none;
+    margin-bottom: 24px;
+    transition: 0.2s ease;
 }
 
-/* button */
+.input:focus {
+    border: 1.5px solid #001F5B;
+    box-shadow: 0 0 8px rgba(0, 31, 91, 0.1);
+}
+
+/* Navy Button */
 .btn {
-    width: 220px;
+    width: 100%;
     padding: 14px;
-    border-radius: 16px;
+    border-radius: 14px;
     border: none;
-    background: #6c95d9;
+    background: #001F5B;
     color: white;
     font-size: 16px;
-    font-weight: 500;
-
-    display: block;
-    margin: 0 auto 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s ease;
 }
 
-/* back link */
-.back {
-    font-size: 13px;
-    color: #2a7de1;
-    text-decoration: none;
+.back-btn {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #001F5B;
+    padding: 4px;
 }
 
-.back:hover {
-    text-decoration: underline;
+.btn:hover {
+    background: #1A3A7C;
 }
 </style>

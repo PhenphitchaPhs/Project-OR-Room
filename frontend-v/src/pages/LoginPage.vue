@@ -5,47 +5,74 @@
 
       <h2 class="title">Hospital</h2>
 
-      <input v-model="license" placeholder="License" class="input" />
+      <input v-model="license" type="text" inputmode="numeric" maxlength="5" placeholder="License" class="input"
+        @input="handleLicenseInput" />
+
       <input v-model="password" type="password" placeholder="Password" class="input" />
 
       <div class="links">
-        <span>Admin mode</span>
+        <router-link to="/admin-login">
+          Admin mode
+        </router-link>
         <span class="divider">|</span>
 
-        <span class="link" @click="$emit('go-forgot')">
+        <span class="link" @click="goForgot">
           Forgot password
         </span>
 
-
-
         <span class="divider">|</span>
-        <router-link to="/signup" class="signup-link">
-          <span>Sign up</span>
-        </router-link>
-      </div>
 
+        <span class="link" @click="goSignup">
+          Sign up
+        </span>
+      </div>
 
       <button class="btn" @click="login">Log in</button>
     </div>
   </div>
 </template>
 
-<script setup>
-import { ref } from "vue";
 
+<script setup>
+import { ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
+
+const router = useRouter();
 const license = ref("");
 const password = ref("");
 
+// ถ้า login อยู่แล้ว ให้เด้งไป home
+onMounted(() => {
+  const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+  if (isLoggedIn) {
+    router.push("/home");
+  }
+});
+
+const goForgot = () => router.push("/forgot-password");
+const goSignup = () => router.push("/signup");
+
+const handleLicenseInput = () => {
+  license.value = license.value.replace(/\D/g, "").slice(0, 5);
+};
+
 const login = () => {
-  if (!license.value || !password.value) {
-    alert("กรุณากรอก License และ Password");
+  if (license.value.length !== 5) {
+    alert("License ต้องเป็นตัวเลข 5 หลัก");
     return;
   }
-  alert("Login (demo)");
+
+  if (!password.value) {
+    alert("กรุณากรอก Password");
+    return;
+  }
+
+  localStorage.setItem("isLoggedIn", "true");
+  localStorage.setItem("userLicense", license.value); // ✅ แก้ให้ตรงกับ Home
+
+  router.push("/home");
 };
 </script>
-
-
 
 
 
@@ -58,85 +85,111 @@ const login = () => {
 .page {
   height: 100dvh;
   width: 100%;
-  overflow: hidden;
 
   display: flex;
   justify-content: center;
-  align-items: flex-start;
+  align-items: center;
+  /* กลางจริง ๆ */
 
-  padding-top: 100px;
+  background: #ffffff;
+  /* เทาอ่อนเรียบ */
 }
-
 
 .card {
   width: 100%;
   max-width: 390px;
-  padding: 16px;
+  padding: 0 24px;
+  /* เอา padding ใหญ่ ๆ ออก */
   text-align: center;
+
+  background: transparent;
+  /* ไม่มีพื้นขาว */
+  border-radius: 0;
+  /* ไม่ต้องโค้ง */
+  box-shadow: none;
+  /* ไม่มีเงา */
 }
 
 .logo {
   width: 90px;
-  margin-bottom: 6px;
+  margin-bottom: 10px;
 }
 
 .title {
-  color: #2a7de1;
+  color: #001F5B;
+  margin-bottom: 28px;
+  font-weight: 700;
+}
+
+/* กล่องกรอกข้อมูลให้เหมือนหน้า Sign up */
+.input {
+  width: 100%;
+  height: 50px;
+  padding: 0 16px;
+  margin-bottom: 16px;
+  border-radius: 12px;
+  border: 1px solid #ddd;
+  background: #ffffff;
+  font-size: 15px;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.input:focus {
+  border: 1.5px solid #001F5B;
+  box-shadow: 0 0 8px rgba(0, 31, 91, 0.1);
+}
+
+/* Links */
+.links {
+  font-size: 13px;
+  color: #001F5B;
   margin-bottom: 24px;
 }
 
-.input {
-  width: 100%;
-  padding: 14px;
-  margin-bottom: 16px;
-  border-radius: 10px;
-  border: 1px solid #b8f1c9;
-  background: #eafff1;
-}
-
 .link {
-  color: #2a7de1;
-  text-decoration: none;
+  color: #001F5B;
   cursor: pointer;
+  font-weight: 500;
+  text-decoration: none;
+  /* 🔥 เอาเส้นใต้ออก */
 }
 
 .link:hover {
   text-decoration: none;
+  /* 🔥 ไม่ให้มีตอน hover */
+  opacity: 0.7;
+  /* เปลี่ยนเป็นจางแทน */
 }
 
-.links a {
+a {
   text-decoration: none;
-  color: #2a7de1;
-}
-
-.links a:hover {
-  text-decoration: none;
-}
-
-
-
-
-.links {
-  font-size: 12px;
-  color: #2a7de1;
-  margin-bottom: 22px;
+  color: #001F5B;
 }
 
 .divider {
-  margin: 0 6px;
+  margin: 0 8px;
+  color: #bbb;
 }
 
+/* ปุ่ม */
 .btn {
-  width: 200px;
+  width: 100%;
   padding: 14px;
   border-radius: 14px;
   border: none;
-  background: #6c95d9;
+  background: #001F5B;
   color: white;
   font-size: 16px;
-  font-weight: 500;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s ease;
 
   display: block;
   margin: 0 auto;
+}
+
+.btn:hover {
+  background: #1A3A7C;
 }
 </style>
