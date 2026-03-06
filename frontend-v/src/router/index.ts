@@ -33,19 +33,19 @@ const routes = [
     path: '/admin-home', 
     name: 'admin-home', 
     component: AdminHome,
-    meta: { requiresAuth: true, role: 'admin' } // 👈 เพิ่มสิทธิ์ตรงนี้
+    meta: { requiresAuth: true, role: 'admin' } 
   },
   { 
     path: '/choose-doctor', 
     name: 'choose-doctor', 
     component: ChooseDoctorAdmin,
-    meta: { requiresAuth: true, role: 'admin' } // 👈 เพิ่มสิทธิ์ตรงนี้
+    meta: { requiresAuth: true, role: 'admin' } 
   },
   { 
     path: '/admin-add-patient', 
     name: 'admin-add-patient', 
     component: AddPatientByAdmin,
-    meta: { requiresAuth: true, role: 'admin' } // 👈 เพิ่มสิทธิ์ตรงนี้
+    meta: { requiresAuth: true, role: 'admin' } 
   }
 ]
 
@@ -57,21 +57,31 @@ const router = createRouter({
 /* 🔐 ยามรักษาความปลอดภัย (Navigation Guard) */
 router.beforeEach((to, from, next) => {
   const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true'
-  const userRole = localStorage.getItem('userRole') // 👈 ดึง Role ในเครื่องมาเช็ก
+  const userRole = localStorage.getItem('userRole') // ดึง Role ในเครื่องมาเช็ก
 
-  // 1. ถ้าหน้าไหนต้องล็อกอิน แต่ยังไม่ได้ล็อกอิน -> เตะไปหน้า Login
-  if (to.meta.requiresAuth && !isLoggedIn) {
-    next('/login')
-  } 
-  // 2. ถ้าหน้าไหนต้องการสิทธิ์ 'admin' แต่คนล็อกอินเข้ามาไม่ใช่ admin -> เตะกลับหน้า Home
-  else if (to.meta.role === 'admin' && userRole !== 'admin') {
-    alert('❌ คุณไม่มีสิทธิ์เข้าถึงหน้า Admin!')
-    next('/home')
-  } 
-  // 3. ถ้าถูกต้องหมด -> ปล่อยผ่าน
-  else {
-    next()
+  // 🛑 กฎข้อ 0: ถ้าล็อกอินอยู่แล้ว แต่พยายามจะเปิดหน้า Login/Signup ให้เด้งไปหน้า Home เลย
+  const publicAuthPages = ['/login', '/signup', '/admin-login']
+  if (publicAuthPages.includes(to.path) && isLoggedIn) {
+    if (userRole === 'admin') {
+      return next('/admin-home')
+    } else {
+      return next('/home')
+    }
   }
+
+  // 🛑 กฎข้อ 1: ถ้าหน้าไหนต้องล็อกอิน แต่ยังไม่ได้ล็อกอิน -> เตะไปหน้า Login
+  if (to.meta.requiresAuth && !isLoggedIn) {
+    return next('/login')
+  } 
+  
+  // 🛑 กฎข้อ 2: ถ้าหน้าไหนต้องการสิทธิ์ 'admin' แต่คนล็อกอินเข้ามาไม่ใช่ admin -> เตะกลับหน้า Home
+  if (to.meta.role === 'admin' && userRole !== 'admin') {
+    alert('❌ คุณไม่มีสิทธิ์เข้าถึงหน้า Admin!')
+    return next('/home')
+  } 
+  
+  // 🟢 กฎข้อ 3: ถ้าถูกต้องหมด -> ปล่อยผ่าน
+  next()
 })
 
 export default router

@@ -153,13 +153,25 @@ const openDayModal = () => {
   isDayModalOpen.value = true // เปิดหน้าต่าง Pop-up
 }
 
-const confirmDayChange = () => {
-  selectedDay.value = tempSelectedDay.value
-  localStorage.setItem('selectedDay', selectedDay.value)
-  isDayModalOpen.value = false
-  // ถ้ากดมาจากหน้าอื่น ให้พากลับไปหน้า Home เพื่อรีเฟรชคิวผ่าตัด (ถ้าต้องการ)
-  if (route.path !== '/home') {
-    router.push('/home')
+// ✅ แก้ใน App.vue
+const confirmDayChange = async () => {
+  try {
+    const response = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/users/${userLicense.value}/day`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ day: tempSelectedDay.value })
+    })
+
+    if (!response.ok) throw new Error("API Error")
+
+    selectedDay.value = tempSelectedDay.value
+    localStorage.setItem('selectedDay', selectedDay.value)
+    isDayModalOpen.value = false
+    alert("✅ อัปเดตวันทำงานสำเร็จ!")
+
+  } catch (error) {
+    console.error("❌ PUT Error:", error)
+    alert("❌ ล้มเหลว!")
   }
 }
 

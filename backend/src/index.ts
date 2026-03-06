@@ -99,8 +99,9 @@ app.get('/api/users/:license', async (c) => {
 })
 
 // 🟢 API 2: สำหรับอัปเดตเปลี่ยนวันทำงานใน Cloudflare (เพิ่มระบบเช็กว่าอัปเดตจริงไหม)
-app.put('/api/users/day', async (c) => {
-  const { license, day } = await c.req.json()
+app.put('/api/users/:license/day', async (c) => {
+  const { day } = await c.req.json()
+  const license = c.req.param('license')   // ดึงจาก URL แทน body
   try {
     // ใช้ตัวแปร info มารับผลลัพธ์การรันคำสั่ง
     const info = await c.env.DB.prepare('UPDATE users SET day = ? WHERE license = ?').bind(day, license).run()

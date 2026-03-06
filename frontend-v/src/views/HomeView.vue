@@ -276,171 +276,121 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
-const API_URL = 'http://localhost:8787/api/bookings'
+const API_URL = 'https://or-room-backend.rockzee2018.workers.dev/api/bookings'
 
 // --- State ---
 const bookings = ref([])
-// 🟢 แก้จาก '123546' เป็นค่าว่าง เพื่อบังคับให้ดึงจากคนที่ล็อกอินเข้ามาจริงๆ เท่านั้น
-const userLicense = ref('')
+const userLicense = ref('') 
 const doctorName = ref('') 
 const filter = ref('Upcoming')
 const expandedId = ref(null)
 const isLoading = ref(false)
 
-const FILTERS = {
-    UPCOMING: 'Upcoming',
-    SUCCEED: 'Succeed'
-}
+const selectedDay = ref('Monday')
+const tempSelectedDay = ref('Monday')
+const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+
+const FILTERS = { UPCOMING: 'Upcoming', SUCCEED: 'Succeed' }
 
 // ================= 1. โหลดข้อมูลจาก Backend =================
-
 const fetchUserDay = async (license) => {
     try {
-        const response = await fetch(`http://localhost:8787/api/users/${license}`);
+        const response = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/users/${license}`);
         const data = await response.json();
-        
         if (data.day) {
             selectedDay.value = data.day;
             tempSelectedDay.value = data.day;
         }
-    } catch (error) {
-        console.error("❌ ดึงวันทำงานจากฐานข้อมูลไม่สำเร็จ", error);
-    }
+    } catch (error) { console.error("❌ ดึงวันทำงานไม่สำเร็จ", error); }
 };
 
 const fetchBookings = async () => {
     isLoading.value = true
     try {
         const response = await fetch(API_URL)
-        if (!response.ok) throw new Error('API Error')
         const data = await response.json()
         bookings.value = Array.isArray(data) ? data : []
-    } catch (error) {
-        console.error("❌ ดึงข้อมูลไม่สำเร็จ:", error)
-        const saved = JSON.parse(localStorage.getItem('bookings'))
-        bookings.value = Array.isArray(saved) ? saved : []
-    } finally {
-        isLoading.value = false
-    }
+    } catch (error) { console.error("❌ ดึงคิวไม่สำเร็จ:", error) }
+    finally { isLoading.value = false }
 }
 
 onMounted(() => {
     const savedLicense = localStorage.getItem('userLicense')
+    const savedName = localStorage.getItem('doctorName')
+    
     if (savedLicense) {
         userLicense.value = savedLicense
         fetchUserDay(savedLicense) 
     }
-
-    const savedName = localStorage.getItem('doctorName')
     if (savedName) doctorName.value = savedName
-
     fetchBookings() 
 })
 
-// ================= 2. ระบบจัดเรียงคิว (Smart Priority Sorting) =================
-const sortCases = (arr) => {
-    const urgencyScore = { 'Emergency': 3, 'Urgent': 2, 'Normal': 1 }
-    
-    return [...arr].sort((a, b) => {
-        if (a.date !== b.date) return new Date(a.date) - new Date(b.date)
-        if (a.isInfected !== b.isInfected) return a.isInfected ? 1 : -1
-        
-        const scoreA = urgencyScore[a.urgency] || 0
-        const scoreB = urgencyScore[b.urgency] || 0
-        if (scoreA !== scoreB) return scoreB - scoreA
-        if (a.isNpoRisk !== b.isNpoRisk) return a.isNpoRisk ? -1 : 1
-        if (a.age !== b.age) return b.age - a.age
-        if (a.gender !== b.gender) return a.gender === 'female' ? -1 : 1
-        
-        return 0
-    })
-}
-
-const upcomingCases = computed(() => 
-    sortCases(bookings.value.filter(item => item.status === FILTERS.UPCOMING || !item.status))
-)
-
-const succeedCases = computed(() => 
-    sortCases(bookings.value.filter(item => item.status === FILTERS.SUCCEED))
-)
-
-// ================= 3. Actions (จัดการข้อมูล) =================
-
-const toggleDetail = (id) => {
-    expandedId.value = expandedId.value === id ? null : id
-}
-
-const deleteCase = async (id) => {
-    const confirmDelete = confirm('ยืนยันการลบเคสนี้จากฐานข้อมูล Cloudflare?')
-    if (!confirmDelete) return
+// ================= 2. ฟังก์ชันเปลี่ยนวัน (ตัวเดียวและตัวจริง!) =================
+// ✅ ถูก
+const confirmDayChange = async () => {
+    alert(`กำลังยิง API ไปหา License: ${userLicense.value}\nวันใหม่คือ: ${tempSelectedDay.value}`)
 
     try {
-        bookings.value = bookings.value.filter(item => item.id !== id)
-        await fetch(`${API_URL}/${id}`, { method: 'DELETE' })
-    } catch (error) {
-        console.error("ลบไม่สำเร็จ:", error)
+        const response = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/users/${userLicense.value}/day`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ day: tempSelectedDay.value })
+        })
+
+        if (!response.ok) throw new Error("API Error")
+
+        selectedDay.value = tempSelectedDay.value
+        isDayModalOpen.value = false
+        alert("✅ อัปเดตข้อมูลสำเร็จ!")
+
+    } catch (error) {   // ← ต้องมีตรงนี้!
+        console.error("❌ PUT Error:", error)
+        alert("❌ ล้มเหลว!")
     }
 }
 
-const markAsSucceed = (id) => {
-    const target = bookings.value.find(item => item.id === id)
-    if (target) {
-        target.status = FILTERS.SUCCEED
-        filter.value = FILTERS.SUCCEED
-    }
+// ================= 3. ฟังก์ชันเสริมอื่นๆ =================
+const upcomingCases = computed(() => sortCases(bookings.value.filter(item => item.status === FILTERS.UPCOMING || !item.status)))
+const succeedCases = computed(() => sortCases(bookings.value.filter(item => item.status === FILTERS.SUCCEED)))
+const sortCases = (arr) => {
+    const urgencyScore = { 'Emergency': 3, 'Urgent': 2, 'Normal': 1 }
+    return [...arr].sort((a, b) => {
+        if (a.date !== b.date) return new Date(a.date) - new Date(b.date)
+        return (urgencyScore[b.urgency] || 0) - (urgencyScore[a.urgency] || 0)
+    })
 }
-
-const clearSucceedCases = () => {
-    if (confirm("ต้องการล้างประวัติที่สำเร็จแล้วทั้งหมดหรือไม่?")) {
-        bookings.value = bookings.value.filter(item => item.status !== FILTERS.SUCCEED)
-    }
-}
-
-// ================= 4. Modal / Navigation =================
+const toggleDetail = (id) => expandedId.value = expandedId.value === id ? null : id
 const isDrawerOpen = ref(false)
 const isDayModalOpen = ref(false)
 const isLogoutModalOpen = ref(false)
 const isDeleteAccModalOpen = ref(false)
-
-const selectedDay = ref('Monday')
-const tempSelectedDay = ref('Monday')
-const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+const isDetailModalOpen = ref(false)
+const selectedCase = ref(null)
 
 const openDayModal = () => { isDrawerOpen.value = false; tempSelectedDay.value = selectedDay.value; isDayModalOpen.value = true }
-
-const confirmDayChange = async () => {
-    try {
-        const response = await fetch('http://localhost:8787/api/users/day', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                license: userLicense.value, 
-                day: tempSelectedDay.value 
-            })
-        });
-
-        if (!response.ok) throw new Error("API Error");
-
-        selectedDay.value = tempSelectedDay.value; 
-        isDayModalOpen.value = false;
-
-    } catch (error) {
-        console.error(error);
-        alert("❌ ไม่สามารถเปลี่ยนวันทำงานในฐานข้อมูลได้ กรุณาตรวจสอบการเชื่อมต่อ");
-    }
-}
-
 const closeAllOverlays = () => { isDrawerOpen.value = isDayModalOpen.value = isLogoutModalOpen.value = isDeleteAccModalOpen.value = isDetailModalOpen.value = false }
 const goToCalendar = () => { isDrawerOpen.value = false; router.push('/calendar') }
 const goAddPatient = () => { isDrawerOpen.value = false; router.push('/booking') }
-const handleLogout = () => { localStorage.removeItem('isLoggedIn'); localStorage.removeItem('doctorName'); router.push('/login') }
+const handleLogout = () => { localStorage.clear(); router.push('/login') }
 const handleDeleteAccount = () => { localStorage.clear(); router.push('/login') }
-
-// Case Detail Modal
-const isDetailModalOpen = ref(false)
-const selectedCase = ref(null)
 const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.value = true }
 const closeDetailModal = () => { isDetailModalOpen.value = false }
+
+const deleteCase = async (id) => {
+    if (!confirm('Confirm delete?')) return
+    try {
+        bookings.value = bookings.value.filter(item => item.id !== id)
+        await fetch(`${API_URL}/${id}`, { method: 'DELETE' })
+    } catch (e) { console.error(e) }
+}
+const markAsSucceed = (id) => {
+    const target = bookings.value.find(item => item.id === id)
+    if (target) { target.status = FILTERS.SUCCEED; filter.value = FILTERS.SUCCEED; }
+}
+const clearSucceedCases = () => {
+    if (confirm("ล้างประวัติ?")) bookings.value = bookings.value.filter(item => item.status !== FILTERS.SUCCEED)
+}
 </script>
 
 <style scoped>
