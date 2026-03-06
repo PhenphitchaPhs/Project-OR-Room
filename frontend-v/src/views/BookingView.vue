@@ -157,11 +157,45 @@ const isHolidayOrWeekend = (dateString) => {
     return day === 0 || day === 6 || officialHolidays.includes(monthDay)
 }
 
-const checkValidDate = () => {
-    if (!form.date) return;
+const checkValidDate = async () => {
+    if (!form.date) return
+
+    // เช็ควันหยุด
     if (isHolidayOrWeekend(form.date)) {
-        alert('❌ วันหยุดราชการ หรือ วันเสาร์-อาทิตย์ ห้องผ่าตัดปิดให้บริการครับ กรุณาเลือกวันอื่น');
-        form.date = ''; 
+        alert('❌ วันหยุดราชการ หรือ วันเสาร์-อาทิตย์ ห้องผ่าตัดปิดให้บริการ')
+        form.date = ''; return
+    }
+
+    // เช็คเฉพาะวันทำงานของหมอ
+    const dayMap = { 'Monday':1, 'Tuesday':2, 'Wednesday':3, 'Thursday':4, 'Friday':5 }
+    const workingDay = localStorage.getItem('selectedDay')
+    const selectedDow = new Date(form.date + 'T00:00:00').getDay()
+    if (workingDay && dayMap[workingDay] !== selectedDow) {
+        alert(`❌ คุณทำงานเฉพาะวัน ${workingDay} เท่านั้น กรุณาเลือกวัน${workingDay}`)
+        form.date = ''; return
+    }
+
+    // เช็ค 7 ชั่วโมง (420 นาที)
+    try {
+        const res = await fetch('https://or-room-backend.rockzee2018.workers.dev/api/bookings')
+        const allBookings = await res.json()
+        const sameDayBookings = allBookings.filter(b => b.date === form.date && b.status !== 'Succeed')
+        
+        const usedMinutes = sameDayBookings.reduce((sum, b) => {
+            const match = b.procedure?.match(/(\d+)\s*min/)
+            return sum + (match ? parseInt(match[1]) : 0)
+        }, 0)
+
+        const selectedProc = procedureList.value.find(p => p.name === form.procedure)
+        const newProcMin = selectedProc ? selectedProc.min : 0
+        
+        if (usedMinutes + newProcMin > 420) {
+            const remaining = 420 - usedMinutes
+            alert(`❌ วันที่ ${form.date} มีเวลาเหลือแค่ ${remaining} นาที แต่ procedure นี้ใช้ ${newProcMin} นาที\nกรุณาเลือกวันอื่น`)
+            form.date = ''; return
+        }
+    } catch(e) {
+        console.error('เช็คความจุไม่สำเร็จ', e)
     }
 }
 
@@ -177,6 +211,14 @@ const submitForm = async () => {
         alert('❌ ไม่สามารถจองคิวในวันหยุดราชการหรือเสาร์-อาทิตย์ได้ครับ')
         return
     }
+    
+    const dayMap = { 'Monday':1, 'Tuesday':2, 'Wednesday':3, 'Thursday':4, 'Friday':5 }
+    const workingDay = localStorage.getItem('selectedDay')
+    const selectedDow = new Date(form.date + 'T00:00:00').getDay()
+    if (workingDay && dayMap[workingDay] !== selectedDow) {
+        alert(`❌ คุณทำงานเฉพาะวัน ${workingDay} เท่านั้น`)
+        return
+    }
 
     const payload = {
         hn: form.hn,
@@ -190,12 +232,13 @@ const submitForm = async () => {
         isNpoRisk: form.isNpoRisk,
         isInfected: form.isInfected,
         underlying: form.disease, // 👈 ส่งโรคประจำตัวแยก
-        notes: form.notes         // 👈 ส่งหมายเหตุแยก
+        notes: form.notes,         // 👈 ส่งหมายเหตุแยก
+        doctorLicense: localStorage.getItem('userLicense')  // 👈 เพิ่มบรรทัดนี้
     }
 
     try {
         // 3. ยิงข้อมูลไปหา Hono API ของเรา
-        const response = await fetch('http://localhost:8787/api/bookings', {
+        const response = await fetch('https://or-room-backend.rockzee2018.workers.dev/api/bookings', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)

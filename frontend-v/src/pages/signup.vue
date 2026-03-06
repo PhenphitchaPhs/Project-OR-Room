@@ -17,6 +17,7 @@
           <input type="text" placeholder="License Number" v-model="license" class="form-input" />
           <input type="password" placeholder="Password" v-model="password" class="form-input" />
           <input type="password" placeholder="Confirm Password" v-model="confirmPassword" class="form-input" />
+          <input type="password" placeholder="Secret Key" v-model="secretKey" class="form-input" />
 
           <div class="select-wrapper">
             <select v-model="day" class="form-select" required>
@@ -55,6 +56,7 @@ const doctorName = ref('') // 👈 เพิ่มตัวแปรนี้
 const license = ref('')
 const password = ref('')
 const confirmPassword = ref('')
+const secretKey = ref('')
 const day = ref('')
 const message = ref('')
 const isSuccess = ref(false)
@@ -75,10 +77,15 @@ const submitForm = async () => {
     isSuccess.value = false
     return
   }
+  if (secretKey.value !== 'OR-UP01') {
+    message.value = '❌ Secret Key ไม่ถูกต้อง'
+    isSuccess.value = false
+    return
+  }
 
   try {
     // 🟢 ยิงข้อมูลไปให้ Backend บันทึกลง Cloudflare D1
-    const response = await fetch('http://localhost:8787/api/register', {
+    const response = await fetch('https://or-room-backend.rockzee2018.workers.dev/api/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

@@ -76,7 +76,7 @@ const login = async () => {
 
   try {
     // 🟢 ส่งข้อมูลไปให้ Backend (Cloudflare) ตรวจสอบ
-    const response = await fetch('http://localhost:8787/api/login', {
+    const response = await fetch('https://or-room-backend.rockzee2018.workers.dev/api/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

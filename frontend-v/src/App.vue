@@ -195,7 +195,7 @@ const goTo = (path) => {
 
 const handleLogout = () => {
   if (confirm("คุณต้องการออกจากระบบใช่หรือไม่?")) {
-    localStorage.removeItem('userLicense')
+    localStorage.clear()  // ล้างทุกอย่างรวมถึง isLoggedIn
     isSidebarOpen.value = false
     router.push('/login')
   }

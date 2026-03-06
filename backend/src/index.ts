@@ -10,10 +10,14 @@ const app = new Hono<{ Bindings: Bindings }>()
 // เปิด CORS ให้หน้าบ้าน (Vue) เข้ามาจิ้มได้
 app.use('/*', cors())
 
-// 🟢 1. ดึงคิวทั้งหมด (ใช้หน้า Home/Calendar)
+// 🟢 1. ดึงคิวทั้งหมด (รองรับการกรองด้วย License หมอ)
 app.get('/api/bookings', async (c) => {
+  const license = c.req.query('license')
   try {
-    const { results } = await c.env.DB.prepare('SELECT * FROM bookings ORDER BY date ASC').all()
+    const { results } = license
+      ? await c.env.DB.prepare('SELECT * FROM bookings WHERE doctorLicense = ? ORDER BY date ASC').bind(license).all()
+      : await c.env.DB.prepare('SELECT * FROM bookings ORDER BY date ASC').all()
+      
     return c.json(results)
   } catch (e) {
     return c.json({ error: 'DB Fetch Error' }, 500)
@@ -25,12 +29,12 @@ app.post('/api/bookings', async (c) => {
   const b = await c.req.json()
   try {
     await c.env.DB.prepare(`
-      INSERT INTO bookings (hn, fullName, dob, age, gender, procedure, date, urgency, isNpoRisk, isInfected, underlying, notes, status, room)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO bookings (hn, fullName, dob, age, gender, procedure, date, urgency, isNpoRisk, isInfected, underlying, notes, status, room, doctorLicense)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
       b.hn, b.fullName, b.dob, b.age, b.gender, b.procedure, 
       b.date, b.urgency, b.isNpoRisk ? 1 : 0, b.isInfected ? 1 : 0, 
-      b.underlying, b.notes, 'Upcoming', 'OR-01' // 👈 เพิ่ม b.underlying เข้ามาตรงนี้
+      b.underlying, b.notes, 'Upcoming', 'OR-01', b.doctorLicense // 👈 เพิ่ม b.doctorLicense ตรงนี้
     ).run()
     return c.json({ success: true }, 201)
   } catch (e) {
@@ -48,6 +52,7 @@ app.delete('/api/bookings/:id', async (c) => {
     return c.json({ error: 'DB Delete Error' }, 500)
   }
 })
+
 // 🟢 4. API สำหรับสมัครสมาชิก (Register)
 app.post('/api/register', async (c) => {
   const { license, doctorName, password, day } = await c.req.json()
@@ -98,7 +103,7 @@ app.get('/api/users/:license', async (c) => {
   }
 })
 
-// 🟢 API 2: สำหรับอัปเดตเปลี่ยนวันทำงานใน Cloudflare (เพิ่มระบบเช็กว่าอัปเดตจริงไหม)
+// 🟢 API 2: สำหรับอัปเดตเปลี่ยนวันทำงานใน Cloudflare
 app.put('/api/users/:license/day', async (c) => {
   const { day } = await c.req.json()
   const license = c.req.param('license')   // ดึงจาก URL แทน body

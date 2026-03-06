@@ -14,7 +14,8 @@ CREATE TABLE bookings (
   underlying TEXT,                -- 👈 เพิ่มช่องนี้สำหรับโรคประจำตัว
   notes TEXT,
   status TEXT DEFAULT 'Upcoming', 
-  room TEXT DEFAULT 'OR-01',      
+  room TEXT DEFAULT 'OR-01', 
+  doctorLicense TEXT,     
   createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 

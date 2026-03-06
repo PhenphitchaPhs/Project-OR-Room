@@ -182,6 +182,11 @@
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
                                         <div class="detail-row"><strong>Notes:</strong> {{ item.notes || '-' }}</div>
+                                        <div class="detail-row"><strong>Urgency:</strong> 
+                                            {{ item.urgency === 'Emergency' ? '🔴 Emergency' : item.urgency === 'Urgent' ? '🟡 Urgent' : item.urgency === 'Normal' ? '🟢 Normal' : '-' }}
+                                        </div>
+                                        <div class="detail-row"><strong>NPO Risk:</strong> {{ item.isNpoRisk ? '🍼 Yes' : '-' }}</div>
+                                        <div class="detail-row"><strong>Infection:</strong> {{ item.isInfected ? '🦠 Yes' : '-' }}</div>
                                     </div>
                                 </transition>
 
@@ -304,10 +309,12 @@ const fetchUserDay = async (license) => {
     } catch (error) { console.error("❌ ดึงวันทำงานไม่สำเร็จ", error); }
 };
 
+// 🟢 อัปเดต: ดึงคิวเฉพาะของหมอที่ล็อกอิน
 const fetchBookings = async () => {
     isLoading.value = true
     try {
-        const response = await fetch(API_URL)
+        const license = localStorage.getItem('userLicense')
+        const response = await fetch(`${API_URL}?license=${license}`)
         const data = await response.json()
         bookings.value = Array.isArray(data) ? data : []
     } catch (error) { console.error("❌ ดึงคิวไม่สำเร็จ:", error) }
@@ -327,7 +334,6 @@ onMounted(() => {
 })
 
 // ================= 2. ฟังก์ชันเปลี่ยนวัน (ตัวเดียวและตัวจริง!) =================
-// ✅ ถูก
 const confirmDayChange = async () => {
     alert(`กำลังยิง API ไปหา License: ${userLicense.value}\nวันใหม่คือ: ${tempSelectedDay.value}`)
 
@@ -344,7 +350,7 @@ const confirmDayChange = async () => {
         isDayModalOpen.value = false
         alert("✅ อัปเดตข้อมูลสำเร็จ!")
 
-    } catch (error) {   // ← ต้องมีตรงนี้!
+    } catch (error) {
         console.error("❌ PUT Error:", error)
         alert("❌ ล้มเหลว!")
     }
@@ -356,8 +362,36 @@ const succeedCases = computed(() => sortCases(bookings.value.filter(item => item
 const sortCases = (arr) => {
     const urgencyScore = { 'Emergency': 3, 'Urgent': 2, 'Normal': 1 }
     return [...arr].sort((a, b) => {
+        // Tier 0: เรียงตามวันก่อน
         if (a.date !== b.date) return new Date(a.date) - new Date(b.date)
-        return (urgencyScore[b.urgency] || 0) - (urgencyScore[a.urgency] || 0)
+        
+        // Tier 1: Emergency > Urgent > Normal
+        const urgA = urgencyScore[a.urgency] || 1
+        const urgB = urgencyScore[b.urgency] || 1
+        if (urgA !== urgB) return urgB - urgA
+
+        // เฉพาะกลุ่ม Urgent/Normal เท่านั้น
+        if (a.urgency !== 'Emergency') {
+            // Tier 3: เคสติดเชื้อไปท้ายสุด
+            const infA = a.isInfected ? 1 : 0
+            const infB = b.isInfected ? 1 : 0
+            if (infA !== infB) return infA - infB
+
+            // Tier 2: NPO Risk พร้อมก่อนได้คิวก่อน
+            const npoA = a.isNpoRisk ? 1 : 0
+            const npoB = b.isNpoRisk ? 1 : 0
+            if (npoA !== npoB) return npoB - npoA
+        }
+
+        // Tier 4: อายุมากสุดได้ก่อน
+        const ageA = parseInt(a.age) || 0
+        const ageB = parseInt(b.age) || 0
+        if (ageA !== ageB) return ageB - ageA
+
+        // Tier 5: เพศหญิงก่อน
+        if (a.gender !== b.gender) return a.gender === 'female' ? -1 : 1
+
+        return 0
     })
 }
 const toggleDetail = (id) => expandedId.value = expandedId.value === id ? null : id
