@@ -12,6 +12,8 @@
         </div>
 
         <div class="form-group">
+          <input type="text" placeholder="Full Name" v-model="doctorName" class="form-input" />
+
           <input type="text" placeholder="License Number" v-model="license" class="form-input" />
           <input type="password" placeholder="Password" v-model="password" class="form-input" />
           <input type="password" placeholder="Confirm Password" v-model="confirmPassword" class="form-input" />
@@ -49,6 +51,7 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
+const doctorName = ref('') // 👈 เพิ่มตัวแปรนี้
 const license = ref('')
 const password = ref('')
 const confirmPassword = ref('')
@@ -56,9 +59,12 @@ const day = ref('')
 const message = ref('')
 const isSuccess = ref(false)
 
-const submitForm = () => {
+// 🟢 สมมติว่านี่คือฐานข้อมูลเลข License ของหมอที่มีสิทธิ์ในโรงพยาบาล (Whitelist)
+const allowedLicenses = ['12345', '67890', '11111', '99999', '54321']
 
-  if (!license.value || !password.value || !confirmPassword.value || !day.value) {
+// เปลี่ยนเป็น async
+const submitForm = async () => {
+  if (!doctorName.value || !license.value || !password.value || !confirmPassword.value || !day.value) {
     message.value = "กรุณากรอกข้อมูลให้ครบ"
     isSuccess.value = false
     return
@@ -70,14 +76,34 @@ const submitForm = () => {
     return
   }
 
-  // ✅ จำลองว่าสมัครสำเร็จ (ยังไม่ใช้ backend)
-  message.value = "สมัครสมาชิกสำเร็จ!"
-  isSuccess.value = true
+  try {
+    // 🟢 ยิงข้อมูลไปให้ Backend บันทึกลง Cloudflare D1
+    const response = await fetch('http://localhost:8787/api/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        license: license.value,
+        doctorName: doctorName.value,
+        password: password.value, 
+        day: day.value
+      })
+    })
 
-  // เด้งกลับ login หลัง 1.5 วิ
-  setTimeout(() => {
-    router.push('/login')
-  }, 1500)
+    const data = await response.json()
+
+    if (!response.ok) throw new Error(data.error || 'สมัครไม่สำเร็จ')
+
+    message.value = "สมัครสมาชิกสำเร็จ!"
+    isSuccess.value = true
+
+    setTimeout(() => {
+      router.push('/login')
+    }, 1500)
+
+  } catch (error) {
+    message.value = "❌ " + error.message
+    isSuccess.value = false
+  }
 }
 
 const goBack = () => {

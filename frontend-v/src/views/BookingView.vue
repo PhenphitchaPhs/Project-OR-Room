@@ -57,19 +57,19 @@
                     <div class="grid-2-col">
                         <div class="select-wrapper">
                             <select v-model="form.urgency" class="input-field orange-theme">
-                                <option value="Normal">🟢 Normal (รอได้)</option>
-                                <option value="Urgent">🟡 Urgent (เร่งด่วน)</option>
-                                <option value="Emergency">🔴 Emergency (ฉุกเฉินช่วยชีวิต!)</option>
+                                <option value="Normal">🟢 Normal</option>
+                                <option value="Urgent">🟡 Urgent</option>
+                                <option value="Emergency">🔴 Emergency</option>
                             </select>
                         </div>
                         <div class="checkbox-group">
                             <label class="check-label">
                                 <input type="checkbox" v-model="form.isNpoRisk" />
-                                🍼 เสี่ยงขาดอาหาร (NPO Risk)
+                                🍼 NPO Risk
                             </label>
                             <label class="check-label red-text">
                                 <input type="checkbox" v-model="form.isInfected" />
-                                🦠 โรคติดเชื้อ (Infection)
+                                🦠 Infection
                             </label>
                         </div>
                     </div>
@@ -165,7 +165,9 @@ const checkValidDate = () => {
     }
 }
 
-const submitForm = () => {
+// เปลี่ยนเป็น async function เพื่อให้ใช้ await fetch ได้
+const submitForm = async () => {
+    // 1. เช็กข้อมูลพื้นฐาน
     if (!form.hn || !form.fullName || !form.dob || !form.gender || !form.procedure || !form.date) {
         alert('กรุณากรอกข้อมูลให้ครบ')
         return
@@ -176,54 +178,43 @@ const submitForm = () => {
         return
     }
 
-    let existing = JSON.parse(localStorage.getItem('bookings')) || []
-
-    const selectedProc = procedureList.value.find(p => p.name === form.procedure)
-    const newProcTime = selectedProc ? selectedProc.min : 0
-    const bookedTimeInDay = existing.filter(b => b.date === form.date).reduce((sum, b) => {
-        const procInfo = procedureList.value.find(p => p.name === b.procedure)
-        return sum + (procInfo ? procInfo.min : 0)
-    }, 0)
-
-    if (bookedTimeInDay + newProcTime > 420) {
-        alert(`❌ คิวเต็มแล้ว! วันนี้เหลือเวลาว่างแค่ ${420 - bookedTimeInDay} นาที (คุณเลือกผ่าตัด ${newProcTime} นาที)`)
-        return
+    const payload = {
+        hn: form.hn,
+        fullName: form.fullName, 
+        dob: form.dob,
+        age: calculatedAge.value, 
+        gender: form.gender,
+        procedure: form.procedure,
+        date: form.date,
+        urgency: form.urgency,
+        isNpoRisk: form.isNpoRisk,
+        isInfected: form.isInfected,
+        underlying: form.disease, // 👈 ส่งโรคประจำตัวแยก
+        notes: form.notes         // 👈 ส่งหมายเหตุแยก
     }
 
-    const newCase = {
-        id: Date.now(),
-        createdAt: Date.now(),
-        status: 'Upcoming',
-        date: form.date, patientName: form.fullName, procedure: form.procedure, doctor: 'Dr. Smith', room: 'OR-01',
-        hn: form.hn, fullName: form.fullName, dob: form.dob, age: calculatedAge.value, 
-        gender: form.gender, underlying: form.disease, notes: form.notes,
-        urgency: form.urgency, isNpoRisk: form.isNpoRisk, isInfected: form.isInfected
+    try {
+        // 3. ยิงข้อมูลไปหา Hono API ของเรา
+        const response = await fetch('http://localhost:8787/api/bookings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+
+        if (!response.ok) throw new Error('Network response was not ok')
+
+        alert("✅ จองคิวสำเร็จ! ข้อมูลถูกบันทึกลง Cloudflare D1 เรียบร้อยแล้ว")
+        
+        // ล้างค่าในฟอร์ม
+        Object.keys(form).forEach(key => form[key] = (typeof form[key] === 'boolean' ? false : (key === 'urgency' ? 'Normal' : '')))
+        
+        // เด้งกลับหน้า Home
+        router.push('/home')
+
+    } catch (error) {
+        console.error("Error saving booking:", error)
+        alert("❌ เกิดข้อผิดพลาดในการบันทึกข้อมูลลงฐานข้อมูล")
     }
-
-    existing.push(newCase)
-
-    const urgencyScore = { 'Emergency': 3, 'Urgent': 2, 'Normal': 1 }
-
-    existing.sort((a, b) => {
-        if (a.date !== b.date) return new Date(a.date) - new Date(b.date); 
-        if (a.isInfected !== b.isInfected) return a.isInfected ? 1 : -1;
-        if (urgencyScore[a.urgency] !== urgencyScore[b.urgency]) {
-            return urgencyScore[b.urgency] - urgencyScore[a.urgency];
-        }
-        if (a.isNpoRisk !== b.isNpoRisk) return a.isNpoRisk ? -1 : 1;
-        
-        if (a.age !== b.age) return b.age - a.age; 
-        
-        if (a.gender !== b.gender) return a.gender === 'female' ? -1 : 1;
-        return a.createdAt - b.createdAt;
-    });
-
-    localStorage.setItem('bookings', JSON.stringify(existing))
-    
-    Object.keys(form).forEach(key => form[key] = (typeof form[key] === 'boolean' ? false : (key === 'urgency' ? 'Normal' : '')))
-    
-    alert("✅ จองคิวสำเร็จ! ระบบจัดลำดับคิวและคำนวณอายุผู้ป่วยเรียบร้อยแล้ว")
-    router.push('/home')
 }
 </script>
 

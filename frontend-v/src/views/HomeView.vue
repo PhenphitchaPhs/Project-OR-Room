@@ -1,7 +1,7 @@
 <template>
     <div class="main-layout">
         <Transition name="fade">
-            <div v-if="isDrawerOpen || isDayModalOpen || isLogoutModalOpen || isDeleteAccModalOpen"
+            <div v-if="isDrawerOpen || isDayModalOpen || isLogoutModalOpen || isDeleteAccModalOpen || isDetailModalOpen"
                 class="drawer-overlay" @click="closeAllOverlays"></div>
         </Transition>
 
@@ -84,6 +84,25 @@
             </div>
         </Transition>
 
+        <Transition name="fade">
+            <div v-if="isDetailModalOpen" class="detail-overlay" @click.self="closeDetailModal">
+                <div class="detail-card">
+                    <h2>Case Details</h2>
+                    <div class="detail-grid" v-if="selectedCase">
+                        <p><strong>HN:</strong> {{ selectedCase.hn }}</p>
+                        <p><strong>Patient Name:</strong> {{ selectedCase.fullName }}</p>
+                        <p><strong>Age:</strong> {{ selectedCase.age }}</p>
+                        <p><strong>Gender:</strong> {{ selectedCase.gender === 'male' ? 'ชาย' : 'หญิง' }}</p>
+                        <p><strong>Procedure:</strong> {{ selectedCase.procedure }}</p>
+                        <p><strong>Surgery Date:</strong> {{ selectedCase.date }}</p>
+                        <p><strong>Underlying:</strong> {{ selectedCase.underlying || '-' }}</p>
+                        <p><strong>Notes:</strong> {{ selectedCase.notes || '-' }}</p>
+                    </div>
+                    <button class="close-detail-btn" @click="closeDetailModal">Close</button>
+                </div>
+            </div>
+        </Transition>
+
         <header class="top-nav">
             <div class="user-group" @click="isDrawerOpen = true">
                 <div class="avatar-circle small">
@@ -140,19 +159,18 @@
                                     </div>
 
                                     <div class="grid-row">
-                                        <span><strong>Patient:</strong> {{ item.patientName }}</span>
+                                        <span><strong>Patient:</strong> {{ item.fullName }}</span>
                                         <span><strong>Procedure:</strong> {{ item.procedure }}</span>
                                     </div>
 
                                     <div class="grid-row single">
-                                        <span><strong>Doctor:</strong> {{ item.doctor }}</span>
+                                        <span><strong>Doctor:</strong> {{ doctorName || 'Dr. ' + userLicense }}</span>
                                     </div>
 
                                 </div>
 
                                 <transition name="expand">
                                     <div v-if="expandedId === item.id" class="case-detail">
-
                                         <div class="detail-row"><strong>HN:</strong> {{ item.hn }}</div>
                                         <div class="detail-row"><strong>Full Name:</strong> {{ item.fullName }}</div>
                                         <div class="detail-row"><strong>Age:</strong> {{ item.age }}</div>
@@ -160,13 +178,10 @@
                                             <strong>Gender:</strong>
                                             {{ item.gender === 'male' ? 'ชาย' : 'หญิง' }}
                                         </div>
-                                        <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
-                                            item.underlying }}</div>
-                                        <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                            }}</div>
+                                        <div class="detail-row"><strong>Underlying Disease(s):</strong> {{ item.underlying || '-' }}</div>
+                                        <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
-                                        <div class="detail-row"><strong>Notes:</strong> {{ item.notes }}</div>
-
+                                        <div class="detail-row"><strong>Notes:</strong> {{ item.notes || '-' }}</div>
                                     </div>
                                 </transition>
 
@@ -207,12 +222,12 @@
 
                                 <div class="case-row top-row">
                                     <span><strong>Surgery Date:</strong> {{ item.date }}</span>
-                                    <span><strong>Patient:</strong> {{ item.patientName }}</span>
+                                    <span><strong>Patient:</strong> {{ item.fullName }}</span>
                                     <span><strong>Room:</strong> {{ item.room }}</span>
                                 </div>
 
                                 <div class="case-row">
-                                    <span><strong>Doctor:</strong> {{ item.doctor }}</span>
+                                    <span><strong>Doctor:</strong> {{ doctorName || 'Dr. ' + userLicense }}</span>
                                     <span><strong>Procedure:</strong> {{ item.procedure }}</span>
                                 </div>
                             </div>
@@ -265,7 +280,9 @@ const API_URL = 'http://localhost:8787/api/bookings'
 
 // --- State ---
 const bookings = ref([])
-const userLicense = ref('123546')
+// 🟢 แก้จาก '123546' เป็นค่าว่าง เพื่อบังคับให้ดึงจากคนที่ล็อกอินเข้ามาจริงๆ เท่านั้น
+const userLicense = ref('')
+const doctorName = ref('') 
 const filter = ref('Upcoming')
 const expandedId = ref(null)
 const isLoading = ref(false)
@@ -276,6 +293,21 @@ const FILTERS = {
 }
 
 // ================= 1. โหลดข้อมูลจาก Backend =================
+
+const fetchUserDay = async (license) => {
+    try {
+        const response = await fetch(`http://localhost:8787/api/users/${license}`);
+        const data = await response.json();
+        
+        if (data.day) {
+            selectedDay.value = data.day;
+            tempSelectedDay.value = data.day;
+        }
+    } catch (error) {
+        console.error("❌ ดึงวันทำงานจากฐานข้อมูลไม่สำเร็จ", error);
+    }
+};
+
 const fetchBookings = async () => {
     isLoading.value = true
     try {
@@ -285,7 +317,6 @@ const fetchBookings = async () => {
         bookings.value = Array.isArray(data) ? data : []
     } catch (error) {
         console.error("❌ ดึงข้อมูลไม่สำเร็จ:", error)
-        // Fallback: ถ้าติดต่อ Backend ไม่ได้ ให้ดึงจาก Local ไปก่อน
         const saved = JSON.parse(localStorage.getItem('bookings'))
         bookings.value = Array.isArray(saved) ? saved : []
     } finally {
@@ -295,8 +326,15 @@ const fetchBookings = async () => {
 
 onMounted(() => {
     const savedLicense = localStorage.getItem('userLicense')
-    if (savedLicense) userLicense.value = savedLicense
-    fetchBookings() // เรียกดึงข้อมูลจาก Cloudflare ทันทีที่เปิดหน้า
+    if (savedLicense) {
+        userLicense.value = savedLicense
+        fetchUserDay(savedLicense) 
+    }
+
+    const savedName = localStorage.getItem('doctorName')
+    if (savedName) doctorName.value = savedName
+
+    fetchBookings() 
 })
 
 // ================= 2. ระบบจัดเรียงคิว (Smart Priority Sorting) =================
@@ -304,24 +342,14 @@ const sortCases = (arr) => {
     const urgencyScore = { 'Emergency': 3, 'Urgent': 2, 'Normal': 1 }
     
     return [...arr].sort((a, b) => {
-        // 1. เรียงตามวันที่ก่อน (ใกล้วันปัจจุบันที่สุดขึ้นก่อน)
         if (a.date !== b.date) return new Date(a.date) - new Date(b.date)
-        
-        // 2. กฎเคสติดเชื้อ (Infection): ถ้ามีเชื้อต้องไปคิวสุดท้ายของวัน (อบโอโซนห้อง)
         if (a.isInfected !== b.isInfected) return a.isInfected ? 1 : -1
         
-        // 3. กฎความฉุกเฉิน (Urgency): Emergency แซงคิวคนอื่นในระดับเดียวกัน
         const scoreA = urgencyScore[a.urgency] || 0
         const scoreB = urgencyScore[b.urgency] || 0
         if (scoreA !== scoreB) return scoreB - scoreA
-        
-        // 4. กฎ NPO Risk: ใครต้องงดน้ำงดอาหาร (เด็ก/เบาหวาน) ให้ได้ทำก่อน
         if (a.isNpoRisk !== b.isNpoRisk) return a.isNpoRisk ? -1 : 1
-        
-        // 5. กฎตามอาจารย์สั่ง: อายุมากได้ก่อน
         if (a.age !== b.age) return b.age - a.age
-        
-        // 6. กฎตามอาจารย์สั่ง: เพศหญิงได้ก่อน
         if (a.gender !== b.gender) return a.gender === 'female' ? -1 : 1
         
         return 0
@@ -342,29 +370,23 @@ const toggleDetail = (id) => {
     expandedId.value = expandedId.value === id ? null : id
 }
 
-// ลบเคส (ลบจาก Backend)
 const deleteCase = async (id) => {
     const confirmDelete = confirm('ยืนยันการลบเคสนี้จากฐานข้อมูล Cloudflare?')
     if (!confirmDelete) return
 
     try {
-        // อัปเดต UI ทันทีเพื่อความรวดเร็ว
         bookings.value = bookings.value.filter(item => item.id !== id)
-        
-        // ยิงไปลบที่ Backend (ควรทำ API DELETE ที่ฝั่ง Hono รองรับด้วย)
         await fetch(`${API_URL}/${id}`, { method: 'DELETE' })
     } catch (error) {
         console.error("ลบไม่สำเร็จ:", error)
     }
 }
 
-// เปลี่ยนสถานะเป็น Succeed
 const markAsSucceed = (id) => {
     const target = bookings.value.find(item => item.id === id)
     if (target) {
         target.status = FILTERS.SUCCEED
         filter.value = FILTERS.SUCCEED
-        // หมายเหตุ: เพื่อให้สถานะใน DB เปลี่ยนถาวร ควรเพิ่ม API Update ใน Backend ครับ
     }
 }
 
@@ -374,7 +396,7 @@ const clearSucceedCases = () => {
     }
 }
 
-// ================= 4. Modal / Navigation (เหมือนเดิม) =================
+// ================= 4. Modal / Navigation =================
 const isDrawerOpen = ref(false)
 const isDayModalOpen = ref(false)
 const isLogoutModalOpen = ref(false)
@@ -385,11 +407,33 @@ const tempSelectedDay = ref('Monday')
 const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
 
 const openDayModal = () => { isDrawerOpen.value = false; tempSelectedDay.value = selectedDay.value; isDayModalOpen.value = true }
-const confirmDayChange = () => { selectedDay.value = tempSelectedDay.value; isDayModalOpen.value = false }
-const closeAllOverlays = () => { isDrawerOpen.value = isDayModalOpen.value = isLogoutModalOpen.value = isDeleteAccModalOpen.value = false }
+
+const confirmDayChange = async () => {
+    try {
+        const response = await fetch('http://localhost:8787/api/users/day', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                license: userLicense.value, 
+                day: tempSelectedDay.value 
+            })
+        });
+
+        if (!response.ok) throw new Error("API Error");
+
+        selectedDay.value = tempSelectedDay.value; 
+        isDayModalOpen.value = false;
+
+    } catch (error) {
+        console.error(error);
+        alert("❌ ไม่สามารถเปลี่ยนวันทำงานในฐานข้อมูลได้ กรุณาตรวจสอบการเชื่อมต่อ");
+    }
+}
+
+const closeAllOverlays = () => { isDrawerOpen.value = isDayModalOpen.value = isLogoutModalOpen.value = isDeleteAccModalOpen.value = isDetailModalOpen.value = false }
 const goToCalendar = () => { isDrawerOpen.value = false; router.push('/calendar') }
 const goAddPatient = () => { isDrawerOpen.value = false; router.push('/booking') }
-const handleLogout = () => { localStorage.removeItem('isLoggedIn'); router.push('/login') }
+const handleLogout = () => { localStorage.removeItem('isLoggedIn'); localStorage.removeItem('doctorName'); router.push('/login') }
 const handleDeleteAccount = () => { localStorage.clear(); router.push('/login') }
 
 // Case Detail Modal

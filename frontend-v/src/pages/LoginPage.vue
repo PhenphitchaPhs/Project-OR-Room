@@ -62,7 +62,8 @@ const handleLicenseInput = () => {
   license.value = license.value.replace(/\D/g, "").slice(0, 5);
 };
 
-const login = () => {
+// เปลี่ยนเป็น async เพื่อต่อ API
+const login = async () => {
   if (license.value.length !== 5) {
     alert("License ต้องเป็นตัวเลข 5 หลัก");
     return;
@@ -73,14 +74,35 @@ const login = () => {
     return;
   }
 
-  // ✅ ขั้นตอนนี้คือการจำลองว่า "ล็อกอินสำเร็จในฐานะ User ธรรมดา"
-  // (เดี๋ยวพอมี Backend ตรงนี้จะเป็นการยิง API แทนครับ)
-  localStorage.setItem("isLoggedIn", "true");
-  localStorage.setItem("userLicense", license.value); 
-  localStorage.setItem("userRole", "user"); // 👈 ประกาศตัวชัดเจนว่าเป็นแค่ User ธรรมดา
+  try {
+    // 🟢 ส่งข้อมูลไปให้ Backend (Cloudflare) ตรวจสอบ
+    const response = await fetch('http://localhost:8787/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        license: license.value,
+        password: password.value
+      })
+    });
 
-  alert("ล็อกอินสำเร็จ ยินดีต้อนรับเข้าสู่ระบบ!");
-  router.push("/home");
+    const data = await response.json();
+
+    if (response.ok && data.success) {
+      // ✅ ถ้าฐานข้อมูลตอบกลับมาว่ารหัสถูก ค่อยเซฟสถานะลงเครื่องเพื่อให้เว็บจำได้
+      localStorage.setItem("isLoggedIn", "true");
+      localStorage.setItem("userLicense", data.user.license); 
+      localStorage.setItem("doctorName", data.user.doctorName); 
+      localStorage.setItem("userRole", data.user.role || 'user'); // ป้องกันกรณีไม่มี Role ส่งมา
+
+      alert("ล็อกอินสำเร็จ ยินดีต้อนรับเข้าสู่ระบบ!");
+      router.push("/home");
+    } else {
+      alert("❌ " + (data.error || "ล็อกอินไม่สำเร็จ"));
+    }
+  } catch (error) {
+    console.error(error);
+    alert("❌ ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบว่ารัน Backend อยู่หรือไม่");
+  }
 };
 </script>
 
