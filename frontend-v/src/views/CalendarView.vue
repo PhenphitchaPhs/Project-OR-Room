@@ -2,14 +2,12 @@
     <div class="calendar-page">
         <header class="calendar-navbar">
             <div class="nav-left"></div>
-
             <div class="nav-center">
                 <div class="header-info">
                     <h2 class="month-label">{{ monthNames[currentMonth] }}</h2>
                     <span class="year-label">{{ currentYear + 543 }}</span>
                 </div>
             </div>
-
             <div class="nav-right">
                 <button @click="goToToday" class="today-btn">Today</button>
                 <div class="nav-arrows">
@@ -25,14 +23,16 @@
 
         <div class="month-container">
             <div class="weekday-grid">
-                <div v-for="day in weekDaysFull" :key="day" class="weekday-item" :class="{ 'sun': day === 'Sunday' || day === 'Saturday' }">
+                <div v-for="day in weekDaysFull" :key="day" class="weekday-item"
+                    :class="{ 'sun': day === 'Sunday' || day === 'Saturday' }">
                     {{ day }}
                 </div>
             </div>
 
             <div class="days-grid">
                 <div v-for="(date, index) in calendarDays" :key="index" class="date-box"
-                    :class="{ 'dimmed': !date.isCurrentMonth }" @click="handleDateClick(date)">
+                    :class="{ 'dimmed': !date.isCurrentMonth }"
+                    @click="handleDateClick(date)">
                     <div class="box-top">
                         <span class="box-number" :class="{
                             'holiday': isOfficialHoliday(date.fullDate) || date.dayOfWeek === 0 || date.dayOfWeek === 6,
@@ -45,46 +45,39 @@
                         <div v-if="isOfficialHoliday(date.fullDate) && date.dayNumber" class="strip holiday-bg">
                             {{ getHolidayName(date.fullDate) }}
                         </div>
-                        
-                        <div v-if="hasNote(date.fullDate)" class="strip note-bg"
-                            @click.stop="openDetailPopup(date.fullDate)">
-                            {{ getSavedNote(date.fullDate).patientName }}
+                        <div v-for="b in getBookingsForDate(date.fullDate)" :key="b.id"
+                            class="strip"
+                            :style="{ background: urgencyColor(b.urgency) }"
+                            @click.stop="handleDateClick(date)">
+                            {{ b.fullName }}
                         </div>
                     </div>
                 </div>
             </div>
 
-            <button class="fab-btn" @click="isAddPopupOpen = true">
+            <button class="fab-btn" @click="goToBooking">
                 <Icon icon="lucide:plus" width="32" height="32" color="#1a3a5f" />
             </button>
         </div>
 
         <Transition name="fade">
-            <div v-if="isAddPopupOpen" class="overlay-modal" @click.self="isAddPopupOpen = false">
-                <div class="card-modal">
-                    <h3 class="modal-title">Add Patient</h3>
-                    <p class="modal-date">{{ formatDateThai(selectedFullDate) }}</p>
-                    <input v-model="tempNote.patientName" placeholder="Patient Name" class="inp" />
-                    <textarea v-model="tempNote.procedure" placeholder="Details" class="inp" rows="3"></textarea>
-                    <div class="actions">
-                        <button @click="isAddPopupOpen = false" class="btn-clear">Cancel</button>
-                        <button @click="saveNote" class="btn-fill">Save</button>
-                    </div>
-                </div>
-            </div>
-        </Transition>
-
-        <Transition name="fade">
             <div v-if="isDetailPopupOpen" class="overlay-modal" @click.self="isDetailPopupOpen = false">
                 <div class="card-modal">
-                    <h3 class="modal-title">Patient Details</h3>
-                    <div v-if="getSavedNote(selectedFullDate)" class="detail-info">
-                        <p><strong>Name:</strong> {{ getSavedNote(selectedFullDate).patientName }}</p>
-                        <p><strong>Procedure:</strong> {{ getSavedNote(selectedFullDate).procedure || '-' }}</p>
+                    <h3 class="modal-title">📅 {{ formatDateThai(selectedFullDate) }}</h3>
+                    <div v-for="b in selectedDateBookings" :key="b.id" class="booking-item">
+                        <div class="booking-badge" :style="{ background: urgencyColor(b.urgency) }">
+                            {{ b.urgency }}
+                        </div>
+                        <p><strong>Patient:</strong> {{ b.fullName }}</p>
+                        <p><strong>HN:</strong> {{ b.hn }}</p>
+                        <p><strong>Procedure:</strong> {{ b.procedure }}</p>
+                        <p v-if="b.isNpoRisk"><strong>🍼 NPO Risk</strong></p>
+                        <p v-if="b.isInfected"><strong>🦠 Infection</strong></p>
+                        <hr style="border-color:#eee; margin: 8px 0" />
                     </div>
                     <div class="actions">
-                        <button @click="deleteNote" class="btn-del">Delete</button>
-                        <button @click="isDetailPopupOpen = false" class="btn-fill">Close</button>
+                        <button @click="goToBooking" class="btn-fill">+ Add Patient</button>
+                        <button @click="isDetailPopupOpen = false" class="btn-clear">Close</button>
                     </div>
                 </div>
             </div>
@@ -104,25 +97,26 @@ const currentYear = ref(now.getFullYear())
 const todayStr = ref(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`)
 
 const selectedFullDate = ref(todayStr.value)
-const isAddPopupOpen = ref(false)
 const isDetailPopupOpen = ref(false)
+const selectedDateBookings = ref([])
 
-// ตัวแปรเก็บข้อมูลคนไข้
-const userNotes = ref([])
-const tempNote = ref({ patientName: '', procedure: '' })
+// ดึงคิวจาก Cloudflare แทน localStorage
+const bookings = ref([])
 
-// ดึงข้อมูลคนไข้ที่เคยบันทึกไว้ในเครื่องขึ้นมาแสดงตอนเปิดหน้าเว็บ
-onMounted(() => {
-    const savedData = localStorage.getItem('calendar_patients')
-    if (savedData) {
-        userNotes.value = JSON.parse(savedData)
+onMounted(async () => {
+    const license = localStorage.getItem('userLicense')
+    try {
+        const res = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/bookings?license=${license}`)
+        const data = await res.json()
+        bookings.value = Array.isArray(data) ? data : []
+    } catch (e) {
+        console.error('ดึงคิวไม่สำเร็จ', e)
     }
 })
 
 const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
 const weekDaysFull = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
-// 🇹🇭 ข้อมูลวันหยุดราชการไทย (อิงปี 2026) 
 const officialHolidays = [
     { date: "2026-01-01", name: "วันขึ้นปีใหม่" },
     { date: "2026-03-03", name: "วันมาฆบูชา" },
@@ -143,15 +137,18 @@ const officialHolidays = [
     { date: "2026-12-31", name: "วันสิ้นปี" }
 ]
 
-// ฟังก์ชันเช็กวันหยุด
 const isOfficialHoliday = (d) => officialHolidays.some(h => h.date === d)
-const getHolidayName = (d) => {
-    const holiday = officialHolidays.find(h => h.date === d)
-    return holiday ? holiday.name : 'Holiday'
-}
+const getHolidayName = (d) => officialHolidays.find(h => h.date === d)?.name || 'Holiday'
 
-const hasNote = (d) => userNotes.value.some(n => n.date === d)
-const getSavedNote = (d) => userNotes.value.find(n => n.date === d)
+// ดึงคิวของวันนั้นๆ
+const getBookingsForDate = (d) => bookings.value.filter(b => b.date === d && b.status !== 'Succeed')
+const hasBooking = (d) => getBookingsForDate(d).length > 0
+
+const urgencyColor = (urgency) => {
+    if (urgency === 'Emergency') return '#e53935'
+    if (urgency === 'Urgent') return '#f9a825'
+    return '#43a047'
+}
 
 const calendarDays = computed(() => {
     const days = []
@@ -165,45 +162,30 @@ const calendarDays = computed(() => {
     return days
 })
 
-const goToToday = () => { currentMonth.value = now.getMonth(); currentYear.value = now.getFullYear(); selectedFullDate.value = todayStr.value; }
+const goToToday = () => { currentMonth.value = now.getMonth(); currentYear.value = now.getFullYear(); selectedFullDate.value = todayStr.value }
 const changeMonth = (v) => {
     currentMonth.value += v
-    if (currentMonth.value > 11) { currentMonth.value = 0; currentYear.value++; }
-    else if (currentMonth.value < 0) { currentMonth.value = 11; currentYear.value--; }
+    if (currentMonth.value > 11) { currentMonth.value = 0; currentYear.value++ }
+    else if (currentMonth.value < 0) { currentMonth.value = 11; currentYear.value-- }
 }
 
-const handleDateClick = (date) => { 
-    if (date.isCurrentMonth) { 
-        // 🔴 อัปเดต: เช็กว่าเป็นวันหยุดราชการ หรือ เสาร์ (6) หรือ อาทิตย์ (0) ไหม
-        if (isOfficialHoliday(date.fullDate) || date.dayOfWeek === 0 || date.dayOfWeek === 6) {
-            alert('❌ ไม่สามารถเพิ่มคิวผ่าตัดในวันหยุดราชการ หรือเสาร์-อาทิตย์ได้');
-            return; // บล็อกการเปิด Pop-up
-        }
-
-        selectedFullDate.value = date.fullDate; 
-        if (!hasNote(date.fullDate)) isAddPopupOpen.value = true; 
-    } 
-}
-const openDetailPopup = (d) => { selectedFullDate.value = d; isDetailPopupOpen.value = true; }
-
-// ฟังก์ชันบันทึกข้อมูล พร้อม Save ลงเครื่อง
-const saveNote = () => { 
-    if (tempNote.value.patientName) { 
-        userNotes.value.push({ date: selectedFullDate.value, ...tempNote.value }); 
-        localStorage.setItem('calendar_patients', JSON.stringify(userNotes.value)); // Save ลงคอม
-        isAddPopupOpen.value = false; 
-        tempNote.value = { patientName: '', procedure: '' }; 
-    } 
+const handleDateClick = (date) => {
+    if (!date.isCurrentMonth) return
+    selectedFullDate.value = date.fullDate
+    selectedDateBookings.value = getBookingsForDate(date.fullDate)
+    if (selectedDateBookings.value.length > 0) {
+        isDetailPopupOpen.value = true
+    }
 }
 
-// ฟังก์ชันลบข้อมูล พร้อม Save ลงเครื่อง
-const deleteNote = () => { 
-    userNotes.value = userNotes.value.filter(n => n.date !== selectedFullDate.value); 
-    localStorage.setItem('calendar_patients', JSON.stringify(userNotes.value)); // อัปเดตข้อมูลในคอม
-    isDetailPopupOpen.value = false; 
-}
+// ปุ่ม + พาไปหน้า Booking
+const goToBooking = () => router.push('/booking')
 
-const formatDateThai = (d) => `${monthNames[new Date(d).getMonth()]} ${new Date(d).getDate()}, ${new Date(d).getFullYear() + 543}`
+const formatDateThai = (d) => {
+    if (!d) return ''
+    const dt = new Date(d + 'T00:00:00')
+    return `${monthNames[dt.getMonth()]} ${dt.getDate()}, ${dt.getFullYear() + 543}`
+}
 </script>
 
 <style scoped>
@@ -380,4 +362,7 @@ const formatDateThai = (d) => `${monthNames[new Date(d).getMonth()]} ${new Date(
 .btn-fill { background: #2c4c87; color: white; border: none; padding: 8px 20px; border-radius: 10px; cursor: pointer; margin-left: 5%; }
 .btn-del { background: #c2185b; color: white; border: none; padding: 8px 20px; border-radius: 10px; cursor: pointer; }
 .btn-clear { background: none; border: none; color: #999; cursor: pointer; }
+
+.booking-item { margin-bottom: 8px; font-size: 13px; color: #333; }
+.booking-badge { display: inline-block; color: white; font-size: 11px; padding: 2px 8px; border-radius: 10px; margin-bottom: 4px; font-weight: bold; }
 </style>
