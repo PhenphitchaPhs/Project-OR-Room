@@ -157,4 +157,15 @@ app.patch('/api/bookings/:id/status', async (c) => {
   }
 })
 
+// 🔴 ลบบัญชีผู้ใช้
+app.delete('/api/users/:license', async (c) => {
+  const license = c.req.param('license')
+  try {
+    await c.env.DB.prepare('DELETE FROM users WHERE license = ?').bind(license).run()
+    return c.json({ success: true })
+  } catch (e) {
+    return c.json({ error: 'Delete Failed' }, 500)
+  }
+})
+
 export default app

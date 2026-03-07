@@ -181,7 +181,15 @@ const openDeleteModal = () => {
   isDeleteAccModalOpen.value = true
 }
 
-const handleDeleteAccount = () => {
+const handleDeleteAccount = async () => {
+  const license = localStorage.getItem('userLicense')
+  try {
+    await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/users/${license}`, {
+      method: 'DELETE'
+    })
+  } catch (e) {
+    console.error('ลบบัญชีไม่สำเร็จ', e)
+  }
   localStorage.clear()
   isDeleteAccModalOpen.value = false
   router.push('/login')
