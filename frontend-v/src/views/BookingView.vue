@@ -206,6 +206,7 @@ const checkValidDate = async () => {
     }
 }
 
+//เพิ่ม autofill เมื่อกรอก HN
 const hnStatus = ref('') // '', 'loading', 'found', 'notfound'
 
 const lookupHN = async () => {

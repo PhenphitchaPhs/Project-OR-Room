@@ -124,7 +124,7 @@ app.put('/api/users/:license/day', async (c) => {
   }
 })
 
-// 🟢 ค้นหาข้อมูลผู้ป่วยจาก HN (สำหรับ autofill)
+// 🟢 ค้นหาข้อมูลผู้ป่วยเก่าจาก HN (สำหรับ autofill)
 app.get('/api/patients/:hn', async (c) => {
   const hn = c.req.param('hn')
   try {
