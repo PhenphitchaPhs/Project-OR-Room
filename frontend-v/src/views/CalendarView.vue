@@ -366,3 +366,5 @@ const formatDateThai = (d) => {
 .booking-item { margin-bottom: 8px; font-size: 13px; color: #333; }
 .booking-badge { display: inline-block; color: white; font-size: 11px; padding: 2px 8px; border-radius: 10px; margin-bottom: 4px; font-weight: bold; }
 </style>
+
+/* 🔥 เพิ่ม Transition สำหรับ Popup */
