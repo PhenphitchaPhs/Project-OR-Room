@@ -418,10 +418,23 @@ const deleteCase = async (id) => {
         await fetch(`${API_URL}/${id}`, { method: 'DELETE' })
     } catch (e) { console.error(e) }
 }
-const markAsSucceed = (id) => {
-    const target = bookings.value.find(item => item.id === id)
-    if (target) { target.status = FILTERS.SUCCEED; filter.value = FILTERS.SUCCEED; }
+const markAsSucceed = async (id) => {
+    try {
+        const res = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/bookings/${id}/status`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'Succeed' })
+        })
+        if (!res.ok) throw new Error()
+        
+        // อัปเดต UI
+        const target = bookings.value.find(item => item.id === id)
+        if (target) { target.status = FILTERS.SUCCEED; filter.value = FILTERS.SUCCEED; }
+    } catch (e) {
+        alert('❌ อัปเดต status ไม่สำเร็จ')
+    }
 }
+
 const clearSucceedCases = () => {
     if (confirm("ล้างประวัติ?")) bookings.value = bookings.value.filter(item => item.status !== FILTERS.SUCCEED)
 }

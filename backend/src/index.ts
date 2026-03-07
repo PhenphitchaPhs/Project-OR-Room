@@ -145,4 +145,16 @@ app.get('/api/patients/:hn', async (c) => {
   }
 })
 
+// 🟢 อัปเดต status ของ booking
+app.patch('/api/bookings/:id/status', async (c) => {
+  const id = c.req.param('id')
+  const { status } = await c.req.json()
+  try {
+    await c.env.DB.prepare('UPDATE bookings SET status = ? WHERE id = ?').bind(status, id).run()
+    return c.json({ success: true })
+  } catch (e) {
+    return c.json({ error: 'Update Failed' }, 500)
+  }
+})
+
 export default app
