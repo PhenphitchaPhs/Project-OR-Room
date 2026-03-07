@@ -124,4 +124,25 @@ app.put('/api/users/:license/day', async (c) => {
   }
 })
 
+// 🟢 ค้นหาข้อมูลผู้ป่วยจาก HN (สำหรับ autofill)
+app.get('/api/patients/:hn', async (c) => {
+  const hn = c.req.param('hn')
+  try {
+    const patient = await c.env.DB.prepare(`
+      SELECT hn, fullName, dob, gender, underlying 
+      FROM bookings 
+      WHERE hn = ? 
+      ORDER BY createdAt DESC 
+      LIMIT 1
+    `).bind(hn).first()
+    
+    if (patient) {
+      return c.json(patient)
+    }
+    return c.json({ error: 'ไม่พบผู้ป่วย' }, 404)
+  } catch (e) {
+    return c.json({ error: 'DB Fetch Error' }, 500)
+  }
+})
+
 export default app

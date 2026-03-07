@@ -14,7 +14,14 @@
                 <div class="section-group">
                     <label class="group-label">Patient Information</label>
                     <div class="grid-2-col">
-                        <input type="text" v-model="form.hn" placeholder="HN" class="input-field green-theme" />
+                       <div style="position: relative;">
+                        <input type="text" v-model="form.hn" placeholder="HN" 
+                        class="input-field green-theme" 
+                        @blur="lookupHN" />
+                        <span v-if="hnStatus === 'loading'" style="position:absolute; right:12px; top:12px; font-size:12px; color:#888">⏳ กำลังค้นหา...</span>
+                        <span v-if="hnStatus === 'found'" style="position:absolute; right:12px; top:12px; font-size:12px; color:#2e7d32">✅ พบข้อมูล</span>
+                        <span v-if="hnStatus === 'notfound'" style="position:absolute; right:12px; top:12px; font-size:12px; color:#888">👤 ผู้ป่วยใหม่</span>
+                    </div>
                         <input type="text" v-model="form.fullName" placeholder="Full Name" class="input-field green-theme" />
                         
                         <div class="split-input-row">
@@ -196,6 +203,31 @@ const checkValidDate = async () => {
         }
     } catch(e) {
         console.error('เช็คความจุไม่สำเร็จ', e)
+    }
+}
+
+const hnStatus = ref('') // '', 'loading', 'found', 'notfound'
+
+const lookupHN = async () => {
+    if (form.hn.length < 3) return  // รอให้กรอกอย่างน้อย 3 ตัวก่อน
+    
+    hnStatus.value = 'loading'
+    try {
+        const res = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/patients/${form.hn}`)
+        
+        if (res.ok) {
+            const patient = await res.json()
+            // autofill ข้อมูล
+            form.fullName = patient.fullName
+            form.dob = patient.dob
+            form.gender = patient.gender
+            form.disease = patient.underlying || ''
+            hnStatus.value = 'found'
+        } else {
+            hnStatus.value = 'notfound'
+        }
+    } catch (e) {
+        hnStatus.value = 'notfound'
     }
 }
 
