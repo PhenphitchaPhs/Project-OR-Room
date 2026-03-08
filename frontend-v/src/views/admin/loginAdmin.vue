@@ -37,27 +37,37 @@ import { useRouter } from 'vue-router'
 import logo from '../../assets/logo.png'
 
 const router = useRouter()
-
 const name = ref('')
 const password = ref('')
 const errorMessage = ref('')
 
-const handleLogin = () => {
+const handleLogin = async () => {
     errorMessage.value = ''
-
     if (!name.value || !password.value) {
         errorMessage.value = 'กรุณากรอกข้อมูลให้ครบ'
         return
     }
-
-    // 🔥 ตอนนี้ยังไม่ต่อ backend
-    // ผ่าน validation แล้วให้เข้าได้เลย
-    router.push({ name: 'admin-home' })
+    try {
+        const res = await fetch('https://or-room-backend.rockzee2018.workers.dev/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ license: name.value, password: password.value })
+        })
+        const data = await res.json()
+        if (res.ok && data.user?.role === 'admin') {
+            localStorage.setItem('isLoggedIn', 'true')
+            localStorage.setItem('userLicense', data.user.license)
+            localStorage.setItem('userRole', 'admin')
+            router.push({ name: 'admin-home' })
+        } else {
+            errorMessage.value = '❌ ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง หรือไม่มีสิทธิ์ Admin'
+        }
+    } catch (e) {
+        errorMessage.value = '❌ เชื่อมต่อ server ไม่ได้'
+    }
 }
 
-const goBack = () => {
-    router.back()
-}
+const goBack = () => router.back()
 </script>
 
 <style scoped>

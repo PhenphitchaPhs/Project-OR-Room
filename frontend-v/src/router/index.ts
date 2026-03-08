@@ -15,6 +15,7 @@ import LoginAdmin from '../views/admin/loginAdmin.vue'
 import AdminHome from '../views/admin/AdminHome.vue'
 import ChooseDoctorAdmin from '../views/admin/ChooseDoctorAdmin.vue'
 import AddPatientByAdmin from '../views/admin/AddPatientByAdmin.vue'
+import AdminCalendarView from '../views/admin/AdminCalendarView.vue'
 
 const routes = [
   { path: '/', redirect: '/login' },
@@ -46,7 +47,13 @@ const routes = [
     name: 'admin-add-patient', 
     component: AddPatientByAdmin,
     meta: { requiresAuth: true, role: 'admin' } 
-  }
+  },
+  { 
+  path: '/admin-calendar', 
+  name: 'admin-calendar', 
+  component: AdminCalendarView,
+  meta: { requiresAuth: true, role: 'admin' } 
+}
 ]
 
 const router = createRouter({

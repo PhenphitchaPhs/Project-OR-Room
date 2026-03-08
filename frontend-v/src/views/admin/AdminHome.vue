@@ -1,43 +1,6 @@
 <template>
     <div class="main-layout">
         <Transition name="fade">
-            <div v-if="isDrawerOpen || isDayModalOpen || isLogoutModalOpen || isDeleteAccModalOpen"
-                class="drawer-overlay" @click="closeAllOverlays"></div>
-        </Transition>
-
-        <Transition name="slide">
-            <aside v-if="isDrawerOpen" class="side-drawer">
-                <div class="drawer-header">
-                    <div class="drawer-user-info">
-                        <div class="avatar-circle">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24">
-                                <path fill="white"
-                                    d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10s10-4.48 10-10S17.52 2 12 2m0 4c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6m0 14c-2.03 0-4.43-.82-6.14-2.88a9.947 9.947 0 0 1 12.28 0C16.43 19.18 14.03 20 12 20" />
-                            </svg>
-                        </div>
-                        <div class="user-meta">
-                            <span class="drawer-license">{{ userLicense }}</span>
-
-                        </div>
-                    </div>
-                </div>
-                <nav class="drawer-menu">
-
-                    <div class="menu-item" @click="goHome">
-                        <span class="material-icons">home</span>
-                        <span class="menu-text">Home</span>
-                    </div>
-
-                    <div class="menu-item" @click="goAddPatient">
-                        <span class="material-icons">person_add</span>
-                        <span class="menu-text">Add Patient</span>
-                    </div>
-
-                </nav>
-            </aside>
-        </Transition>
-
-        <Transition name="fade">
             <div v-if="isDayModalOpen" class="modal-overlay-center">
                 <div class="day-modal-card">
                     <h2 class="day-modal-title">Choose your day</h2>
@@ -83,7 +46,7 @@
         </Transition>
 
         <header class="top-nav">
-            <div class="user-group" @click="isDrawerOpen = true">
+            <div class="user-group">
                 <div class="avatar-circle small">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
                         <path fill="white"
@@ -92,6 +55,12 @@
                 </div>
                 <span class="license-text">{{ userLicense }}</span>
             </div>
+            <button class="nav-calendar-btn" @click="router.push('/admin-calendar')">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24">
+                    <path fill="white" d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2m0 16H5V10h14zm0-12H5V6h14z"/>
+                </svg>
+                <span>Calendar</span>
+            </button>
             <button class="logout-btn" @click="isLogoutModalOpen = true">
                 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24">
                     <path fill="white"
@@ -140,12 +109,12 @@
                                     </div>
 
                                     <div class="grid-row">
-                                        <span><strong>Patient:</strong> {{ item.patientName }}</span>
+                                        <span><strong>Patient:</strong> {{ item.fullName }}</span>
                                         <span><strong>Procedure:</strong> {{ item.procedure }}</span>
                                     </div>
 
                                     <div class="grid-row single">
-                                        <span><strong>Doctor:</strong> {{ item.doctor }}</span>
+                                        <span><strong>Doctor:</strong> {{ doctorMap[item.doctorLicense] || item.doctorLicense || '-' }}</span>
                                     </div>
 
                                 </div>
@@ -210,12 +179,12 @@
 
                                 <div class="case-row top-row">
                                     <span><strong>Surgery Date:</strong> {{ item.date }}</span>
-                                    <span><strong>Patient:</strong> {{ item.patientName }}</span>
+                                    <span><strong>Patient:</strong> {{ item.fullName }}</span>
                                     <span><strong>Room:</strong> {{ item.room }}</span>
                                 </div>
 
                                 <div class="case-row">
-                                    <span><strong>Doctor:</strong> {{ item.doctor }}</span>
+                                    <span><strong>Doctor:</strong> {{ doctorMap[item.doctorLicense] || item.doctorLicense || '-' }}</span>
                                     <span><strong>Procedure:</strong> {{ item.procedure }}</span>
                                 </div>
                             </div>
@@ -258,6 +227,8 @@
         + Add Patient
     </button>
 
+    <button class="floating-add-btn" @click="goAddPatient">+ Add Patient</button>
+
 </template>
 
 
@@ -277,7 +248,8 @@ const goHome = () => {
     isDrawerOpen.value = false
 }
 
-
+// เพิ่มตัวแปรเก็บรายชื่อหมอ
+const doctorMap = ref({}) // { license: doctorName }
 
 const expandedId = ref(null)
 
@@ -306,17 +278,69 @@ const toggleExpand = (id) => {
 const bookings = ref([])
 
 // ================= โหลดข้อมูล =================
-onMounted(() => {
+// แก้ onMounted ให้ดึงรายชื่อหมอด้วย
+onMounted(async () => {
     const savedLicense = localStorage.getItem('userLicense')
     if (savedLicense) userLicense.value = savedLicense
 
     try {
-        const savedBookings = JSON.parse(localStorage.getItem('bookings'))
-        bookings.value = Array.isArray(savedBookings) ? savedBookings : []
-    } catch (error) {
-        bookings.value = []
+        // ดึงคิวทั้งหมด
+        const res = await fetch('https://or-room-backend.rockzee2018.workers.dev/api/bookings')
+        const data = await res.json()
+        bookings.value = Array.isArray(data) ? data : []
+    } catch (e) {
+        console.error('ดึงคิวไม่สำเร็จ', e)
+    }
+
+    try {
+        // ดึงรายชื่อหมอมา map license -> ชื่อ
+        const res2 = await fetch('https://or-room-backend.rockzee2018.workers.dev/api/users')
+        const users = await res2.json()
+        if (Array.isArray(users)) {
+            users.forEach(u => { doctorMap.value[u.license] = u.doctorName })
+        }
+    } catch (e) {
+        console.error('ดึงรายชื่อหมอไม่สำเร็จ', e)
     }
 })
+
+// markAsSucceed — ยิง API จริง
+const markAsSucceed = async (id) => {
+    try {
+        await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/bookings/${id}/status`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'Succeed' })
+        })
+        const target = bookings.value.find(item => item.id === id)
+        if (target) { target.status = 'Succeed'; filter.value = FILTERS.SUCCEED }
+    } catch (e) {
+        alert('❌ อัปเดต status ไม่สำเร็จ')
+    }
+}
+
+// deleteCase — ยิง API จริง
+const deleteCase = async (id) => {
+    if (!confirm('ยืนยันการลบเคสนี้?')) return
+    try {
+        await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/bookings/${id}`, {
+            method: 'DELETE'
+        })
+        bookings.value = bookings.value.filter(item => item.id !== id)
+    } catch (e) {
+        alert('❌ ลบไม่สำเร็จ')
+    }
+}
+
+// clearSucceedCases — ลบทีละตัวผ่าน API
+const clearSucceedCases = async () => {
+    if (!confirm('ล้างประวัติทั้งหมด?')) return
+    const succeedIds = bookings.value.filter(b => b.status === 'Succeed').map(b => b.id)
+    await Promise.all(succeedIds.map(id =>
+        fetch(`https://or-room-backend.rockzee2018.workers.dev/api/bookings/${id}`, { method: 'DELETE' })
+    ))
+    bookings.value = bookings.value.filter(b => b.status !== 'Succeed')
+}
 
 // ================= computed =================
 
@@ -339,36 +363,7 @@ const succeedCases = computed(() =>
     )
 )
 
-// ================= localStorage =================
-const saveToStorage = () => {
-    localStorage.setItem('bookings', JSON.stringify(bookings.value))
-}
-
-// ================= actions =================
-
-// 🔥 ลบเคส (มี confirm)
-const deleteCase = (id) => {
-    const confirmDelete = confirm('ยืนยันการลบเคสนี้?')
-    if (!confirmDelete) return
-
-    bookings.value = bookings.value.filter(item => item.id !== id)
-    saveToStorage()
-}
-
-// 🔥 เปลี่ยนสถานะเป็น Succeed แล้วสลับแท็บทันที
-const markAsSucceed = (id) => {
-    const target = bookings.value.find(item => item.id === id)
-
-    if (target) {
-        target.status = FILTERS.SUCCEED
-        saveToStorage()
-
-        // 🔥 สลับไปแท็บ Succeed เลย
-        filter.value = FILTERS.SUCCEED
-    }
-}
-
-// ================= modal / drawer เดิม =================
+// ================= modal / drawer =================
 const isDrawerOpen = ref(false)
 const isDayModalOpen = ref(false)
 const isLogoutModalOpen = ref(false)
@@ -377,12 +372,6 @@ const isDeleteAccModalOpen = ref(false)
 const selectedDay = ref('Monday')
 const tempSelectedDay = ref('Monday')
 const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
-
-const openDayModal = () => {
-    isDrawerOpen.value = false
-    tempSelectedDay.value = selectedDay.value
-    isDayModalOpen.value = true
-}
 
 const confirmDayChange = () => {
     selectedDay.value = tempSelectedDay.value
@@ -396,18 +385,18 @@ const closeAllOverlays = () => {
     isDeleteAccModalOpen.value = false
 }
 
+const goAddPatient = () => {
+    isDrawerOpen.value = false
+    router.push({ name: 'admin-add-patient' })
+}
+
 const goToCalendar = () => {
     isDrawerOpen.value = false
     router.push('/calendar')
 }
 
-const goAddPatient = () => {
-    isDrawerOpen.value = false
-    router.push({ name: 'admin-add-patient' })
-}
 const handleLogout = () => {
-    localStorage.removeItem('isLoggedIn')
-    localStorage.removeItem('userLicense')
+    localStorage.clear()
     router.push('/login')
 }
 
@@ -416,7 +405,6 @@ const handleDeleteAccount = () => {
     router.push('/login')
 }
 
-// ===== Case Detail Modal =====
 const isDetailModalOpen = ref(false)
 const selectedCase = ref(null)
 
@@ -425,25 +413,7 @@ const openCaseDetail = (item) => {
     isDetailModalOpen.value = true
 }
 
-const closeDetailModal = () => {
-    isDetailModalOpen.value = false
-}
 
-// ==========ลบ===================
-const clearSucceedCases = () => {
-
-    const confirmClear = confirm("Are you sure you want to clear all succeeded cases?")
-    if (!confirmClear) return
-
-    const existing = JSON.parse(localStorage.getItem('bookings')) || []
-
-    // 🔥 ลบเฉพาะ status = Succeed
-    const filtered = existing.filter(item => item.status !== 'Succeed')
-
-    localStorage.setItem('bookings', JSON.stringify(filtered))
-
-    bookings.value = filtered
-}
 </script>
 
 
@@ -565,7 +535,24 @@ const clearSucceedCases = () => {
     cursor: pointer;
 }
 
-/* --- Main Dashboard Content (UI อัปเดตใหม่) --- */
+.nav-calendar-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,255,255,0.18);
+    border: 1.5px solid rgba(255,255,255,0.35);
+    color: white;
+    padding: 7px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-left: auto;
+    margin-right: 10px;
+    transition: background 0.2s;
+}
+.nav-calendar-btn:hover { background: rgba(255,255,255,0.28); }
+
 .dashboard-container {
     padding: 20px;
     flex-grow: 1;
@@ -1162,5 +1149,27 @@ const clearSucceedCases = () => {
 
 .clear-btn:hover {
     background-color: #ffd500;
+}
+
+.floating-add-btn {
+    position: fixed;
+    bottom: 35px;
+    right: 35px;
+    background: #1a3a5f;
+    color: white;
+    border: none;
+    padding: 14px 24px;
+    border-radius: 50px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+    z-index: 100;
+    transition: 0.2s ease;
+}
+
+.floating-add-btn:hover {
+    background: #244b7a;
+    transform: translateY(-3px);
 }
 </style>

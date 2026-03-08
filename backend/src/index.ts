@@ -168,4 +168,14 @@ app.delete('/api/users/:license', async (c) => {
   }
 })
 
+// GET ดึงรายชื่อหมอทั้งหมด (สำหรับ Admin)
+app.get('/api/users', async (c) => {
+  try {
+    const { results } = await c.env.DB.prepare('SELECT license, doctorName, day, role FROM users').all()
+    return c.json(results)
+  } catch (e) {
+    return c.json({ error: 'DB Fetch Error' }, 500)
+  }
+})
+
 export default app

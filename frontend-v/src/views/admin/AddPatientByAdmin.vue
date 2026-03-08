@@ -20,7 +20,6 @@
                         <div class="user-meta">
                             <span class="drawer-license">{{ userLicense }}</span>
                             <span class="drawer-day">Admin</span>
-
                         </div>
                     </div>
                 </div>
@@ -29,13 +28,25 @@
                         <span class="material-icons">home</span>
                         <span class="menu-text">Home</span>
                     </div>
-
-                    <div class="menu-item" @click="goToAddPatient">
+                    <div class="menu-item" @click="isDrawerOpen = false">
                         <span class="material-icons">person_add</span>
                         <span class="menu-text">Add Patient</span>
                     </div>
                 </nav>
             </aside>
+        </Transition>
+
+        <!-- LOGOUT MODAL -->
+        <Transition name="fade">
+            <div v-if="isLogoutModalOpen" class="modal-overlay-center">
+                <div class="white-modal-card">
+                    <h2 class="modal-msg-title">Are you sure you want to log out?</h2>
+                    <div class="modal-button-group">
+                        <button class="btn-cancel-blue" @click="isLogoutModalOpen = false">Cancel</button>
+                        <button class="btn-confirm-green" @click="handleLogout">Confirm</button>
+                    </div>
+                </div>
+            </div>
         </Transition>
 
         <!-- TOP BAR -->
@@ -47,7 +58,7 @@
                             d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10s10-4.48 10-10S17.52 2 12 2m0 4c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6m0 14c-2.03 0-4.43-.82-6.14-2.88a9.947 9.947 0 0 1 12.28 0C16.43 19.18 14.03 20 12 20" />
                     </svg>
                 </div>
-                <span class="license-text">Admin</span>
+                <span class="license-text">{{ userLicense }}</span>
             </div>
             <button class="logout-btn" @click="isLogoutModalOpen = true">
                 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24">
@@ -56,7 +67,6 @@
                 </svg>
             </button>
         </header>
-
 
         <!-- PAGE CONTENT -->
         <div class="dashboard-container">
@@ -68,16 +78,26 @@
 
             <div class="grid-4">
                 <input type="text" placeholder="Full Name" v-model="form.fullName" />
-                <input type="text" placeholder="HN Number" v-model="form.hn" />
+
+                <!-- HN + autofill -->
+                <div style="position: relative;">
+                    <input type="text" placeholder="HN Number" v-model="form.hn" @blur="lookupHN" />
+                    <span v-if="hnStatus === 'loading'"
+                        style="position:absolute;right:10px;top:14px;font-size:11px;color:#888">⏳</span>
+                    <span v-if="hnStatus === 'found'"
+                        style="position:absolute;right:10px;top:14px;font-size:11px;color:#2e7d32">✅ พบข้อมูล</span>
+                    <span v-if="hnStatus === 'notfound'"
+                        style="position:absolute;right:10px;top:14px;font-size:11px;color:#888">👤 ใหม่</span>
+                </div>
+
                 <input type="number" placeholder="Age" v-model="form.age" />
 
                 <select v-model="form.gender">
                     <option value="">Select Gender</option>
-                    <option>Male</option>
-                    <option>Female</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
                 </select>
             </div>
-
 
             <!-- Medical History -->
             <h3 class="section-title">Medical History</h3>
@@ -85,7 +105,6 @@
             <div class="grid-3">
                 <input type="text" placeholder="Underlying Disease" v-model="form.disease" />
                 <input type="text" placeholder="Drug Allergy" v-model="form.allergy" />
-
                 <select v-model="form.bloodType">
                     <option value="">Select Blood Type</option>
                     <option>A</option>
@@ -97,32 +116,64 @@
 
             <textarea rows="4" placeholder="Additional Notes" v-model="form.notes"></textarea>
 
+            <!-- NPO Risk & Infection -->
+            <div class="checkbox-group">
+                <label class="checkbox-item" :class="{ 'checked-npo': form.isNpoRisk }">
+                    <input type="checkbox" v-model="form.isNpoRisk" />
+                    <span>🍼 NPO Risk</span>
+                </label>
+                <label class="checkbox-item" :class="{ 'checked-inf': form.isInfected }">
+                    <input type="checkbox" v-model="form.isInfected" />
+                    <span>🦠 Infection Risk</span>
+                </label>
+            </div>
 
             <!-- Surgery Detail -->
             <h3 class="section-title">Surgery Detail</h3>
 
-            <div class="grid-4"> <input type="text" placeholder="Doctor License (5 digits)" v-model="form.license" />
-                <input type="text" placeholder="Doctor Name" v-model="form.doctor" />
+            <div class="grid-4">
+                <!-- Dropdown หมอดึงจาก Cloudflare -->
+                <select v-model="form.doctorLicense">
+                    <option value="">Select Doctor</option>
+                    <option v-for="doc in doctors" :key="doc.license" :value="doc.license">
+                        {{ doc.doctorName }} ({{ doc.license }})
+                    </option>
+                </select>
+
+                <!-- Urgency -->
+                <select v-model="form.urgency">
+                    <option value="Normal">🟢 Normal</option>
+                    <option value="Urgent">🟡 Urgent</option>
+                    <option value="Emergency">🔴 Emergency</option>
+                </select>
+
+                <!-- OR Room -->
                 <select v-model="form.room">
                     <option value="">Select Operating Room</option>
                     <option>OR-1</option>
                     <option>OR-2</option>
                     <option>OR-3</option>
                 </select>
-                <input type="date" v-model="form.date" />
+
+                <!-- Date -->
+                <input type="date" v-model="form.date" @change="checkValidDate" />
             </div>
 
             <div class="form-row-single">
-                <select class="input-field" v-model="form.procedure">
+                <select class="input-field" v-model="form.procedure" @change="checkValidDate">
                     <option value="">Select Proposed Procedure</option>
-                    <option value="LC">LC (120 min)</option>
-                    <option value="MRM">MRM (90 min)</option>
-                    <option value="Thyroidectomy">Thyroidectomy (90 min)</option>
-                    <option value="Herniorrhaphy">Herniorrhaphy (40 min)</option>
-                    <option value="LAR">LAR (180 min)</option>
+                    <option value="Appendectomy (ผ่าตัดไส้ติ่ง) - 60 min">Appendectomy (ผ่าตัดไส้ติ่ง) - 60 min</option>
+                    <option value="Laparoscopic Cholecystectomy / LC - 120 min">Laparoscopic Cholecystectomy / LC - 120 min</option>
+                    <option value="Cesarean Section / C-Section - 60 min">Cesarean Section / C-Section - 60 min</option>
+                    <option value="Herniorrhaphy (ผ่าตัดไส้เลื่อน) - 90 min">Herniorrhaphy (ผ่าตัดไส้เลื่อน) - 90 min</option>
+                    <option value="Total Knee Arthroplasty / TKA - 180 min">Total Knee Arthroplasty / TKA - 180 min</option>
+                    <option value="Thyroidectomy (ผ่าตัดต่อมไทรอยด์) - 120 min">Thyroidectomy (ผ่าตัดต่อมไทรอยด์) - 120 min</option>
+                    <option value="Modified Radical Mastectomy / MRM - 120 min">Modified Radical Mastectomy / MRM - 120 min</option>
+                    <option value="Cataract Surgery (ผ่าตัดต้อกระจก) - 30 min">Cataract Surgery (ผ่าตัดต้อกระจก) - 30 min</option>
+                    <option value="Hemorrhoidectomy (ผ่าตัดริดสีดวง) - 45 min">Hemorrhoidectomy (ผ่าตัดริดสีดวง) - 45 min</option>
+                    <option value="Exploratory Laparotomy (เปิดช่องท้อง) - 180 min">Exploratory Laparotomy (เปิดช่องท้อง) - 180 min</option>
                 </select>
             </div>
-
 
             <div class="btn-container">
                 <button class="primary-btn" @click="handleSubmit">
@@ -131,123 +182,166 @@
             </div>
 
         </div>
-
     </div>
 </template>
 
-
 <script setup>
-
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
-
 const isDrawerOpen = ref(false)
+const isLogoutModalOpen = ref(false)
+const userLicense = ref('Admin')
+const doctors = ref([])
+const hnStatus = ref('') // '', 'loading', 'found', 'notfound'
+
+// ดึงรายชื่อหมอจาก Cloudflare
+onMounted(async () => {
+    userLicense.value = localStorage.getItem('userLicense') || 'Admin'
+    try {
+        const res = await fetch('https://or-room-backend.rockzee2018.workers.dev/api/users')
+        const data = await res.json()
+        doctors.value = Array.isArray(data) ? data.filter(u => u.role !== 'admin') : []
+    } catch (e) {
+        console.error('ดึงรายชื่อหมอไม่สำเร็จ', e)
+    }
+})
+
+const form = reactive({
+    fullName: '', hn: '', age: '', gender: '',
+    disease: '', allergy: '', bloodType: '',
+    notes: '', doctorLicense: '', room: '',
+    date: '', procedure: '', urgency: 'Normal',
+    isNpoRisk: false, isInfected: false
+})
+
+// autofill ข้อมูลผู้ป่วยเก่าจาก HN
+const lookupHN = async () => {
+    if (form.hn.length < 3) return
+    hnStatus.value = 'loading'
+    try {
+        const res = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/patients/${form.hn}`)
+        if (res.ok) {
+            const p = await res.json()
+            form.fullName = p.fullName
+            form.gender = p.gender
+            form.disease = p.underlying || ''
+            hnStatus.value = 'found'
+        } else {
+            hnStatus.value = 'notfound'
+        }
+    } catch (e) {
+        hnStatus.value = 'notfound'
+    }
+}
+
+// เช็ค 7 ชั่วโมง (420 นาที) รวมทุกหมอ
+const checkValidDate = async () => {
+    if (!form.date || !form.procedure) return
+    try {
+        const res = await fetch('https://or-room-backend.rockzee2018.workers.dev/api/bookings')
+        const allBookings = await res.json()
+        const sameDayBookings = allBookings.filter(b => b.date === form.date && b.status !== 'Succeed')
+        const usedMinutes = sameDayBookings.reduce((sum, b) => {
+            const match = b.procedure?.match(/(\d+)\s*min/)
+            return sum + (match ? parseInt(match[1]) : 0)
+        }, 0)
+        const match = form.procedure?.match(/(\d+)\s*min/)
+        const newProcMin = match ? parseInt(match[1]) : 0
+        if (usedMinutes + newProcMin > 420) {
+            const remaining = 420 - usedMinutes
+            alert(`❌ วันที่ ${form.date} มีเวลาเหลือแค่ ${remaining} นาที\nแต่ procedure นี้ใช้ ${newProcMin} นาที\nกรุณาเลือกวันอื่น`)
+            form.date = ''
+        }
+    } catch(e) {
+        console.error('เช็คความจุไม่สำเร็จ', e)
+    }
+}
+
+const handleSubmit = async () => {
+    if (!form.fullName || !form.hn || !form.doctorLicense || !form.date || !form.procedure) {
+        alert('กรุณากรอกข้อมูลให้ครบ (ชื่อ, HN, หมอ, วันที่, และหัตถการ)')
+        return
+    }
+    try {
+        const res = await fetch('https://or-room-backend.rockzee2018.workers.dev/api/bookings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                hn: form.hn,
+                fullName: form.fullName,
+                dob: '',
+                age: form.age,
+                gender: form.gender,
+                procedure: form.procedure,
+                date: form.date,
+                urgency: form.urgency,
+                isNpoRisk: form.isNpoRisk,
+                isInfected: form.isInfected,
+                underlying: form.disease,
+                notes: form.notes,
+                doctorLicense: form.doctorLicense
+            })
+        })
+        if (!res.ok) throw new Error()
+        alert('✅ เพิ่มคิวสำเร็จ')
+        router.push('/admin-home')
+    } catch (e) {
+        alert('❌ เพิ่มคิวไม่สำเร็จ')
+    }
+}
 
 const goHome = () => {
+    isDrawerOpen.value = false
     router.push('/admin-home')
 }
 
-const form = reactive({
-    fullName: '',
-    hn: '',
-    age: '',
-    gender: '',
-    disease: '',
-    allergy: '',
-    bloodType: '',
-    notes: '',
-    license: '',
-    doctor: '',
-    room: '',
-    date: '',
-    procedure: ''
-})
-
-const handleSubmit = () => {
-
-    if (!form.fullName || !form.hn) {
-        alert("Please fill patient information")
-        return
-    }
-
-    const newCase = {
-        id: Date.now(),
-        date: form.date,
-        room: form.room,
-        patientName: form.fullName,
-        doctor: form.doctor,
-        procedure: form.procedure,
-        hn: form.hn,
-        fullName: form.fullName,
-        age: form.age,
-        gender: form.gender,
-        underlying: form.disease,
-        notes: form.notes,
-        status: 'Upcoming'
-    }
-
-    const existingCases = JSON.parse(localStorage.getItem('bookings')) || []
-
-    existingCases.push(newCase)
-
-    localStorage.setItem('bookings', JSON.stringify(existingCases))
-
-    alert("Queue added successfully")
-
-    router.push('/admin-home')
+const handleLogout = () => {
+    localStorage.clear()
+    router.push('/login')
 }
 </script>
 
-
-
-
-
-
-
-
-
-
-
 <style scoped>
-/* ===== Layout ===== */
-.form-section {
-    margin-bottom: 28px;
-}
-
-textarea {
-    margin-top: 20px;
-    margin-bottom: 10px;
-}
-
-.main-layout {
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-    background: #eef2f7;
-}
-
-/* ===== TOP NAVBAR ===== */
+@import url('https://fonts.googleapis.com/icon?family=Material+Icons');
 
 .main-layout {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
     background-color: #f5f7fa;
-    /* พื้นหลังเทาอ่อนเพื่อให้การ์ดเด่น */
 }
 
-/* --- สี Navy Blue สำหรับ Top Nav & Drawer --- */
 .top-nav,
 .drawer-header {
-    background-color: #1a3a5f !important;
-    /* Navy Blue */
+    background-color: #1a3a5f;
     height: 80px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 0 20px;
+}
+
+.side-drawer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    height: 100vh;
+    background-color: #ffffff;
+    z-index: 3000;
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1);
+}
+
+.drawer-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 2500;
 }
 
 .drawer-user-info {
@@ -257,28 +351,41 @@ textarea {
     color: white;
 }
 
-.user-group {
+.user-meta {
     display: flex;
-    align-items: center;
-    gap: 10px;
-    cursor: pointer;
-    color: white;
-    flex-wrap: nowrap;
-    /* บังคับไม่ให้ขึ้นบรรทัดใหม่ */
+    flex-direction: column;
 }
 
+.drawer-license {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
 
-/* --- Side Drawer (คงของเดิมแต่เปลี่ยนสี) --- */
-.side-drawer {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 280px;
-    height: 100vh;
-    background-color: #ffffff;
-    /* เปลี่ยนเป็นสีขาวให้ดูสะอาดตา หรือตามชอบ */
-    z-index: 3000;
-    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1);
+.drawer-day {
+    font-size: 0.8rem;
+    opacity: 0.8;
+}
+
+.drawer-menu {
+    padding: 15px 0;
+}
+
+.menu-item {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 15px 25px;
+    color: #4a6fa5;
+    cursor: pointer;
+}
+
+.menu-item:hover {
+    background-color: #e6effa;
+}
+
+.menu-text {
+    font-size: 15px;
+    font-weight: 500;
 }
 
 .avatar-circle {
@@ -297,100 +404,63 @@ textarea {
     border-width: 1px;
 }
 
+.user-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    color: white;
+}
 
 .license-text {
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 500;
+    color: white;
 }
 
-/* ===== PAGE CONTENT ===== */
+.logout-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+}
 
+/* PAGE CONTENT */
 .dashboard-container {
     padding: 40px 60px;
-    max-width: 1400px;
-    margin: auto;
+    max-width: 1200px;
+    margin: 0 auto;
     width: 100%;
+    box-sizing: border-box;
 }
-
-/* ===== TITLE ===== */
 
 .page-title {
     font-size: 26px;
     font-weight: 600;
-    margin-bottom: 30px;
+    margin-bottom: 10px;
     color: #1f3a66;
 }
 
 .section-title {
     font-size: 18px;
     font-weight: 600;
-    margin-top: 30px;
-    margin-bottom: 14px;
+    margin-top: 40px;
+    margin-bottom: 20px;
     color: #1f3a66;
 }
-
-/* ===== GRID LAYOUT ===== */
-
-/* ===== GRID LAYOUT (ปรับระยะห่างให้กว้างขึ้นอีก) ===== */
 
 .grid-4 {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 40px;
-    /* เพิ่มเป็น 40px เพื่อให้กล่องห่างกันชัดเจน */
+    gap: 20px;
 }
 
 .grid-3 {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 40px;
-    /* เพิ่มเป็น 40px */
+    gap: 20px;
 }
-
-.grid-5 {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 30px;
-    /* เพิ่มเป็น 30px (เนื่องจากช่องเยอะ ถ้าห่างเกินไปกล่องจะแคบมากครับ) */
-}
-
-/* ปรับระยะห่างระหว่าง Section ให้โดดเด่นขึ้น */
-.section-title {
-    font-size: 18px;
-    font-weight: 600;
-    margin-top: 50px;
-    /* เว้นที่ว่างด้านบนหัวข้อเพิ่มขึ้น */
-    margin-bottom: 25px;
-    /* เว้นระยะก่อนเริ่มกล่อง input */
-    color: #1f3a66;
-}
-
-/* เพิ่มระยะห่างให้กล่องหมายเหตุ (Additional Notes) */
-textarea {
-    margin-top: 30px;
-    /* ให้ห่างจากแถว Underlying Disease/Drug Allergy */
-    width: 100%;
-    box-sizing: border-box;
-}
-
-/* เพิ่มระยะห่างให้หัวข้อ Section จะได้ไม่ติดกับกล่องข้างบน */
-.section-title {
-    font-size: 18px;
-    font-weight: 600;
-    margin-top: 40px;
-    /* เพิ่มระยะห่างด้านบนหัวข้อ */
-    margin-bottom: 20px;
-    /* ระยะห่างก่อนถึงกล่อง input */
-    color: #1f3a66;
-}
-
-/* ทำให้ textarea มีระยะห่างจากกล่องด้านบนชัดเจน */
-textarea {
-    margin-top: 25px;
-    resize: none;
-}
-
-/* ===== INPUT ===== */
 
 input,
 select,
@@ -402,16 +472,7 @@ textarea {
     font-size: 14px;
     background: white;
     transition: 0.2s;
-}
-
-input[type="date"] {
     box-sizing: border-box;
-    width: 100%;
-    max-width: 100%;
-}
-
-.input-field {
-    margin-top: 10px;
 }
 
 input:focus,
@@ -423,16 +484,68 @@ textarea:focus {
 }
 
 textarea {
-    margin-top: 30px;
+    margin-top: 25px;
     resize: none;
+    width: 100%;
 }
 
-/* ===== BUTTON ===== */
+.input-field {
+    margin-top: 10px;
+}
+
+.checkbox-group {
+    display: flex;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: 10px;
+    border: 2px solid #d7dde7;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: #555;
+    background: white;
+    transition: 0.2s;
+    user-select: none;
+}
+
+.checkbox-item input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+    border: none;
+    box-shadow: none;
+}
+
+.checkbox-item:hover {
+    border-color: #1f3a66;
+}
+
+.checked-npo {
+    border-color: #f9a825;
+    background: #fffde7;
+    color: #f57f17;
+}
+
+.checked-inf {
+    border-color: #e53935;
+    background: #fce4ec;
+    color: #c62828;
+}
 
 .btn-container {
     display: flex;
     justify-content: flex-end;
     margin-top: 30px;
+    margin-bottom: 40px;
 }
 
 .primary-btn {
@@ -451,155 +564,76 @@ textarea {
     background: #162c4d;
 }
 
-/* ===== RESPONSIVE ===== */
-
-@media (max-width:1200px) {
-    .grid-5 {
-        grid-template-columns: repeat(3, 1fr);
-    }
-}
-
-@media (max-width:900px) {
-
-    .grid-4,
-    .grid-3,
-    .grid-5 {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
-
-@media (max-width:600px) {
-
-    .dashboard-container {
-        padding: 25px 18px;
-    }
-
-    .grid-4,
-    .grid-3,
-    .grid-5 {
-        grid-template-columns: 1fr;
-    }
-
-    .btn-container {
-        justify-content: center;
-    }
-
-}
-
-/* SIDEBAR */
-
-.sidebar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 250px;
-    height: 100%;
-    background: #1f3a5f;
-    z-index: 1000;
-}
-
-.overlay {
+/* MODAL */
+.modal-overlay-center {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.3);
-    z-index: 900;
-}
-
-/* header */
-
-.sidebar-header {
-    background: #1f3a66;
-    color: white;
-    padding: 22px;
     display: flex;
-    align-items: center;
-    gap: 14px;
-}
-
-.avatar {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    border: 2px solid white;
-    display: flex;
-    align-items: center;
     justify-content: center;
-}
-
-.user-info .license {
-    font-size: 18px;
-    font-weight: 600;
-}
-
-.user-info .role {
-    font-size: 14px;
-    opacity: .8;
-}
-
-/* menu */
-
-.menu {
-    margin-top: 10px;
-}
-
-.menu-item {
-    display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 16px 22px;
-    color: #3f5e8c;
+    z-index: 4000;
+    background: rgba(0, 0, 0, 0.4);
+}
+
+.white-modal-card {
+    background: white;
+    width: 90%;
+    max-width: 320px;
+    padding: 30px 20px;
+    border-radius: 24px;
+    text-align: center;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.modal-msg-title {
+    color: #2c4c87;
+    font-size: 1.1rem;
+    margin-bottom: 25px;
+}
+
+.modal-button-group {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+}
+
+.btn-confirm-green {
+    background-color: #03c172;
+    color: white;
+    border: none;
+    padding: 10px 25px;
+    border-radius: 12px;
+    font-weight: bold;
     cursor: pointer;
-    font-size: 16px;
 }
 
-.menu-item:hover {
-    background: #cdd3db;
+.btn-cancel-blue {
+    background-color: #6a92d4;
+    color: white;
+    border: none;
+    padding: 10px 25px;
+    border-radius: 12px;
+    font-weight: bold;
+    cursor: pointer;
 }
 
-.dashboard-container {
-    padding: 40px 60px;
-    max-width: 1200px;
-    /* ปรับให้พอดีสายตา */
-    margin: 0 auto;
-    /* จัดกึ่งกลางหน้าจอเสมอ */
-    width: 100%;
-    box-sizing: border-box;
-    /* ป้องกันกล่องขยายเกินหน้าจอ */
-}
-
-.drawer-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.3);
-    z-index: 5;
-}
-
-/* slide animation */
-
+/* TRANSITIONS */
 .slide-enter-active,
 .slide-leave-active {
-    transition: transform .3s ease;
+    transition: transform 0.3s ease;
 }
 
-.slide-enter-from {
-    transform: translateX(-100%);
-}
-
+.slide-enter-from,
 .slide-leave-to {
     transform: translateX(-100%);
 }
 
-/* fade overlay */
-
 .fade-enter-active,
 .fade-leave-active {
-    transition: opacity .2s;
+    transition: opacity 0.2s;
 }
 
 .fade-enter-from,
@@ -607,50 +641,26 @@ textarea {
     opacity: 0;
 }
 
-.logout-btn {
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
+/* RESPONSIVE */
+@media (max-width: 900px) {
+    .grid-4,
+    .grid-3 {
+        grid-template-columns: repeat(2, 1fr);
+    }
 }
 
-.surgery-form {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 16px;
-}
+@media (max-width: 600px) {
+    .dashboard-container {
+        padding: 25px 18px;
+    }
 
-.surgery-form input,
-.surgery-form select {
-    width: 100%;
-    padding: 12px 14px;
-    border-radius: 10px;
-    border: 1px solid #d1d5db;
-    font-size: 14px;
-}
+    .grid-4,
+    .grid-3 {
+        grid-template-columns: 1fr;
+    }
 
-.procedure-field {
-    grid-column: span 3;
-}
-
-.form-actions {
-    display: flex;
-    justify-content: flex-end;
-    margin-top: 20px;
-}
-
-.add-btn {
-    background: #243f66;
-    color: white;
-    padding: 10px 24px;
-    border-radius: 10px;
-    border: none;
-    font-size: 14px;
-    cursor: pointer;
-}
-
-.add-btn:hover {
-    background: #1b3152;
+    .btn-container {
+        justify-content: center;
+    }
 }
 </style>

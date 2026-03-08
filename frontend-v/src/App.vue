@@ -127,7 +127,11 @@ const showLayout = computed(() => {
     '/signup', 
     '/forgot-password', 
     '/admin-login',
-    '/booking'
+    '/booking',
+    '/admin-home',
+    '/admin-calendar',
+    '/admin-add-patient',
+    '/choose-doctor'
   ]
   return !hiddenPages.includes(route.path)
 })
