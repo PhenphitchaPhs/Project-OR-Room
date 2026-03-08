@@ -1,78 +1,66 @@
 <template>
     <div class="calendar-page">
+
+        <!-- NAVBAR -->
         <header class="calendar-navbar">
             <div class="nav-left"></div>
             <div class="nav-center">
-                <div class="header-info">
-                    <h2 class="month-label">{{ monthNames[currentMonth] }}</h2>
-                    <span class="year-label">{{ currentYear + 543 }}</span>
-                </div>
+                <button class="ctrl-btn" @click="changeMonth(-1)">‹</button>
+                <div class="month-label">{{ monthNames[currentMonth] }} {{ currentYear + 543 }}</div>
+                <button class="ctrl-btn" @click="changeMonth(1)">›</button>
             </div>
             <div class="nav-right">
-                <button @click="goToToday" class="today-btn">Today</button>
-                <div class="nav-arrows">
-                    <button @click="changeMonth(-1)" class="arrow-btn">
-                        <Icon icon="lucide:chevron-left" />
-                    </button>
-                    <button @click="changeMonth(1)" class="arrow-btn">
-                        <Icon icon="lucide:chevron-right" />
-                    </button>
-                </div>
+                <button class="today-btn" @click="goToToday">Today</button>
             </div>
         </header>
 
-        <div class="month-container">
-            <div class="weekday-grid">
-                <div v-for="day in weekDaysFull" :key="day" class="weekday-item"
-                    :class="{ 'sun': day === 'Sunday' || day === 'Saturday' }">
-                    {{ day }}
-                </div>
-            </div>
-
-            <div class="days-grid">
-                <div v-for="(date, index) in calendarDays" :key="index" class="date-box"
-                    :class="{ 'dimmed': !date.isCurrentMonth }"
-                    @click="handleDateClick(date)">
-                    <div class="box-top">
-                        <span class="box-number" :class="{
-                            'holiday': isOfficialHoliday(date.fullDate) || date.dayOfWeek === 0 || date.dayOfWeek === 6,
-                            'today-circle-large': date.fullDate === todayStr
-                        }">
-                            {{ date.dayNumber }}
-                        </span>
-                    </div>
-                    <div class="box-content">
-                        <div v-if="isOfficialHoliday(date.fullDate) && date.dayNumber" class="strip holiday-bg">
-                            {{ getHolidayName(date.fullDate) }}
-                        </div>
-                        <div v-for="b in getBookingsForDate(date.fullDate)" :key="b.id"
-                            class="strip"
-                            :style="{ background: urgencyColor(b.urgency) }"
-                            @click.stop="handleDateClick(date)">
-                            {{ b.fullName }}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <button class="fab-btn" @click="goToBooking">
-                <Icon icon="lucide:plus" width="32" height="32" color="#1a3a5f" />
-            </button>
+        <!-- WEEKDAY HEADERS -->
+        <div class="weekday-row">
+            <div v-for="d in ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']" :key="d" class="weekday-cell"
+                :class="{ 'weekend-label': d === 'Sun' || d === 'Sat' }">{{ d }}</div>
         </div>
 
+        <!-- CALENDAR GRID -->
+        <div class="calendar-grid">
+            <div
+                v-for="(date, i) in calendarDays"
+                :key="i"
+                class="day-cell"
+                :class="{
+                    'empty-cell': !date.isCurrentMonth,
+                    'today-cell': date.fullDate === todayStr,
+                    'weekend-cell': date.isCurrentMonth && (date.dayOfWeek === 0 || date.dayOfWeek === 6),
+                    'holiday-cell': date.isCurrentMonth && isOfficialHoliday(date.fullDate),
+                    'has-booking': date.isCurrentMonth && hasBooking(date.fullDate)
+                }"
+                @click="date.isCurrentMonth && handleDateClick(date)"
+            >
+                <span class="day-number" :class="{ 'today-circle': date.fullDate === todayStr }">{{ date.dayNumber }}</span>
+                <span v-if="date.isCurrentMonth && isOfficialHoliday(date.fullDate)" class="holiday-tag">{{ getHolidayName(date.fullDate) }}</span>
+                <div class="dot-row">
+                    <span
+                        v-for="b in getBookingsForDate(date.fullDate).slice(0,3)"
+                        :key="b.id"
+                        class="dot"
+                        :style="{ background: urgencyColor(b.urgency) }"
+                    ></span>
+                    <span v-if="getBookingsForDate(date.fullDate).length > 3" class="more-count">+{{ getBookingsForDate(date.fullDate).length - 3 }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- DETAIL POPUP -->
         <Transition name="fade">
             <div v-if="isDetailPopupOpen" class="overlay-modal" @click.self="isDetailPopupOpen = false">
                 <div class="card-modal">
                     <h3 class="modal-title">📅 {{ formatDateThai(selectedFullDate) }}</h3>
                     <div v-for="b in selectedDateBookings" :key="b.id" class="booking-item">
-                        <div class="booking-badge" :style="{ background: urgencyColor(b.urgency) }">
-                            {{ b.urgency }}
-                        </div>
+                        <div class="booking-badge" :style="{ background: urgencyColor(b.urgency) }">{{ b.urgency }}</div>
                         <p><strong>Patient:</strong> {{ b.fullName }}</p>
                         <p><strong>HN:</strong> {{ b.hn }}</p>
                         <p><strong>Procedure:</strong> {{ b.procedure }}</p>
-                        <p v-if="b.isNpoRisk"><strong>🍼 NPO Risk</strong></p>
-                        <p v-if="b.isInfected"><strong>🦠 Infection</strong></p>
+                        <p v-if="b.isNpoRisk">🍼 <strong>NPO Risk</strong></p>
+                        <p v-if="b.isInfected">🦠 <strong>Infection Risk</strong></p>
                         <hr style="border-color:#eee; margin: 8px 0" />
                     </div>
                     <div class="actions">
@@ -82,6 +70,14 @@
                 </div>
             </div>
         </Transition>
+
+        <!-- FAB -->
+        <button class="fab-btn" @click="goToBooking">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24">
+                <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6z"/>
+            </svg>
+        </button>
+
     </div>
 </template>
 
@@ -189,182 +185,224 @@ const formatDateThai = (d) => {
 </script>
 
 <style scoped>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
 .calendar-page {
-    height: 100vh;
+    min-height: 100vh;
     display: flex;
     flex-direction: column;
     background: #f4f7f9;
+    font-family: 'Segoe UI', sans-serif;
 }
 
+/* NAVBAR */
 .calendar-navbar {
     background: linear-gradient(135deg, #174983, #1a3a5f);
-    height: 85px;
-    padding: 0 30px;
+    height: 70px;
+    padding: 0 20px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    
-    /* 🔴 อัปเดต: เพิ่ม 2 บรรทัดนี้เข้าไป เพื่อให้ Navbar ถอยลงไปอยู่ใต้ไอคอน App.vue */
-    position: relative;
-    z-index: 10; 
 }
+.nav-left { width: 40px; }
+.nav-center { display: flex; align-items: center; gap: 12px; flex: 1; justify-content: center; }
+.nav-right { width: 80px; display: flex; justify-content: flex-end; }
 
-.arrow-btn {
-    width: 42px;
-    height: 42px;
-    border-radius: 50%;
+.ctrl-btn {
+    background: rgba(255,255,255,0.2);
     border: none;
-    background: rgb(255, 255, 255);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.nav-arrows { display: flex; flex-direction: row; gap: 8px; align-items: center; }
-.nav-left, .nav-right { display: flex; align-items: center; justify-content: flex-end; gap: 12px; }
-.nav-center { flex: 2; display: flex; justify-content: center; }
-
-/* 🔥 ดันเลเยอร์ปุ่มและข้อความขึ้นมาให้ลอยเหนือ App.vue จะได้กดได้ */
-.nav-center, 
-.nav-right {
-    position: relative;
-    z-index: 100; 
-}
-
-.nav-right { justify-content: flex-end; gap: 12px; }
-.month-label { font-size: 1.4rem; margin: 0; color: white; }
-.year-label { color: white; }
-
-.today-btn {
-    background: rgba(255, 255, 255, 0.2);
-    color: white;
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    padding: 5px 15px;
-    border-radius: 6px;
-    cursor: pointer;
-}
-
-.month-container {
-    margin: 15px;
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-    background: white;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-    border: 1px solid #5284af;
-}
-
-.weekday-grid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    background: #ffffff;
-    border-bottom: 1px solid #eee;
-}
-
-.weekday-item {
-    padding: 12px;
-    text-align: center;
-    font-size: 0.75rem;
-    font-weight: bold;
-    color: #777;
-    text-transform: uppercase;
-}
-
-.sun { color: #d9534f; }
-.days-grid { display: grid; grid-template-columns: repeat(7, 1fr); flex-grow: 1; color: #000000; }
-
-.date-box {
-    border-right: 1px solid #eee;
-    border-bottom: 1px solid #eee;
-    min-height: 90px;
-    padding: 5px;
-    cursor: pointer;
-    display: flex;
-    flex-direction: column;
-}
-
-.box-number {
-    font-size: 0.95rem;
     width: 34px;
     height: 34px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.today-circle-large { background: #1a73e8; color: white !important; border-radius: 50%; font-weight: bold; }
-.holiday { color: #d9534f; font-weight: bold; }
-
-.strip {
-    font-size: 0.7rem; 
-    padding: 4px 6px;
-    border-radius: 4px;
-    color: white;
-    margin-top: 3px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.holiday-bg { background: #e57373; }
-.note-bg { background: #56a394; }
-
-.fab-btn {
-    position: fixed;
-    bottom: 35px;
-    right: 35px;
-    background: white;
-    border: 3px solid #1a3a5f;
-    width: 62px;
-    height: 62px;
-    border-radius: 50%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    font-size: 22px;
     cursor: pointer;
-    z-index: 100; /* ดันปุ่มบวกให้ลอยขึ้นมาด้วยเผื่อกดไม่ได้ */
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+.ctrl-btn:hover { background: rgba(255,255,255,0.3); }
+.month-label { font-weight: 700; font-size: 1rem; color: white; }
+.today-btn {
+    background: rgba(255,255,255,0.2);
+    color: white;
+    border: 1.5px solid rgba(255,255,255,0.4);
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    font-weight: 600;
+}
+.today-btn:hover { background: rgba(255,255,255,0.3); }
+
+/* WEEKDAY */
+.weekday-row {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    background: #e8edf5;
+    padding: 6px 0;
+}
+.weekday-cell {
+    text-align: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: #4a6fa5;
+    text-transform: uppercase;
+}
+.weekend-label { color: #c0392b; }
+
+/* GRID */
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    flex: 1;
+    gap: 1px;
+    background: #dde3ea;
+}
+.day-cell {
+    background: white;
+    min-height: 80px;
+    padding: 6px;
+    cursor: pointer;
+    position: relative;
+    transition: background 0.15s;
+}
+.day-cell:hover { background: #f0f5fb; }
+.empty-cell { background: #f8f9fb; cursor: default; }
+.today-cell { background: #e8f0fe; }
+.weekend-cell { background: #fdf8f0; }
+.holiday-cell { background: #fff3e0; }
+.has-booking { border-top: 3px solid #4a6fa5; }
+
+.day-number {
+    font-size: 13px;
+    font-weight: 600;
+    color: #333;
+    display: block;
+}
+.today-circle {
+    background: #1a3a5f;
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+}
+.holiday-tag {
+    display: block;
+    font-size: 9px;
+    color: #e65100;
+    margin-top: 2px;
+    line-height: 1.2;
+}
+.dot-row {
+    display: flex;
+    gap: 3px;
+    margin-top: 4px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+.dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+}
+.more-count {
+    font-size: 9px;
+    color: #666;
+    font-weight: 600;
 }
 
+/* POPUP */
 .overlay-modal {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
+    inset: 0;
+    background: rgba(0,0,0,0.45);
     display: flex;
     justify-content: center;
-    align-items: center;
-    z-index: 999;
+    align-items: flex-end;
+    z-index: 2000;
+    padding-bottom: 20px;
 }
-
 .card-modal {
     background: white;
-    padding: 25px;
-    border-radius: 20px;
-    width: 320px;
-}
-
-.inp {
     width: 100%;
-    margin-bottom: 10px;
-    padding: 10px;
-    border: 1px solid #eee;
+    max-width: 480px;
+    border-radius: 20px 20px 0 0;
+    padding: 24px 20px;
+    max-height: 75vh;
+    overflow-y: auto;
+}
+.modal-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1a3a5f;
+    margin-bottom: 12px;
+}
+.booking-item { margin-bottom: 10px; }
+.booking-item p { font-size: 13px; color: #333; margin: 3px 0; }
+.booking-badge {
+    display: inline-block;
+    color: white;
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+.actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+}
+.btn-fill {
+    flex: 1;
+    background: #1a3a5f;
+    color: white;
+    border: none;
+    padding: 12px;
     border-radius: 10px;
-    box-sizing: border-box;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 14px;
+}
+.btn-clear {
+    flex: 1;
+    background: #f0f4f8;
+    color: #555;
+    border: none;
+    padding: 12px;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 14px;
 }
 
-.btn-fill { background: #2c4c87; color: white; border: none; padding: 8px 20px; border-radius: 10px; cursor: pointer; margin-left: 5%; }
-.btn-del { background: #c2185b; color: white; border: none; padding: 8px 20px; border-radius: 10px; cursor: pointer; }
-.btn-clear { background: none; border: none; color: #999; cursor: pointer; }
+/* FAB */
+.fab-btn {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 56px;
+    height: 56px;
+    background: #1a3a5f;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+    z-index: 100;
+    transition: 0.2s;
+}
+.fab-btn:hover { background: #244b7a; transform: scale(1.08); }
 
-.booking-item { margin-bottom: 8px; font-size: 13px; color: #333; }
-.booking-badge { display: inline-block; color: white; font-size: 11px; padding: 2px 8px; border-radius: 10px; margin-bottom: 4px; font-weight: bold; }
+.fade-enter-active, .fade-leave-active { transition: opacity 0.25s; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
 </style>
-
-/* 🔥 เพิ่ม Transition สำหรับ Popup */
