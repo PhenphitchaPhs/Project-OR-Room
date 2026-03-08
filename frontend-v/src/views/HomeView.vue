@@ -148,8 +148,19 @@
                         </div>
                         
                         <div v-else>
-                            <div v-for="item in upcomingCases" :key="item.id" class="case-card"
-                                @click="toggleDetail(item.id)">
+                            <div class="reset-wrapper">
+                                <button class="btn-reset" @click="resetQueue">
+                                    <span class="material-icons">refresh</span> รีเซ็ตลำดับคิว
+                                </button>
+                            </div>
+
+                            <div v-for="(item, index) in upcomingCases" :key="item.id" 
+                            class="case-card drag-item"
+                            draggable="true"
+                            @dragstart="onDragStart(index, item.id)"
+                            @dragover.prevent
+                            @drop="onDrop(index)"
+                            @click="toggleDetail(item.id)">
 
                                 <div class="case-grid">
 
@@ -297,7 +308,114 @@ const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
 
 const FILTERS = { UPCOMING: 'Upcoming', SUCCEED: 'Succeed' }
 
-// ================= 1. โหลดข้อมูลจาก Backend =================
+// ================= ระบบจัดเรียงคิว (รวม Drag&Drop แบบใหม่) =================
+const sortCases = (arr) => {
+    const urgencyScore = { 'Emergency': 3, 'Urgent': 2, 'Normal': 1 }
+    return [...arr].sort((a, b) => {
+        // Tier 0: เรียงตามวันก่อนเสมอ
+        if (a.date !== b.date) return new Date(a.date) - new Date(b.date)
+        
+        // 🌟 ถ้าผู้ใช้เคยลากคิวจัดลำดับ (queueOrder) ให้ยึดตามที่ผู้ใช้จัดเป็นหลัก!
+        const qA = a.queueOrder || 999
+        const qB = b.queueOrder || 999
+        if (qA !== qB) return qA - qB
+        
+        // ถ้าเป็นคิวใหม่ (ยังไม่เคยลากจัด) ให้ใช้ระบบอัจฉริยะแบบเดิม
+        const urgA = urgencyScore[a.urgency] || 1
+        const urgB = urgencyScore[b.urgency] || 1
+        if (urgA !== urgB) return urgB - urgA
+
+        if (a.urgency !== 'Emergency') {
+            const infA = a.isInfected ? 1 : 0
+            const infB = b.isInfected ? 1 : 0
+            if (infA !== infB) return infA - infB
+
+            const npoA = a.isNpoRisk ? 1 : 0
+            const npoB = b.isNpoRisk ? 1 : 0
+            if (npoA !== npoB) return npoB - npoA
+        }
+
+        const ageA = parseInt(a.age) || 0
+        const ageB = parseInt(b.age) || 0
+        if (ageA !== ageB) return ageB - ageA
+
+        if (a.gender !== b.gender) return a.gender === 'female' ? -1 : 1
+
+        return 0
+    })
+}
+
+// ================= Computed Properties =================
+const upcomingCases = computed(() => sortCases(bookings.value.filter(item => item.status === FILTERS.UPCOMING || !item.status)))
+const succeedCases = computed(() => sortCases(bookings.value.filter(item => item.status === FILTERS.SUCCEED)))
+
+
+// ================= ระบบ Drag & Drop เลื่อนคิว =================
+const draggedIndex = ref(null)
+
+const onDragStart = (index, id) => {
+    draggedIndex.value = index
+}
+
+const onDrop = async (dropIndex) => {
+    if (draggedIndex.value === null || draggedIndex.value === dropIndex) return
+
+    const list = [...upcomingCases.value]
+    const draggedItem = list.splice(draggedIndex.value, 1)[0]
+    list.splice(dropIndex, 0, draggedItem)
+
+    const updates = list.map((item, idx) => {
+        item.queueOrder = idx + 1
+        return { id: item.id, queueOrder: item.queueOrder }
+    })
+
+    list.forEach(item => {
+        const target = bookings.value.find(b => b.id === item.id)
+        if (target) target.queueOrder = item.queueOrder
+    })
+
+    draggedIndex.value = null
+
+    try {
+        await fetch('https://or-room-backend.rockzee2018.workers.dev/api/bookings/reorder', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ updates })
+        })
+    } catch (e) {
+        console.error("❌ อัปเดตคิวไม่สำเร็จ", e)
+    }
+}
+
+// ================= ฟังก์ชันรีเซ็ตคิว =================
+const resetQueue = async () => {
+    if (!confirm('ต้องการรีเซ็ตการเรียงคิว กลับไปใช้ระบบอัตโนมัติหรือไม่?')) return
+
+    // 1. ตั้งค่า queueOrder เป็น 999 ให้หมด
+    const updates = upcomingCases.value.map(item => {
+        return { id: item.id, queueOrder: 999 }
+    })
+
+    // 2. อัปเดต UI ทันที
+    bookings.value.forEach(b => {
+        if (b.status !== FILTERS.SUCCEED) b.queueOrder = 999
+    })
+
+    // 3. บันทึกลงฐานข้อมูล
+    try {
+        await fetch('https://or-room-backend.rockzee2018.workers.dev/api/bookings/reorder', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ updates })
+        })
+        alert('✅ รีเซ็ตการจัดคิวเรียบร้อย!')
+    } catch (e) {
+        console.error("❌ รีเซ็ตคิวไม่สำเร็จ", e)
+    }
+}
+
+
+// ================= โหลดข้อมูลจาก Backend =================
 const fetchUserDay = async (license) => {
     try {
         const response = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/users/${license}`);
@@ -309,7 +427,6 @@ const fetchUserDay = async (license) => {
     } catch (error) { console.error("❌ ดึงวันทำงานไม่สำเร็จ", error); }
 };
 
-// 🟢 อัปเดต: ดึงคิวเฉพาะของหมอที่ล็อกอิน
 const fetchBookings = async () => {
     isLoading.value = true
     try {
@@ -333,10 +450,8 @@ onMounted(() => {
     fetchBookings() 
 })
 
-// ================= 2. ฟังก์ชันเปลี่ยนวัน (ตัวเดียวและตัวจริง!) =================
+// ================= ฟังก์ชันเปลี่ยนวัน =================
 const confirmDayChange = async () => {
-    alert(`กำลังยิง API ไปหา License: ${userLicense.value}\nวันใหม่คือ: ${tempSelectedDay.value}`)
-
     try {
         const response = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/users/${userLicense.value}/day`, {
             method: 'PUT',
@@ -356,44 +471,7 @@ const confirmDayChange = async () => {
     }
 }
 
-// ================= 3. ฟังก์ชันเสริมอื่นๆ =================
-const upcomingCases = computed(() => sortCases(bookings.value.filter(item => item.status === FILTERS.UPCOMING || !item.status)))
-const succeedCases = computed(() => sortCases(bookings.value.filter(item => item.status === FILTERS.SUCCEED)))
-const sortCases = (arr) => {
-    const urgencyScore = { 'Emergency': 3, 'Urgent': 2, 'Normal': 1 }
-    return [...arr].sort((a, b) => {
-        // Tier 0: เรียงตามวันก่อน
-        if (a.date !== b.date) return new Date(a.date) - new Date(b.date)
-        
-        // Tier 1: Emergency > Urgent > Normal
-        const urgA = urgencyScore[a.urgency] || 1
-        const urgB = urgencyScore[b.urgency] || 1
-        if (urgA !== urgB) return urgB - urgA
-
-        // เฉพาะกลุ่ม Urgent/Normal เท่านั้น
-        if (a.urgency !== 'Emergency') {
-            // Tier 3: เคสติดเชื้อไปท้ายสุด
-            const infA = a.isInfected ? 1 : 0
-            const infB = b.isInfected ? 1 : 0
-            if (infA !== infB) return infA - infB
-
-            // Tier 2: NPO Risk พร้อมก่อนได้คิวก่อน
-            const npoA = a.isNpoRisk ? 1 : 0
-            const npoB = b.isNpoRisk ? 1 : 0
-            if (npoA !== npoB) return npoB - npoA
-        }
-
-        // Tier 4: อายุมากสุดได้ก่อน
-        const ageA = parseInt(a.age) || 0
-        const ageB = parseInt(b.age) || 0
-        if (ageA !== ageB) return ageB - ageA
-
-        // Tier 5: เพศหญิงก่อน
-        if (a.gender !== b.gender) return a.gender === 'female' ? -1 : 1
-
-        return 0
-    })
-}
+// ================= ฟังก์ชัน UI อื่นๆ =================
 const toggleDetail = (id) => expandedId.value = expandedId.value === id ? null : id
 const isDrawerOpen = ref(false)
 const isDayModalOpen = ref(false)
@@ -1172,5 +1250,46 @@ input[type="checkbox"] {
     height: 20px !important;
     margin: 0 !important;
     flex-shrink: 0;
+}
+.drag-item {
+    cursor: grab;
+    user-select: none; /* ป้องกันการคลุมดำข้อความ */
+    -webkit-user-select: none;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.drag-item:active {
+    cursor: grabbing;
+    transform: scale(1.02); /* ขยายการ์ดนิดนึงให้รู้ว่ากำลังหยิบ */
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+    opacity: 0.9;
+}
+
+/* ปุ่มรีเซ็ต */
+.reset-wrapper {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 10px;
+    padding-right: 10px;
+}
+.btn-reset {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: #f0f2f5;
+    color: #555;
+    border: 1px solid #ddd;
+    padding: 6px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    transition: 0.2s;
+}
+.btn-reset:hover {
+    background: #e4e6e9;
+    color: #1a3a5f;
+}
+.btn-reset .material-icons {
+    font-size: 16px;
 }
 </style>

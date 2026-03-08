@@ -85,7 +85,6 @@
 
                 <div class="tab-content-wrapper">
 
-                    <!-- ================= UPCOMING ================= -->
                     <div v-if="filter === FILTERS.UPCOMING">
 
                         <div v-if="upcomingCases.length === 0" class="empty-state">
@@ -97,75 +96,67 @@
                         </div>
 
                         <div v-else>
-                            <div v-for="item in upcomingCases" :key="item.id" class="case-card"
+                            <div class="reset-wrapper">
+                                <button class="btn-reset" @click="resetQueue">
+                                    <span class="material-icons">refresh</span> รีเซ็ตลำดับคิว
+                                </button>
+                            </div>
+
+                            <div v-for="(item, index) in upcomingCases" :key="item.id" 
+                                class="case-card drag-item"
+                                draggable="true"
+                                @dragstart="onDragStart(index, item.id)"
+                                @dragover.prevent
+                                @drop="onDrop(index)"
                                 @click="toggleDetail(item.id)">
 
-                                <!-- ข้อมูลย่อ -->
                                 <div class="case-grid">
-
                                     <div class="grid-row">
                                         <span><strong>Surgery Date:</strong> {{ item.date }}</span>
                                         <span><strong>Room:</strong> {{ item.room }}</span>
                                     </div>
-
                                     <div class="grid-row">
                                         <span><strong>Patient:</strong> {{ item.fullName }}</span>
                                         <span><strong>Procedure:</strong> {{ item.procedure }}</span>
                                     </div>
-
                                     <div class="grid-row single">
                                         <span><strong>Doctor:</strong> {{ doctorMap[item.doctorLicense] || item.doctorLicense || '-' }}</span>
                                     </div>
-
                                 </div>
 
-                                <!-- ✅ Detail แค่ก้อนเดียว -->
                                 <transition name="expand">
                                     <div v-if="expandedId === item.id" class="case-detail">
-
                                         <div class="detail-row"><strong>HN:</strong> {{ item.hn }}</div>
                                         <div class="detail-row"><strong>Full Name:</strong> {{ item.fullName }}</div>
                                         <div class="detail-row"><strong>Age:</strong> {{ item.age }}</div>
-                                        <div>
-                                            <strong>Gender:</strong>
-                                            {{ item.gender === 'male' ? 'ชาย' : 'หญิง' }}
-                                        </div>
-                                        <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
-                                            item.underlying }}</div>
-                                        <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                            }}</div>
+                                        <div><strong>Gender:</strong> {{ item.gender === 'male' ? 'ชาย' : 'หญิง' }}</div>
+                                        <div class="detail-row"><strong>Underlying Disease(s):</strong> {{ item.underlying }}</div>
+                                        <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
                                         <div class="detail-row"><strong>Notes:</strong> {{ item.notes }}</div>
-
+                                        <div class="detail-row"><strong>Urgency:</strong> 
+                                            {{ item.urgency === 'Emergency' ? '🔴 Emergency' : item.urgency === 'Urgent' ? '🟡 Urgent' : item.urgency === 'Normal' ? '🟢 Normal' : '-' }}
+                                        </div>
+                                        <div class="detail-row"><strong>NPO Risk:</strong> {{ item.isNpoRisk ? '🍼 Yes' : '-' }}</div>
+                                        <div class="detail-row"><strong>Infection:</strong> {{ item.isInfected ? '🦠 Yes' : '-' }}</div>
                                     </div>
                                 </transition>
 
-                                <!-- ปุ่ม -->
                                 <div class="case-actions">
-                                    <button class="btn-success" @click.stop="markAsSucceed(item.id)">
-                                        Succeed
-                                    </button>
-
-                                    <button class="btn-delete" @click.stop="deleteCase(item.id)">
-                                        Delete
-                                    </button>
+                                    <button class="btn-success" @click.stop="markAsSucceed(item.id)">Succeed</button>
+                                    <button class="btn-delete" @click.stop="deleteCase(item.id)">Delete</button>
                                 </div>
-
                             </div>
                         </div>
 
                         <div class="add-btn-wrapper" :class="{ center: upcomingCases.length === 0 }">
-                            <button class="add-btn" @click="goAddPatient">
-                                + Add Patient
-                            </button>
+                            <button class="add-btn" @click="goAddPatient">+ Add Patient</button>
                         </div>
 
                     </div>
 
 
-                    <!-- ================= SUCCEED ================= -->
                     <div v-if="filter === FILTERS.SUCCEED">
-
                         <div v-if="succeedCases.length === 0" class="empty-state">
                             <div class="icon-wrap">
                                 <span class="material-icons">check_circle</span>
@@ -176,13 +167,11 @@
                         <div v-else>
                             <div v-for="item in succeedCases" :key="item.id" class="case-card"
                                 @click="openCaseDetail(item)">
-
                                 <div class="case-row top-row">
                                     <span><strong>Surgery Date:</strong> {{ item.date }}</span>
                                     <span><strong>Patient:</strong> {{ item.fullName }}</span>
                                     <span><strong>Room:</strong> {{ item.room }}</span>
                                 </div>
-
                                 <div class="case-row">
                                     <span><strong>Doctor:</strong> {{ doctorMap[item.doctorLicense] || item.doctorLicense || '-' }}</span>
                                     <span><strong>Procedure:</strong> {{ item.procedure }}</span>
@@ -191,9 +180,7 @@
                         </div>
                         <div class="clear-wrapper">
                             <div class="clear-wrapper" v-if="succeedCases.length > 0">
-                                <button class="clear-btn" @click="clearSucceedCases">
-                                    Clear
-                                </button>
+                                <button class="clear-btn" @click="clearSucceedCases">Clear</button>
                             </div>
                         </div>
                     </div>
@@ -207,104 +194,138 @@
                     <h3>Additional Information</h3>
                 </div>
                 <ul class="info-list">
-                    <li>
-                        <span class="material-icons check-bullet">check</span>
-                        Cases can be canceled before surgery date.
-                    </li>
-                    <li>
-                        <span class="material-icons check-bullet">check</span>
-                        Please arrive on time for the convenience of everyone.
-                    </li>
-                    <li>
-                        <span class="material-icons check-bullet">check</span>
-                        If there is a problem, please contact staff.
-                    </li>
+                    <li><span class="material-icons check-bullet">check</span> Cases can be canceled before surgery date.</li>
+                    <li><span class="material-icons check-bullet">check</span> Please arrive on time for the convenience of everyone.</li>
+                    <li><span class="material-icons check-bullet">check</span> If there is a problem, please contact staff.</li>
                 </ul>
             </div>
         </div>
     </div>
-    <button class="floating-add-btn" @click="goAddPatient">
-        + Add Patient
-    </button>
-
     <button class="floating-add-btn" @click="goAddPatient">+ Add Patient</button>
-
 </template>
-
-
-
-
-
-
-
-
-
-
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
-const goHome = () => {
-    isDrawerOpen.value = false
-}
 
-// เพิ่มตัวแปรเก็บรายชื่อหมอ
-const doctorMap = ref({}) // { license: doctorName }
-
+const doctorMap = ref({}) 
 const expandedId = ref(null)
 
-const toggleDetail = (id) => {
-    expandedId.value = expandedId.value === id ? null : id
-}
+const toggleDetail = (id) => { expandedId.value = expandedId.value === id ? null : id }
 
 const router = useRouter()
-const userLicense = ref('123546')
+const userLicense = ref('Admin')
 
-const FILTERS = {
-    UPCOMING: 'Upcoming',
-    SUCCEED: 'Succeed'
-}
-
-
+const FILTERS = { UPCOMING: 'Upcoming', SUCCEED: 'Succeed' }
 const filter = ref(FILTERS.UPCOMING)
-const expandedCaseId = ref(null)
-
-const toggleExpand = (id) => {
-    expandedCaseId.value =
-        expandedCaseId.value === id ? null : id
-}
-
-// 🔥 state เก็บเคส
 const bookings = ref([])
 
-// ================= โหลดข้อมูล =================
-// แก้ onMounted ให้ดึงรายชื่อหมอด้วย
 onMounted(async () => {
     const savedLicense = localStorage.getItem('userLicense')
     if (savedLicense) userLicense.value = savedLicense
 
     try {
-        // ดึงคิวทั้งหมด
         const res = await fetch('https://or-room-backend.rockzee2018.workers.dev/api/bookings')
         const data = await res.json()
         bookings.value = Array.isArray(data) ? data : []
-    } catch (e) {
-        console.error('ดึงคิวไม่สำเร็จ', e)
-    }
+    } catch (e) { console.error('ดึงคิวไม่สำเร็จ', e) }
 
     try {
-        // ดึงรายชื่อหมอมา map license -> ชื่อ
         const res2 = await fetch('https://or-room-backend.rockzee2018.workers.dev/api/users')
         const users = await res2.json()
         if (Array.isArray(users)) {
             users.forEach(u => { doctorMap.value[u.license] = u.doctorName })
         }
-    } catch (e) {
-        console.error('ดึงรายชื่อหมอไม่สำเร็จ', e)
-    }
+    } catch (e) { console.error('ดึงรายชื่อหมอไม่สำเร็จ', e) }
 })
 
-// markAsSucceed — ยิง API จริง
+// ================= ระบบจัดเรียงคิวอัจฉริยะแบบเดียวกับ User =================
+const sortCases = (arr) => {
+    const urgencyScore = { 'Emergency': 3, 'Urgent': 2, 'Normal': 1 }
+    return [...arr].sort((a, b) => {
+        if (a.date !== b.date) return new Date(a.date) - new Date(b.date)
+        
+        const qA = a.queueOrder || 999
+        const qB = b.queueOrder || 999
+        if (qA !== qB) return qA - qB
+        
+        const urgA = urgencyScore[a.urgency] || 1
+        const urgB = urgencyScore[b.urgency] || 1
+        if (urgA !== urgB) return urgB - urgA
+
+        if (a.urgency !== 'Emergency') {
+            const infA = a.isInfected ? 1 : 0
+            const infB = b.isInfected ? 1 : 0
+            if (infA !== infB) return infA - infB
+
+            const npoA = a.isNpoRisk ? 1 : 0
+            const npoB = b.isNpoRisk ? 1 : 0
+            if (npoA !== npoB) return npoB - npoA
+        }
+
+        const ageA = parseInt(a.age) || 0
+        const ageB = parseInt(b.age) || 0
+        if (ageA !== ageB) return ageB - ageA
+
+        if (a.gender !== b.gender) return a.gender === 'female' ? -1 : 1
+
+        return 0
+    })
+}
+
+const upcomingCases = computed(() => sortCases(bookings.value.filter(item => item.status === FILTERS.UPCOMING || !item.status)))
+const succeedCases = computed(() => sortCases(bookings.value.filter(item => item.status === FILTERS.SUCCEED)))
+
+
+// ================= ระบบ Drag & Drop เลื่อนคิว =================
+const draggedIndex = ref(null)
+
+const onDragStart = (index, id) => { draggedIndex.value = index }
+
+const onDrop = async (dropIndex) => {
+    if (draggedIndex.value === null || draggedIndex.value === dropIndex) return
+
+    const list = [...upcomingCases.value]
+    const draggedItem = list.splice(draggedIndex.value, 1)[0]
+    list.splice(dropIndex, 0, draggedItem)
+
+    const updates = list.map((item, idx) => {
+        item.queueOrder = idx + 1
+        return { id: item.id, queueOrder: item.queueOrder }
+    })
+
+    list.forEach(item => {
+        const target = bookings.value.find(b => b.id === item.id)
+        if (target) target.queueOrder = item.queueOrder
+    })
+
+    draggedIndex.value = null
+
+    try {
+        await fetch('https://or-room-backend.rockzee2018.workers.dev/api/bookings/reorder', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ updates })
+        })
+    } catch (e) { console.error("❌ อัปเดตคิวไม่สำเร็จ", e) }
+}
+
+const resetQueue = async () => {
+    if (!confirm('ต้องการรีเซ็ตการเรียงคิว กลับไปใช้ระบบอัตโนมัติหรือไม่?')) return
+    const updates = upcomingCases.value.map(item => { return { id: item.id, queueOrder: 999 } })
+    bookings.value.forEach(b => { if (b.status !== FILTERS.SUCCEED) b.queueOrder = 999 })
+    try {
+        await fetch('https://or-room-backend.rockzee2018.workers.dev/api/bookings/reorder', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ updates })
+        })
+        alert('✅ รีเซ็ตการจัดคิวเรียบร้อย!')
+    } catch (e) { console.error("❌ รีเซ็ตคิวไม่สำเร็จ", e) }
+}
+
+
+// API Functions
 const markAsSucceed = async (id) => {
     try {
         await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/bookings/${id}/status`, {
@@ -314,862 +335,118 @@ const markAsSucceed = async (id) => {
         })
         const target = bookings.value.find(item => item.id === id)
         if (target) { target.status = 'Succeed'; filter.value = FILTERS.SUCCEED }
-    } catch (e) {
-        alert('❌ อัปเดต status ไม่สำเร็จ')
-    }
+    } catch (e) { alert('❌ อัปเดต status ไม่สำเร็จ') }
 }
 
-// deleteCase — ยิง API จริง
 const deleteCase = async (id) => {
     if (!confirm('ยืนยันการลบเคสนี้?')) return
     try {
-        await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/bookings/${id}`, {
-            method: 'DELETE'
-        })
+        await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/bookings/${id}`, { method: 'DELETE' })
         bookings.value = bookings.value.filter(item => item.id !== id)
-    } catch (e) {
-        alert('❌ ลบไม่สำเร็จ')
-    }
+    } catch (e) { alert('❌ ลบไม่สำเร็จ') }
 }
 
-// clearSucceedCases — ลบทีละตัวผ่าน API
 const clearSucceedCases = async () => {
     if (!confirm('ล้างประวัติทั้งหมด?')) return
     const succeedIds = bookings.value.filter(b => b.status === 'Succeed').map(b => b.id)
-    await Promise.all(succeedIds.map(id =>
-        fetch(`https://or-room-backend.rockzee2018.workers.dev/api/bookings/${id}`, { method: 'DELETE' })
-    ))
+    await Promise.all(succeedIds.map(id => fetch(`https://or-room-backend.rockzee2018.workers.dev/api/bookings/${id}`, { method: 'DELETE' })))
     bookings.value = bookings.value.filter(b => b.status !== 'Succeed')
 }
 
-// ================= computed =================
-
-// 🔥 เรียงวันที่ใกล้สุดก่อน
-const sortByDate = (arr) => {
-    return [...arr].sort((a, b) => {
-        return new Date(a.date) - new Date(b.date)
-    })
-}
-
-const upcomingCases = computed(() =>
-    sortByDate(
-        bookings.value.filter(item => item.status === FILTERS.UPCOMING)
-    )
-)
-
-const succeedCases = computed(() =>
-    sortByDate(
-        bookings.value.filter(item => item.status === FILTERS.SUCCEED)
-    )
-)
-
-// ================= modal / drawer =================
-const isDrawerOpen = ref(false)
+// Modal logic
 const isDayModalOpen = ref(false)
 const isLogoutModalOpen = ref(false)
 const isDeleteAccModalOpen = ref(false)
-
 const selectedDay = ref('Monday')
 const tempSelectedDay = ref('Monday')
 const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
-
-const confirmDayChange = () => {
-    selectedDay.value = tempSelectedDay.value
-    isDayModalOpen.value = false
-}
-
-const closeAllOverlays = () => {
-    isDrawerOpen.value = false
-    isDayModalOpen.value = false
-    isLogoutModalOpen.value = false
-    isDeleteAccModalOpen.value = false
-}
-
-const goAddPatient = () => {
-    isDrawerOpen.value = false
-    router.push({ name: 'admin-add-patient' })
-}
-
-const goToCalendar = () => {
-    isDrawerOpen.value = false
-    router.push('/calendar')
-}
-
-const handleLogout = () => {
-    localStorage.clear()
-    router.push('/login')
-}
-
-const handleDeleteAccount = () => {
-    localStorage.clear()
-    router.push('/login')
-}
-
+const confirmDayChange = () => { selectedDay.value = tempSelectedDay.value; isDayModalOpen.value = false }
+const goAddPatient = () => { router.push({ name: 'admin-add-patient' }) }
+const handleLogout = () => { localStorage.clear(); router.push('/login') }
+const handleDeleteAccount = () => { localStorage.clear(); router.push('/login') }
 const isDetailModalOpen = ref(false)
 const selectedCase = ref(null)
-
-const openCaseDetail = (item) => {
-    selectedCase.value = item
-    isDetailModalOpen.value = true
-}
-
-
+const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.value = true }
 </script>
-
-
-
-
-
-
-
-
 
 <style scoped>
 @import url('https://fonts.googleapis.com/icon?family=Material+Icons');
 
 /* --- Layout & Basic --- */
-.main-layout {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    background-color: #f5f7fa;
-    /* พื้นหลังเทาอ่อนเพื่อให้การ์ดเด่น */
-}
+.main-layout { min-height: 100vh; display: flex; flex-direction: column; background-color: #f5f7fa; }
+.top-nav, .drawer-header { background-color: #1a3a5f !important; height: 80px; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; }
 
-/* --- สี Navy Blue สำหรับ Top Nav & Drawer --- */
-.top-nav,
-.drawer-header {
-    background-color: #1a3a5f !important;
-    /* Navy Blue */
-    height: 80px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0 20px;
-}
+.avatar-circle { width: 48px; height: 48px; border: 2px solid white; border-radius: 50%; display: flex; justify-content: center; align-items: center; }
+.avatar-circle.small { width: 32px; height: 32px; border-width: 1px; }
 
-
-/* --- Side Drawer (คงของเดิมแต่เปลี่ยนสี) --- */
-.side-drawer {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 280px;
-    height: 100vh;
-    background-color: #f0f7ff;
-    z-index: 3000;
-    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1);
-}
-
-.avatar-circle {
-    width: 48px;
-    height: 48px;
-    border: 2px solid white;
-    border-radius: 50%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.avatar-circle.small {
-    width: 32px;
-    height: 32px;
-    border-width: 1px;
-}
-
-.drawer-user-info {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    color: white;
-}
-
-.user-meta {
-    display: flex;
-    flex-direction: column;
-}
-
-.drawer-license {
-    font-size: 1.2rem;
-    font-weight: 600;
-}
-
-.drawer-day {
-    font-size: 0.85rem;
-    opacity: 0.8;
-}
-
-.drawer-menu {
-    padding: 15px 0;
-}
-
-.menu-item {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    padding: 15px 25px;
-    color: #4a6fa5;
-    cursor: pointer;
-}
-
-.menu-item:hover {
-    background-color: #e6effa;
-}
-
-.delete-acc-btn {
-    color: #b80000;
-    margin-top: 0px;
-}
-
-.user-group {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    cursor: pointer;
-    color: white;
-}
-
-.logout-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-}
-
-.nav-calendar-btn {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    background: rgba(255,255,255,0.18);
-    border: 1.5px solid rgba(255,255,255,0.35);
-    color: white;
-    padding: 7px 14px;
-    border-radius: 20px;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    margin-left: auto;
-    margin-right: 10px;
-    transition: background 0.2s;
-}
+.user-group { display: flex; align-items: center; gap: 10px; cursor: pointer; color: white; }
+.logout-btn { background: none; border: none; cursor: pointer; }
+.nav-calendar-btn { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.18); border: 1.5px solid rgba(255,255,255,0.35); color: white; padding: 7px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; margin-left: auto; margin-right: 10px; transition: background 0.2s; }
 .nav-calendar-btn:hover { background: rgba(255,255,255,0.28); }
 
-.dashboard-container {
-    padding: 20px;
-    flex-grow: 1;
-}
-
-.main-title {
-    text-align: center;
-    color: #1a3a5f;
-    font-size: 1.6rem;
-    font-weight: bold;
-    margin: 30px 0;
-}
-
-.queue-card {
-    width: 90%;
-    max-width: 500px;
-    margin: 0 auto 30px auto;
-    background: white;
-    border-radius: 20px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
-    overflow: hidden;
-}
-
-.queue-filter {
-    display: flex;
-    padding: 15px;
-    gap: 10px;
-    background: #f8f9fa;
-}
-
-.queue-filter button {
-    flex: 1;
-    padding: 10px 0;
-    border-radius: 10px;
-    border: 1px solid #eee;
-    background: white;
-    color: #444;
-    font-weight: 600;
-    cursor: pointer;
-    transition: 0.3s;
-}
-
-.queue-filter button.active {
-    background: #1a3a5f;
-    color: white;
-    border-color: #1a3a5f;
-}
-
-.empty-state {
-    text-align: center;
-    padding: 60px 20px;
-}
-
-.case-card {
-    background: white;
-    padding: 16px;
-    border-radius: 12px;
-    margin-bottom: 12px;
-    margin-block: 10px;
-    margin-left: 10px;
-    margin-right: 10px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-}
-
-.icon-wrap {
-    width: 70px;
-    height: 70px;
-    background: #f0f2f5;
-    border-radius: 50%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin: 0 auto 20px auto;
-}
-
-.icon-wrap .material-icons {
-    font-size: 35px;
-    color: #90a4ae;
-}
-
-.empty-state h3 {
-    color: #333;
-    font-size: 1.2rem;
-    margin-bottom: 8px;
-}
-
-.sub-text {
-    color: #888;
-    font-size: 0.9rem;
-    margin-bottom: 30px;
-}
-
-.add-btn {
-    background: #1a3a5f;
-    color: white;
-    border: none;
-    padding: 12px 35px;
-    border-radius: 12px;
-    font-weight: bold;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-    box-shadow: 0 4px 12px rgba(26, 58, 95, 0.3);
-    transition: transform 0.2s;
-}
-
-.add-btn:hover {
-    transform: translateY(-2px);
-}
-
-/* --- Info Section อัปเดตใหม่ตามวาด --- */
-.info-section {
-    max-width: 500px;
-    margin: 0 auto 50px auto;
-    background: #eef2f7;
-    padding: 20px;
-    border-radius: 16px;
-}
-
-.info-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 15px;
-    color: #1a3a5f;
-}
-
-
-
-.info-header h3 {
-    font-size: 1.1rem;
-    font-weight: bold;
-    margin: 0;
-}
-
-
-
-.info-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-.info-list li {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    margin-bottom: 12px;
-    color: #4a5e75;
-    font-size: 0.95rem;
-}
-
-.check-bullet {
-    font-size: 18px;
-    color: #1a3a5f;
-    margin-top: 2px;
-}
-
-/* --- Modals & Transitions (ของเดิมทั้งหมด) --- */
-.drawer-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.3);
-    z-index: 2500;
-}
-
-.modal-overlay-center {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 4000;
-    background: rgba(0, 0, 0, 0.4);
-}
-
-.white-modal-card {
-    background: white;
-    width: 90%;
-    max-width: 320px;
-    padding: 30px 20px;
-    border-radius: 24px;
-    text-align: center;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-}
-
-.day-modal-card {
-    background-color: #e3f2fd;
-    width: 90%;
-    max-width: 340px;
-    padding: 30px;
-    border-radius: 24px;
-}
-
-.day-modal-title {
-    color: #2c4c87;
-    text-align: center;
-    margin-bottom: 20px;
-}
-
-.day-option {
-    display: flex;
-    justify-content: space-between;
-    padding: 12px;
-    color: #6a92d4;
-    cursor: pointer;
-}
-
-.active-day-text {
-    color: #2c4c87;
-    font-weight: bold;
-}
-
-.checkbox-box {
-    width: 22px;
-    height: 22px;
-    border: 2px solid #2c4c87;
-    border-radius: 4px;
-    background: white;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.check-icon {
-    color: #2c4c87;
-    font-size: 18px;
-}
-
-.btn-confirm-day {
-    background: #2c4c87;
-    color: white;
-    border: none;
-    padding: 10px 25px;
-    border-radius: 12px;
-    cursor: pointer;
-    float: right;
-    margin-top: 15px;
-}
-
-.modal-msg-title {
-    color: #2c4c87;
-    font-size: 1.1rem;
-    margin-bottom: 25px;
-}
-
-.red-text {
-    color: #d50000;
-    font-weight: bold;
-}
-
-.modal-desc {
-    font-size: 0.85rem;
-    color: #666;
-    margin-top: -15px;
-    margin-bottom: 25px;
-}
-
-.warning-icon {
-    font-size: 2.5rem;
-    margin-bottom: 10px;
-}
-
-.modal-button-group {
-    display: flex;
-    justify-content: center;
-    gap: 15px;
-}
-
-.btn-confirm-green {
-    background-color: #03c172;
-    color: white;
-    border: none;
-    padding: 10px 25px;
-    border-radius: 12px;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-.btn-cancel-blue {
-    background-color: #6a92d4;
-    color: white;
-    border: none;
-    padding: 10px 25px;
-    border-radius: 12px;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-.btn-confirm-red {
-    background-color: #d50000;
-    color: white;
-    border: none;
-    padding: 10px 25px;
-    border-radius: 12px;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-.btn-cancel-gray {
-    background-color: #eee;
-    color: #666;
-    border: none;
-    padding: 10px 25px;
-    border-radius: 12px;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-/* Transitions */
-.slide-enter-active,
-.slide-leave-active {
-    transition: transform 0.3s ease;
-}
-
-.slide-enter-from,
-.slide-leave-to {
-    transform: translateX(-100%);
-}
-
-.slide-enter-to,
-.slide-leave-from {
-    transform: translateX(0);
-}
-
-.fade-enter-active,
-.fade-leave-active {
-    transition: opacity 0.3s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-    opacity: 0;
-}
-
-.top-action {
-    margin-bottom: 16px;
-    text-align: right;
-}
-
-.case-actions {
-    margin-top: 12px;
-    display: flex;
-    gap: 10px;
-}
-
-.btn-success {
-    background: #2e7d32;
-    color: white;
-    border: none;
-    padding: 6px 12px;
-    border-radius: 8px;
-    cursor: pointer;
-}
-
-.btn-delete {
-    background: #c62828;
-    color: white;
-    border: none;
-    padding: 6px 12px;
-    border-radius: 8px;
-    cursor: pointer;
-}
-
-/* ---------- Case Card Professional Style ---------- */
-
-.case-card {
-    background: #ffffff;
-    padding: 20px;
-    border-radius: 16px;
-    margin-bottom: 16px;
-    border: 1px solid #e4e9f0;
-    transition: 0.25s ease;
-    cursor: pointer;
-}
-
-.case-card:hover {
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-    transform: translateY(-2px);
-}
-
-.case-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    font-size: 14px;
-    color: #2c3e50;
-}
-
-.grid-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    align-items: center;
-}
-
-.grid-row span {
-    display: block;
-}
-
-.grid-row.single {
-    grid-template-columns: 1fr;
-}
-
-/* ทำ label ดูบาลานซ์ */
-.case-grid strong {
-    font-weight: 600;
-    margin-right: 4px;
-}
-
-.top-row {
-    font-weight: 600;
-    margin-bottom: 12px;
-}
-
-.case-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 12px;
-    margin-top: 12px;
-}
-
-/* ---------- Buttons ---------- */
-
-.btn-success {
-    background: #0d47a1;
-    color: white;
-    border: none;
-    padding: 6px 14px;
-    border-radius: 8px;
-    font-size: 13px;
-    cursor: pointer;
-}
-
-.btn-success:hover {
-    background: #1565c0;
-}
-
-.btn-delete {
-    background: #b71c1c;
-    color: white;
-    border: none;
-    padding: 6px 14px;
-    border-radius: 8px;
-    font-size: 13px;
-    cursor: pointer;
-}
-
-.btn-delete:hover {
-    background: #d32f2f;
-}
-
-/* ---------- Floating Add Button ---------- */
-
-
-
-.floating-add-btn:hover {
-    background: #244b7a;
-    transform: translateY(-3px);
-}
-
-/* ---------- Detail Modal ---------- */
-
-.detail-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.45);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 5000;
-}
-
-.detail-card {
-    background: white;
-    width: 90%;
-    max-width: 450px;
-    padding: 28px;
-    border-radius: 18px;
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
-}
-
-.detail-card h2 {
-    margin-bottom: 20px;
-    color: #1a3a5f;
-}
-
-.detail-grid p {
-    margin-bottom: 10px;
-    font-size: 14px;
-    color: #333;
-}
-
-.close-detail-btn {
-    margin-top: 20px;
-    width: 100%;
-    background: #1a3a5f;
-    color: white;
-    border: none;
-    padding: 10px;
-    border-radius: 10px;
-    cursor: pointer;
-
-
-}
-
-.add-btn-wrapper {
-    display: flex;
-    justify-content: center;
-    /* ตรงกลาง */
-    margin-top: 28px;
-}
-
-.add-btn {
-    background: #1a3a5f;
-    color: white;
-    border: none;
-    padding: 14px 20px;
-    border-radius: 40px;
-    font-weight: 600;
-    font-size: 15px;
-    cursor: pointer;
-    transition: 0.25s ease;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
-    border-radius: 15px;
-    margin-block: 10px;
-
-}
-
-.add-btn:hover {
-    background: #244b7a;
-    transform: translateY(-2px);
-
-}
-
-.case-detail {
-    margin-top: 14px;
-    padding: 14px;
-    background: #f8fafc;
-    border-radius: 10px;
-    border: 1px solid #e3e8ef;
-    font-size: 13px;
-    line-height: 1.6;
-}
-
-.detail-row {
-    margin-bottom: 6px;
-}
-
-/* animation */
-.expand-enter-active,
-.expand-leave-active {
-    transition: all 0.25s ease;
-}
-
-.expand-enter-from,
-.expand-leave-to {
-    opacity: 0;
-    transform: translateY(-6px);
-}
-
-.detail-box {
-    margin-top: 15px;
-    padding: 15px;
-    background: #f5f7fa;
-    border-radius: 10px;
-    font-size: 14px;
-    line-height: 1.6;
-    border: 1px solid #e0e6ed;
-}
-
-
-.clear-wrapper {
-    display: flex;
-    justify-content: flex-end;
-    margin: 10px 0;
-}
-
-.clear-btn {
-    background-color: #ffe500;
-    color: white;
-    border: none;
-    padding: 6px 14px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: 500;
-}
-
-.clear-btn:hover {
-    background-color: #ffd500;
-}
-
-.floating-add-btn {
-    position: fixed;
-    bottom: 35px;
-    right: 35px;
-    background: #1a3a5f;
-    color: white;
-    border: none;
-    padding: 14px 24px;
-    border-radius: 50px;
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
-    z-index: 100;
-    transition: 0.2s ease;
-}
-
-.floating-add-btn:hover {
-    background: #244b7a;
-    transform: translateY(-3px);
-}
+.dashboard-container { padding: 20px; flex-grow: 1; }
+.main-title { text-align: center; color: #1a3a5f; font-size: 1.6rem; font-weight: bold; margin: 30px 0; }
+
+.queue-card { width: 90%; max-width: 500px; margin: 0 auto 30px auto; background: white; border-radius: 20px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05); overflow: hidden; }
+.queue-filter { display: flex; padding: 15px; gap: 10px; background: #f8f9fa; }
+.queue-filter button { flex: 1; padding: 10px 0; border-radius: 10px; border: 1px solid #eee; background: white; color: #444; font-weight: 600; cursor: pointer; transition: 0.3s; }
+.queue-filter button.active { background: #1a3a5f; color: white; border-color: #1a3a5f; }
+
+.empty-state { text-align: center; padding: 60px 20px; }
+.icon-wrap { width: 70px; height: 70px; background: #f0f2f5; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin: 0 auto 20px auto; }
+.icon-wrap .material-icons { font-size: 35px; color: #90a4ae; }
+
+/* ---------- Case Card & Drag ---------- */
+.case-card { background: #ffffff; padding: 20px; border-radius: 16px; margin-bottom: 16px; border: 1px solid #e4e9f0; cursor: pointer; }
+.drag-item {
+    cursor: grab;
+    user-select: none;
+    -webkit-user-select: none;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.drag-item:active {
+    cursor: grabbing;
+    transform: scale(1.02);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+    opacity: 0.9;
+}
+
+.case-grid { display: flex; flex-direction: column; gap: 10px; font-size: 14px; color: #2c3e50; }
+.grid-row { display: grid; grid-template-columns: 1fr 1fr; align-items: center; }
+.grid-row span { display: block; }
+.grid-row.single { grid-template-columns: 1fr; }
+.case-grid strong { font-weight: 600; margin-right: 4px; }
+
+.case-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 12px; }
+.btn-success { background: #0d47a1; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-size: 13px; cursor: pointer; }
+.btn-delete { background: #b71c1c; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-size: 13px; cursor: pointer; }
+
+/* --- Reset Button --- */
+.reset-wrapper { display: flex; justify-content: flex-end; margin-bottom: 10px; padding-right: 10px; }
+.btn-reset { display: flex; align-items: center; gap: 5px; background: #f0f2f5; color: #555; border: 1px solid #ddd; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; transition: 0.2s; }
+.btn-reset:hover { background: #e4e6e9; color: #1a3a5f; }
+.btn-reset .material-icons { font-size: 16px; }
+
+/* --- Modals & Other UI --- */
+.modal-overlay-center { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; z-index: 4000; background: rgba(0, 0, 0, 0.4); }
+.white-modal-card { background: white; width: 90%; max-width: 320px; padding: 30px 20px; border-radius: 24px; text-align: center; }
+.btn-confirm-green { background-color: #03c172; color: white; border: none; padding: 10px 25px; border-radius: 12px; font-weight: bold; cursor: pointer; }
+.btn-cancel-blue { background-color: #6a92d4; color: white; border: none; padding: 10px 25px; border-radius: 12px; font-weight: bold; cursor: pointer; }
+.modal-button-group { display: flex; justify-content: center; gap: 15px; }
+
+.floating-add-btn { position: fixed; bottom: 35px; right: 35px; background: #1a3a5f; color: white; border: none; padding: 14px 24px; border-radius: 50px; font-size: 15px; font-weight: 600; cursor: pointer; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25); z-index: 100; transition: 0.2s ease; }
+.floating-add-btn:hover { background: #244b7a; transform: translateY(-3px); }
+
+.info-section { max-width: 500px; margin: 0 auto 50px auto; background: #eef2f7; padding: 20px; border-radius: 16px; }
+.info-header { display: flex; align-items: center; gap: 8px; margin-bottom: 15px; color: #1a3a5f; }
+.info-list { list-style: none; padding: 0; margin: 0; }
+.info-list li { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; color: #4a5e75; font-size: 0.95rem; }
+
+.case-detail { margin-top: 14px; padding: 14px; background: #f8fafc; border-radius: 10px; border: 1px solid #e3e8ef; font-size: 13px; line-height: 1.6; }
+.expand-enter-active, .expand-leave-active { transition: all 0.25s ease; }
+.expand-enter-from, .expand-leave-to { opacity: 0; transform: translateY(-6px); }
+
+.clear-wrapper { display: flex; justify-content: flex-end; margin: 10px 0; }
+.clear-btn { background-color: #ffe500; color: white; border: none; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-weight: 500; }
+.clear-btn:hover { background-color: #ffd500; }
 </style>
