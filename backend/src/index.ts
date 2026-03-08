@@ -178,4 +178,21 @@ app.get('/api/users', async (c) => {
   }
 })
 
+// 🟢 6. API สำหรับอัปเดตลำดับคิวแบบ Manual (Drag & Drop)
+app.put('/api/bookings/reorder', async (c) => {
+  const { updates } = await c.req.json()
+  try {
+    // updates คือ Array ของ { id: 1, queueOrder: 1 } ที่ส่งมาจากหน้าเว็บ
+    const statements = updates.map((u: any) => 
+      c.env.DB.prepare('UPDATE bookings SET queueOrder = ? WHERE id = ?').bind(u.queueOrder, u.id)
+    )
+    
+    // ใช้ batch เพื่อสั่งอัปเดตหลายๆ คิวพร้อมกันในรวดเดียว
+    await c.env.DB.batch(statements)
+    
+    return c.json({ success: true })
+  } catch (e) {
+    return c.json({ error: 'Reorder Failed' }, 500)
+  }
+})
 export default app
