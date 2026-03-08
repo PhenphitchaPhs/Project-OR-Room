@@ -29,12 +29,12 @@ app.post('/api/bookings', async (c) => {
   const b = await c.req.json()
   try {
     await c.env.DB.prepare(`
-      INSERT INTO bookings (hn, fullName, dob, age, gender, procedure, date, urgency, isNpoRisk, isInfected, underlying, notes, status, room, doctorLicense)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO bookings (hn, fullName, dob, age, gender, procedure, date, urgency, isNpoRisk, isInfected, underlying, notes, status, room, doctorLicense, createdAt)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now', '+7 hours'))
     `).bind(
       b.hn, b.fullName, b.dob, b.age, b.gender, b.procedure, 
       b.date, b.urgency, b.isNpoRisk ? 1 : 0, b.isInfected ? 1 : 0, 
-      b.underlying, b.notes, 'Upcoming', 'OR-01', b.doctorLicense // 👈 เพิ่ม b.doctorLicense ตรงนี้
+      b.underlying, b.notes, 'Upcoming', 'OR-01', b.doctorLicense 
     ).run()
     return c.json({ success: true }, 201)
   } catch (e) {
