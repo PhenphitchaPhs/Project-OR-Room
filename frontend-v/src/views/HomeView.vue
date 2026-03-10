@@ -214,11 +214,7 @@
                             </div>
                         </div>
 
-                        <div class="add-btn-wrapper" :class="{ center: upcomingCases.length === 0 }">
-                            <button class="add-btn" @click="goAddPatient">
-                                + Add Patient
-                            </button>
-                        </div>
+
 
                     </div>
 
@@ -283,7 +279,7 @@
         </div>
     </div>
     <button class="floating-add-btn" @click="goAddPatient">
-        + Add Patient
+        + Add Queue
     </button>
 </template>
 

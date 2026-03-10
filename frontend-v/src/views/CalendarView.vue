@@ -64,7 +64,7 @@
                         <hr style="border-color:#eee; margin: 8px 0" />
                     </div>
                     <div class="actions">
-                        <button @click="goToBooking" class="btn-fill">+ Add Patient</button>
+                        <button @click="goToBooking" class="btn-fill">+ Add Queue</button>
                         <button @click="isDetailPopupOpen = false" class="btn-clear">Close</button>
                     </div>
                 </div>

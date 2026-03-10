@@ -47,7 +47,6 @@
                         v-for="b in getBookingsForDate(date.fullDate).slice(0,3)"
                         :key="b.id"
                         class="dot"
-                        :style="{ background: urgencyColor(b.urgency) }"
                     ></span>
                     <span v-if="getBookingsForDate(date.fullDate).length > 3" class="more-count">+{{ getBookingsForDate(date.fullDate).length - 3 }}</span>
                 </div>
@@ -73,19 +72,16 @@
                     </div>
 
                     <div v-for="b in selectedDateBookings" :key="b.id" class="booking-item">
-                        <div class="booking-badge" :style="{ background: urgencyColor(b.urgency) }">{{ b.urgency }}</div>
                         <p><strong>Patient:</strong> {{ b.fullName }}</p>
                         <p><strong>HN:</strong> {{ b.hn }}</p>
                         <p><strong>Doctor:</strong> {{ doctorMap[b.doctorLicense] || b.doctorLicense || '-' }}</p>
                         <p><strong>Procedure:</strong> {{ b.procedure }}</p>
                         <p><strong>Room:</strong> {{ b.room }}</p>
-                        <p v-if="b.isNpoRisk">🍼 <strong>NPO Risk</strong></p>
-                        <p v-if="b.isInfected">🦠 <strong>Infection Risk</strong></p>
                         <hr style="border-color:#eee; margin: 8px 0" />
                     </div>
 
                     <div class="actions">
-                        <button @click="goAddPatient" class="btn-fill">+ Add Patient</button>
+                        <button @click="goAddPatient" class="btn-fill">+ Add Queue</button>
                         <button @click="isDetailPopupOpen = false" class="btn-clear">Close</button>
                     </div>
                 </div>
@@ -173,12 +169,6 @@ const getUsedMinutes = (d) => {
         const match = b.procedure?.match(/(\d+)\s*min/)
         return sum + (match ? parseInt(match[1]) : 0)
     }, 0)
-}
-
-const urgencyColor = (urgency) => {
-    if (urgency === 'Emergency') return '#e53935'
-    if (urgency === 'Urgent') return '#f9a825'
-    return '#43a047'
 }
 
 const calendarDays = computed(() => {
@@ -369,6 +359,7 @@ const formatDateThai = (d) => {
     width: 7px;
     height: 7px;
     border-radius: 50%;
+    background: #4a6fa5;
 }
 .more-count {
     font-size: 9px;

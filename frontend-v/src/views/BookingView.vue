@@ -59,29 +59,6 @@
                     </div>
                 </div>
 
-                <div class="section-group extra-options">
-                    <label class="group-label">Triage & Special Requirements</label>
-                    <div class="grid-2-col">
-                        <div class="select-wrapper">
-                            <select v-model="form.urgency" class="input-field orange-theme">
-                                <option value="Normal">🟢 Normal</option>
-                                <option value="Urgent">🟡 Urgent</option>
-                                <option value="Emergency">🔴 Emergency</option>
-                            </select>
-                        </div>
-                        <div class="checkbox-group">
-                            <label class="check-label">
-                                <input type="checkbox" v-model="form.isNpoRisk" />
-                                🍼 NPO Risk
-                            </label>
-                            <label class="check-label red-text">
-                                <input type="checkbox" v-model="form.isInfected" />
-                                🦠 Infection
-                            </label>
-                        </div>
-                    </div>
-                </div>
-
                 <div class="section-group">
                     <label class="group-label">Surgery Date</label>
                     <input type="date" v-model="form.date" :min="minDate" @change="checkValidDate" class="input-field green-theme" />
@@ -127,8 +104,7 @@ const officialHolidays = [
 ]
 
 const form = reactive({
-    hn: '', fullName: '', dob: '', disease: '', gender: '', procedure: '', date: '', notes: '',
-    urgency: 'Normal', isNpoRisk: false, isInfected: false
+    hn: '', fullName: '', dob: '', disease: '', gender: '', procedure: '', date: '', notes: ''
 })
 
 const goHome = () => router.push('/home')
@@ -261,12 +237,12 @@ const submitForm = async () => {
         gender: form.gender,
         procedure: form.procedure,
         date: form.date,
-        urgency: form.urgency,
-        isNpoRisk: form.isNpoRisk,
-        isInfected: form.isInfected,
-        underlying: form.disease, // 👈 ส่งโรคประจำตัวแยก
-        notes: form.notes,         // 👈 ส่งหมายเหตุแยก
-        doctorLicense: localStorage.getItem('userLicense')  // 👈 เพิ่มบรรทัดนี้
+        urgency: 'Normal',
+        isNpoRisk: 0,
+        isInfected: 0,
+        underlying: form.disease,
+        notes: form.notes,
+        doctorLicense: localStorage.getItem('userLicense')
     }
 
     try {
@@ -282,7 +258,7 @@ const submitForm = async () => {
         alert("✅ จองคิวสำเร็จ! ข้อมูลถูกบันทึกลง Cloudflare D1 เรียบร้อยแล้ว")
         
         // ล้างค่าในฟอร์ม
-        Object.keys(form).forEach(key => form[key] = (typeof form[key] === 'boolean' ? false : (key === 'urgency' ? 'Normal' : '')))
+        Object.keys(form).forEach(key => form[key] = '')
         
         // เด้งกลับหน้า Home
         router.push('/home')
@@ -325,14 +301,6 @@ input, textarea, select { width: 100%; box-sizing: border-box; }
     cursor: not-allowed; /* เปลี่ยนเมาส์เป็นเครื่องหมายห้าม */
     border: 1px solid #ced4da;
 }
-
-/* โซนใหม่: ตกแต่ง Extra Options */
-.extra-options { background: #fffcf0; padding: 15px; border-radius: 12px; border: 1px dashed #f5b041; }
-.orange-theme { background: #fff8e1; border: 1px solid #f5b041; }
-.checkbox-group { display: flex; flex-direction: column; justify-content: center; gap: 15px; padding-left: 10px; }
-.check-label { display: flex !important; align-items: center !important; justify-content: flex-start !important; gap: 12px !important; font-size: 14.5px; font-weight: 600; color: #444; cursor: pointer; margin: 0 !important; width: 100% !important; }
-
-input[type="checkbox"] { width: 22px !important; height: 22px !important; margin: 0 !important; cursor: pointer; flex-shrink: 0 !important; accent-color: #d32f2f; -webkit-appearance: auto !important; appearance: auto !important; }
 
 textarea { resize: none; overflow-wrap: break-word; }
 .textarea-auto { overflow: hidden; min-height: 40px; }

@@ -134,11 +134,6 @@
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
                                         <div class="detail-row"><strong>Notes:</strong> {{ item.notes }}</div>
-                                        <div class="detail-row"><strong>Urgency:</strong> 
-                                            {{ item.urgency === 'Emergency' ? '🔴 Emergency' : item.urgency === 'Urgent' ? '🟡 Urgent' : item.urgency === 'Normal' ? '🟢 Normal' : '-' }}
-                                        </div>
-                                        <div class="detail-row"><strong>NPO Risk:</strong> {{ item.isNpoRisk ? '🍼 Yes' : '-' }}</div>
-                                        <div class="detail-row"><strong>Infection:</strong> {{ item.isInfected ? '🦠 Yes' : '-' }}</div>
                                     </div>
                                 </transition>
 
@@ -149,9 +144,7 @@
                             </div>
                         </div>
 
-                        <div class="add-btn-wrapper" :class="{ center: upcomingCases.length === 0 }">
-                            <button class="add-btn" @click="goAddPatient">+ Add Patient</button>
-                        </div>
+
 
                     </div>
 
@@ -201,7 +194,7 @@
             </div>
         </div>
     </div>
-    <button class="floating-add-btn" @click="goAddPatient">+ Add Patient</button>
+    <button class="floating-add-btn" @click="goAddPatient">+ Add Queue</button>
 </template>
 
 <script setup>
@@ -239,34 +232,23 @@ onMounted(async () => {
     } catch (e) { console.error('ดึงรายชื่อหมอไม่สำเร็จ', e) }
 })
 
-// ================= ระบบจัดเรียงคิวอัจฉริยะแบบเดียวกับ User =================
+// ================= ระบบจัดเรียงคิวอัจฉริยะ =================
 const sortCases = (arr) => {
-    const urgencyScore = { 'Emergency': 3, 'Urgent': 2, 'Normal': 1 }
     return [...arr].sort((a, b) => {
+        // 1. เรียงตามวันผ่าตัดก่อน (วันใกล้สุดได้ก่อน)
         if (a.date !== b.date) return new Date(a.date) - new Date(b.date)
         
+        // 2. ถ้า manual drag ไว้ ให้ queueOrder มีผล
         const qA = a.queueOrder || 999
         const qB = b.queueOrder || 999
         if (qA !== qB) return qA - qB
         
-        const urgA = urgencyScore[a.urgency] || 1
-        const urgB = urgencyScore[b.urgency] || 1
-        if (urgA !== urgB) return urgB - urgA
-
-        if (a.urgency !== 'Emergency') {
-            const infA = a.isInfected ? 1 : 0
-            const infB = b.isInfected ? 1 : 0
-            if (infA !== infB) return infA - infB
-
-            const npoA = a.isNpoRisk ? 1 : 0
-            const npoB = b.isNpoRisk ? 1 : 0
-            if (npoA !== npoB) return npoB - npoA
-        }
-
+        // 3. อายุมากสุดได้ก่อน
         const ageA = parseInt(a.age) || 0
         const ageB = parseInt(b.age) || 0
         if (ageA !== ageB) return ageB - ageA
 
+        // 4. เพศหญิงก่อน ถ้าอายุเท่ากัน
         if (a.gender !== b.gender) return a.gender === 'female' ? -1 : 1
 
         return 0
