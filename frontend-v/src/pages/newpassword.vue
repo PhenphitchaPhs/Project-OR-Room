@@ -45,6 +45,9 @@
 
 <script setup>
 import { ref, computed } from "vue";
+import { useRouter } from "vue-router";
+
+const router = useRouter();
 
 const newPassword = ref("");
 const confirmPassword = ref("");
@@ -70,10 +73,11 @@ const confirm = () => {
     }
 
     if (passwordMismatch.value) {
-        return; // ไม่ให้ผ่าน
+        return;
     }
 
-    alert("Reset password (demo)");
+    alert("✅ Reset password สำเร็จ (Demo)");
+    router.push('/login');
 };
 </script>
 
