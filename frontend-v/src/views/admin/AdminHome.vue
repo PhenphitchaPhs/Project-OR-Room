@@ -160,9 +160,7 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </div>
-            </div>
+            </div><!-- end queue-card -->
 
             <div class="info-section">
                 <div class="info-header">
