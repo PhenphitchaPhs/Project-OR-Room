@@ -20,3 +20,6 @@ npm run dev
 Account Test
 License: 12345
 Password: 123456**
+
+Signup
+Secret Key: OR-UP01
