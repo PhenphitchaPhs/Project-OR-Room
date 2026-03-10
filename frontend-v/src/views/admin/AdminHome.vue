@@ -55,6 +55,12 @@
                 </div>
                 <span class="license-text">{{ userLicense }}</span>
             </div>
+            <button class="nav-calendar-btn" @click="router.push('/admin-dashboard')">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24">
+                    <path fill="white" d="M3 13h8V3H3zm0 8h8v-6H3zm10 0h8V11h-8zm0-18v6h8V3z"/>
+                </svg>
+                <span>Dashboard</span>
+            </button>
             <button class="nav-calendar-btn" @click="router.push('/admin-calendar')">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24">
                     <path fill="white" d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2m0 16H5V10h14zm0-12H5V6h14z"/>
@@ -72,11 +78,7 @@
         <div class="dashboard-container">
             <h1 class="main-title">Surgery Queue Management</h1>
 
-            <div class="two-col-layout">
-
-                <!-- ===== คอลัมน์ซ้าย: คิวผ่าตัด ===== -->
-                <div class="col-left">
-                    <div class="queue-card">
+            <div class="queue-card">
                         <div class="queue-filter">
                             <button :class="{ active: filter === FILTERS.UPCOMING }" @click="filter = FILTERS.UPCOMING">Upcoming</button>
                             <button :class="{ active: filter === FILTERS.SUCCEED }" @click="filter = FILTERS.SUCCEED">Succeed</button>
@@ -159,82 +161,6 @@
                             </div>
                         </div>
                     </div>
-                </div>
-
-                <!-- ===== คอลัมน์ขวา: Stats + Doctor ===== -->
-                <div class="col-right">
-
-                    <!-- DASHBOARD STATS -->
-                    <div class="stats-row">
-                        <div class="stat-card blue">
-                            <div class="stat-icon">📋</div>
-                            <div class="stat-info">
-                                <div class="stat-number">{{ upcomingCases.length }}</div>
-                                <div class="stat-label">Upcoming Queues</div>
-                            </div>
-                        </div>
-                        <div class="stat-card green">
-                            <div class="stat-icon">✅</div>
-                            <div class="stat-info">
-                                <div class="stat-number">{{ succeedCases.length }}</div>
-                                <div class="stat-label">Completed</div>
-                            </div>
-                        </div>
-                        <div class="stat-card purple">
-                            <div class="stat-icon">👨‍⚕️</div>
-                            <div class="stat-info">
-                                <div class="stat-number">{{ doctorList.length }}</div>
-                                <div class="stat-label">Doctors</div>
-                            </div>
-                        </div>
-                        <div class="stat-card orange">
-                            <div class="stat-icon">📅</div>
-                            <div class="stat-info">
-                                <div class="stat-number">{{ todayQueues.length }}</div>
-                                <div class="stat-label">Today's Queues</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- DOCTOR MANAGEMENT -->
-                    <div class="doctor-section">
-                        <div class="section-header">
-                            <h2 class="section-title">👨‍⚕️ Doctor Accounts</h2>
-                        </div>
-                        <div class="doctor-table-wrap">
-                            <div v-if="doctorList.length === 0" class="empty-state" style="padding: 30px">
-                                <p>No doctor accounts found.</p>
-                            </div>
-                            <table v-else class="doctor-table">
-                                <thead>
-                                    <tr>
-                                        <th>License</th>
-                                        <th>Name</th>
-                                        <th>Working Day</th>
-                                        <th>Role</th>
-                                        <th>Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="doc in doctorList" :key="doc.license">
-                                        <td>{{ doc.license }}</td>
-                                        <td>{{ doc.doctorName }}</td>
-                                        <td>{{ doc.day }}</td>
-                                        <td>
-                                            <span class="role-badge" :class="doc.role === 'admin' ? 'admin' : 'user'">
-                                                {{ doc.role === 'admin' ? '🛡️ Admin' : '👤 User' }}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <button v-if="doc.role !== 'admin'" class="btn-delete-doc" @click="deleteDoctor(doc.license, doc.doctorName)">Delete</button>
-                                            <span v-else class="protected-text">Protected</span>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
                 </div>
             </div>
 
@@ -445,7 +371,7 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
 .dashboard-container { padding: 20px; flex-grow: 1; }
 .main-title { text-align: center; color: #1a3a5f; font-size: 1.6rem; font-weight: bold; margin: 30px 0; }
 
-.queue-card { width: 100%; margin: 0 0 30px 0; background: white; border-radius: 20px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05); overflow: hidden; }
+.queue-card { width: 90%; max-width: 600px; margin: 0 auto 30px auto; background: white; border-radius: 20px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05); overflow: hidden; }
 .queue-filter { display: flex; padding: 15px; gap: 10px; background: #f8f9fa; }
 .queue-filter button { flex: 1; padding: 10px 0; border-radius: 10px; border: 1px solid #eee; background: white; color: #444; font-weight: 600; cursor: pointer; transition: 0.3s; }
 .queue-filter button.active { background: #1a3a5f; color: white; border-color: #1a3a5f; }
