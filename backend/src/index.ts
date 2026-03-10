@@ -3,6 +3,7 @@ import { cors } from 'hono/cors'
 
 type Bindings = {
   DB: D1Database
+  RESEND_API_KEY: string // 🟢 เพิ่มบรรทัดนี้เพื่อรับ API Key ของระบบส่งอีเมล
 }
 
 const app = new Hono<{ Bindings: Bindings }>()
@@ -195,4 +196,64 @@ app.put('/api/bookings/reorder', async (c) => {
     return c.json({ error: 'Reorder Failed' }, 500)
   }
 })
+
+// 🟢 7. API สำหรับลืมรหัสผ่าน (Demo Mode สำหรับส่งอาจารย์)
+app.post('/api/forgot-password', async (c) => {
+  const { email } = await c.req.json()
+  try {
+    // 1. เช็กว่ามีอีเมลนี้ในระบบจริงไหม
+    const user = await c.env.DB.prepare('SELECT * FROM users WHERE email = ?').bind(email).first()
+    if (!user) {
+      return c.json({ error: 'ไม่พบอีเมลนี้ในระบบ' }, 404)
+    }
+
+    // 2. สร้าง Token สำหรับรีเซ็ต และกำหนดเวลาหมดอายุ (1 ชั่วโมง)
+    const token = crypto.randomUUID()
+    const expiry = Date.now() + 3600000 
+
+    // 3. บันทึก Token ลงฐานข้อมูล
+    await c.env.DB.prepare('UPDATE users SET reset_token = ?, reset_token_expiry = ? WHERE email = ?')
+      .bind(token, expiry, email).run()
+
+    // 4. สร้างลิงก์วาร์ปไปหน้าตั้งรหัสผ่านใหม่
+    const resetLink = `https://project-or-room-i5pxiod0r-phenphitcha67s-projects.vercel.app/newpassword?token=${token}`
+    
+    // 💡 ส่งลิงก์กลับไปให้หน้าบ้าน (Vue) เด้งให้กดเลย โดยไม่ต้องส่งอีเมลจริง
+    return c.json({ 
+      success: true, 
+      demoLink: resetLink,
+      message: 'Demo Mode: ข้ามการส่งอีเมลจริง'
+    })
+
+  } catch (e) {
+    console.error(e)
+    return c.json({ error: 'ระบบขัดข้อง' }, 500)
+  }
+})
+
+// 🟢 8. API สำหรับลบบัญชีผู้ใช้ (ลบแค่บัญชี ข้อมูลคนไข้ยังอยู่ และห้ามลบ Admin)
+app.delete('/api/users/:license', async (c) => {
+  const license = c.req.param('license')
+  
+  try {
+    // 1. เช็กก่อนว่ามีบัญชีนี้ไหม และเป็น Admin หรือเปล่า
+    const user = await c.env.DB.prepare('SELECT role FROM users WHERE license = ?').bind(license).first()
+    
+    if (!user) {
+      return c.json({ error: 'ไม่พบบัญชีนี้ในระบบ' }, 404)
+    }
+    if (user.role === 'admin') {
+      return c.json({ error: 'ไม่อนุญาตให้ลบบัญชี Admin' }, 403)
+    }
+
+    // 2. ลบแค่บัญชีผู้ใช้ออกจากตาราง users เท่านั้น (ข้อมูลคิวใน bookings จะไม่ถูกแตะต้อง)
+    await c.env.DB.prepare('DELETE FROM users WHERE license = ?').bind(license).run()
+
+    return c.json({ success: true, message: 'ลบบัญชีเรียบร้อยแล้ว (ข้อมูลคนไข้ยังคงอยู่)' })
+  } catch (e) {
+    console.error(e)
+    return c.json({ error: 'ระบบลบข้อมูลขัดข้อง' }, 500)
+  }
+})
+
 export default app

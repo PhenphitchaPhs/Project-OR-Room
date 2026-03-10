@@ -75,7 +75,7 @@
                 <div class="white-modal-card">
                     <div class="warning-icon">⚠️</div>
                     <h2 class="modal-msg-title red-text">Delete Account?</h2>
-                    <p class="modal-desc">All your surgery data will be permanently removed.</p>
+                    <p class="modal-desc">Your account will be deleted, but patient surgery data will remain in the system.</p>
                     <div class="modal-button-group">
                         <button class="btn-cancel-gray" @click="isDeleteAccModalOpen = false">Cancel</button>
                         <button class="btn-confirm-red" @click="handleDeleteAccount">Delete</button>
@@ -481,7 +481,33 @@ const closeAllOverlays = () => { isDrawerOpen.value = isDayModalOpen.value = isL
 const goToCalendar = () => { isDrawerOpen.value = false; router.push('/calendar') }
 const goAddPatient = () => { isDrawerOpen.value = false; router.push('/booking') }
 const handleLogout = () => { localStorage.clear(); router.push('/login') }
-const handleDeleteAccount = () => { localStorage.clear(); router.push('/login') }
+// 🟢 อัปเดตฟังก์ชันลบบัญชีให้เรียกใช้งาน API จริง
+const handleDeleteAccount = async () => {
+    const license = localStorage.getItem('userLicense')
+    if (!license) return
+
+    try {
+        // ยิง API ไปลบข้อมูลที่ Backend
+        const response = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/users/${license}`, {
+            method: 'DELETE'
+        })
+
+        const data = await response.json()
+
+        if (response.ok) {
+            alert('✅ ' + data.message)
+            isDeleteAccModalOpen.value = false // ปิด Modal
+            localStorage.clear() // ล้างข้อมูลในเครื่อง
+            router.push('/login') // เด้งกลับหน้าล็อกอิน
+        } else {
+            alert('❌ ' + (data.error || 'ลบไม่สำเร็จ'))
+            isDeleteAccModalOpen.value = false
+        }
+    } catch (error) {
+        alert('❌ ระบบขัดข้อง ไม่สามารถติดต่อเซิร์ฟเวอร์ได้')
+        isDeleteAccModalOpen.value = false
+    }
+}
 const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.value = true }
 const closeDetailModal = () => { isDetailModalOpen.value = false }
 

@@ -9,6 +9,7 @@ import BookingView from '../views/BookingView.vue'
 import LoginPages from '../pages/LoginPage.vue' 
 import ForgotPassword from '../pages/email-ForgotPassword.vue'
 import SignUp from '../pages/signup.vue'
+import NewPassword from '../pages/newpassword.vue' // 🟢 เพิ่มการนำเข้าหน้า NewPassword
 
 // ===== Admin Pages =====
 import LoginAdmin from '../views/admin/loginAdmin.vue'
@@ -24,12 +25,13 @@ const routes = [
   { path: '/login', name: 'login', component: LoginPages },
   { path: '/signup', name: 'signup', component: SignUp },
   { path: '/forgot-password', name: 'forgot-password', component: ForgotPassword },
+  { path: '/newpassword', name: 'newpassword', component: NewPassword }, // 🟢 เพิ่ม Route หน้าตั้งรหัสใหม่
   { path: '/home', name: 'home', component: HomeView, meta: { requiresAuth: true } },
   { path: '/booking', name: 'booking', component: BookingView, meta: { requiresAuth: true } },
   { path: '/calendar', name: 'calendar', component: CalendarView, meta: { requiresAuth: true } },
 
   // ---------- ADMIN (ต้องล็อกอิน และต้องเป็น Admin เท่านั้น) ----------
-  { path: '/admin-login', name: 'admin-login', component: LoginAdmin }, // หน้าล็อกอินแอดมินไม่ต้องล็อก
+  { path: '/admin-login', name: 'admin-login', component: LoginAdmin },
   { 
     path: '/admin-home', 
     name: 'admin-home', 
@@ -64,10 +66,11 @@ const router = createRouter({
 /* 🔐 ยามรักษาความปลอดภัย (Navigation Guard) */
 router.beforeEach((to, from, next) => {
   const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true'
-  const userRole = localStorage.getItem('userRole') // ดึง Role ในเครื่องมาเช็ก
+  const userRole = localStorage.getItem('userRole') 
 
   // 🛑 กฎข้อ 0: ถ้าล็อกอินอยู่แล้ว แต่พยายามจะเปิดหน้า Login/Signup ให้เด้งไปหน้า Home เลย
-  const publicAuthPages = ['/login', '/signup', '/admin-login']
+  // 🟢 เพิ่ม /newpassword ให้อยู่ในกลุ่มหน้า Public
+  const publicAuthPages = ['/login', '/signup', '/admin-login', '/newpassword']
   if (publicAuthPages.includes(to.path) && isLoggedIn) {
     if (userRole === 'admin') {
       return next('/admin-home')
