@@ -113,11 +113,11 @@ const isDayModalOpen = ref(false) // สถานะเปิด/ปิด Pop-u
 
 const router = useRouter()
 const route = useRoute() 
-const userLicense = ref('------')
+const userLicense = computed(() => localStorage.getItem('userLicense') || '------')
+const selectedDay = computed(() => localStorage.getItem('selectedDay') || 'Monday')
 
 // สถานะการเลือกวัน
 const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
-const selectedDay = ref('Monday')
 const tempSelectedDay = ref('Monday')
 
 // คำนวณว่าควรแสดงเลย์เอาต์ไหม
@@ -126,6 +126,7 @@ const showLayout = computed(() => {
     '/login', 
     '/signup', 
     '/forgot-password', 
+    '/newpassword',
     '/admin-login',
     '/booking',
     '/admin-home',
@@ -137,14 +138,8 @@ const showLayout = computed(() => {
 })
 
 onMounted(() => {
-  const savedLicense = localStorage.getItem('userLicense')
-  if (savedLicense) userLicense.value = savedLicense
-
   const savedDay = localStorage.getItem('selectedDay')
-  if (savedDay) {
-    selectedDay.value = savedDay
-    tempSelectedDay.value = savedDay
-  }
+  if (savedDay) tempSelectedDay.value = savedDay
 })
 
 const toggleSidebar = () => { isSidebarOpen.value = !isSidebarOpen.value }
@@ -168,8 +163,7 @@ const confirmDayChange = async () => {
 
     if (!response.ok) throw new Error("API Error")
 
-    selectedDay.value = tempSelectedDay.value
-    localStorage.setItem('selectedDay', selectedDay.value)
+    localStorage.setItem('selectedDay', tempSelectedDay.value)
     isDayModalOpen.value = false
     alert("✅ อัปเดตวันทำงานสำเร็จ!")
 
