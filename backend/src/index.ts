@@ -70,7 +70,7 @@ app.post('/api/forgot-password', async (c) => {
 
     await c.env.DB.prepare('UPDATE users SET reset_token = ?, reset_token_expiry = ? WHERE email = ?').bind(token, expiry, email).run()
 
-    const resetLink = `https://project-or-room-i5pxiod0r-phenphitcha67s-projects.vercel.app/newpassword?token=${token}`
+    const resetLink = `https://project-or-room.vercel.app/newpassword?token=${token}`
     
     return c.json({ success: true, demoLink: resetLink, message: 'Demo Mode: ข้ามการส่งอีเมลจริง' })
   } catch (e) {

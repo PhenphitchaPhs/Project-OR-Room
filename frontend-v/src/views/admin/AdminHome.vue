@@ -72,185 +72,166 @@
         <div class="dashboard-container">
             <h1 class="main-title">Surgery Queue Management</h1>
 
-            <!-- ===== DASHBOARD STATS ===== -->
-            <div class="stats-row">
-                <div class="stat-card blue">
-                    <div class="stat-icon">📋</div>
-                    <div class="stat-info">
-                        <div class="stat-number">{{ upcomingCases.length }}</div>
-                        <div class="stat-label">Upcoming Queues</div>
-                    </div>
-                </div>
-                <div class="stat-card green">
-                    <div class="stat-icon">✅</div>
-                    <div class="stat-info">
-                        <div class="stat-number">{{ succeedCases.length }}</div>
-                        <div class="stat-label">Completed</div>
-                    </div>
-                </div>
-                <div class="stat-card purple">
-                    <div class="stat-icon">👨‍⚕️</div>
-                    <div class="stat-info">
-                        <div class="stat-number">{{ doctorList.length }}</div>
-                        <div class="stat-label">Doctors</div>
-                    </div>
-                </div>
-                <div class="stat-card orange">
-                    <div class="stat-icon">📅</div>
-                    <div class="stat-info">
-                        <div class="stat-number">{{ todayQueues.length }}</div>
-                        <div class="stat-label">Today's Queues</div>
-                    </div>
-                </div>
-            </div>
+            <div class="two-col-layout">
 
-            <!-- ===== DOCTOR MANAGEMENT ===== -->
-            <div class="doctor-section">
-                <div class="section-header">
-                    <h2 class="section-title">👨‍⚕️ Doctor Accounts</h2>
-                </div>
-                <div class="doctor-table-wrap">
-                    <div v-if="doctorList.length === 0" class="empty-state" style="padding: 30px">
-                        <p>No doctor accounts found.</p>
-                    </div>
-                    <table v-else class="doctor-table">
-                        <thead>
-                            <tr>
-                                <th>License</th>
-                                <th>Name</th>
-                                <th>Working Day</th>
-                                <th>Role</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="doc in doctorList" :key="doc.license">
-                                <td>{{ doc.license }}</td>
-                                <td>{{ doc.doctorName }}</td>
-                                <td>{{ doc.day }}</td>
-                                <td>
-                                    <span class="role-badge" :class="doc.role === 'admin' ? 'admin' : 'user'">
-                                        {{ doc.role === 'admin' ? '🛡️ Admin' : '👤 User' }}
-                                    </span>
-                                </td>
-                                <td>
-                                    <button 
-                                        v-if="doc.role !== 'admin'"
-                                        class="btn-delete-doc" 
-                                        @click="deleteDoctor(doc.license, doc.doctorName)">
-                                        Delete
-                                    </button>
-                                    <span v-else class="protected-text">Protected</span>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div class="queue-card">
-                <div class="queue-filter">
-                    <button :class="{ active: filter === FILTERS.UPCOMING }" @click="filter = FILTERS.UPCOMING">
-                        Upcoming
-                    </button>
-
-                    <button :class="{ active: filter === FILTERS.SUCCEED }" @click="filter = FILTERS.SUCCEED">
-                        Succeed
-                    </button>
-                </div>
-
-                <div class="tab-content-wrapper">
-
-                    <div v-if="filter === FILTERS.UPCOMING">
-
-                        <div v-if="upcomingCases.length === 0" class="empty-state">
-                            <div class="icon-wrap">
-                                <span class="material-icons">assignment</span>
-                            </div>
-                            <h3>No upcoming surgery cases</h3>
-                            <p class="sub-text">Please ensure all patient records are updated.</p>
+                <!-- ===== คอลัมน์ซ้าย: คิวผ่าตัด ===== -->
+                <div class="col-left">
+                    <div class="queue-card">
+                        <div class="queue-filter">
+                            <button :class="{ active: filter === FILTERS.UPCOMING }" @click="filter = FILTERS.UPCOMING">Upcoming</button>
+                            <button :class="{ active: filter === FILTERS.SUCCEED }" @click="filter = FILTERS.SUCCEED">Succeed</button>
                         </div>
 
-                        <div v-else>
-                            <div class="reset-wrapper">
-                                <button class="btn-reset" @click="resetQueue">
-                                    <span class="material-icons">refresh</span> รีเซ็ตลำดับคิว
-                                </button>
-                            </div>
-
-                            <div v-for="(item, index) in upcomingCases" :key="item.id" 
-                                class="case-card drag-item"
-                                draggable="true"
-                                @dragstart="onDragStart(index, item.id)"
-                                @dragover.prevent
-                                @drop="onDrop(index)"
-                                @click="toggleDetail(item.id)">
-
-                                <div class="case-grid">
-                                    <div class="grid-row">
-                                        <span><strong>Surgery Date:</strong> {{ item.date }}</span>
-                                        <span><strong>Room:</strong> {{ item.room }}</span>
+                        <div class="tab-content-wrapper">
+                            <div v-if="filter === FILTERS.UPCOMING">
+                                <div v-if="upcomingCases.length === 0" class="empty-state">
+                                    <div class="icon-wrap"><span class="material-icons">assignment</span></div>
+                                    <h3>No upcoming surgery cases</h3>
+                                    <p class="sub-text">Please ensure all patient records are updated.</p>
+                                </div>
+                                <div v-else>
+                                    <div class="reset-wrapper">
+                                        <button class="btn-reset" @click="resetQueue">
+                                            <span class="material-icons">refresh</span> รีเซ็ตลำดับคิว
+                                        </button>
                                     </div>
-                                    <div class="grid-row">
-                                        <span><strong>Patient:</strong> {{ item.fullName }}</span>
-                                        <span><strong>Procedure:</strong> {{ item.procedure }}</span>
-                                    </div>
-                                    <div class="grid-row single">
-                                        <span><strong>Doctor:</strong> {{ doctorMap[item.doctorLicense] || item.doctorLicense || '-' }}</span>
+                                    <div v-for="(item, index) in upcomingCases" :key="item.id"
+                                        class="case-card drag-item"
+                                        draggable="true"
+                                        @dragstart="onDragStart(index, item.id)"
+                                        @dragover.prevent
+                                        @drop="onDrop(index)"
+                                        @click="toggleDetail(item.id)">
+                                        <div class="case-grid">
+                                            <div class="grid-row">
+                                                <span><strong>Surgery Date:</strong> {{ item.date }}</span>
+                                                <span><strong>Room:</strong> {{ item.room }}</span>
+                                            </div>
+                                            <div class="grid-row">
+                                                <span><strong>Patient:</strong> {{ item.fullName }}</span>
+                                                <span><strong>Procedure:</strong> {{ item.procedure }}</span>
+                                            </div>
+                                            <div class="grid-row single">
+                                                <span><strong>Doctor:</strong> {{ doctorMap[item.doctorLicense] || item.doctorLicense || '-' }}</span>
+                                            </div>
+                                        </div>
+                                        <transition name="expand">
+                                            <div v-if="expandedId === item.id" class="case-detail">
+                                                <div class="detail-row"><strong>HN:</strong> {{ item.hn }}</div>
+                                                <div class="detail-row"><strong>Full Name:</strong> {{ item.fullName }}</div>
+                                                <div class="detail-row"><strong>Age:</strong> {{ item.age }}</div>
+                                                <div><strong>Gender:</strong> {{ item.gender === 'male' ? 'ชาย' : 'หญิง' }}</div>
+                                                <div class="detail-row"><strong>Underlying Disease(s):</strong> {{ item.underlying }}</div>
+                                                <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure }}</div>
+                                                <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
+                                                <div class="detail-row"><strong>Notes:</strong> {{ item.notes }}</div>
+                                            </div>
+                                        </transition>
+                                        <div class="case-actions">
+                                            <button class="btn-success" @click.stop="markAsSucceed(item.id)">Succeed</button>
+                                            <button class="btn-delete" @click.stop="deleteCase(item.id)">Delete</button>
+                                        </div>
                                     </div>
                                 </div>
+                            </div>
 
-                                <transition name="expand">
-                                    <div v-if="expandedId === item.id" class="case-detail">
-                                        <div class="detail-row"><strong>HN:</strong> {{ item.hn }}</div>
-                                        <div class="detail-row"><strong>Full Name:</strong> {{ item.fullName }}</div>
-                                        <div class="detail-row"><strong>Age:</strong> {{ item.age }}</div>
-                                        <div><strong>Gender:</strong> {{ item.gender === 'male' ? 'ชาย' : 'หญิง' }}</div>
-                                        <div class="detail-row"><strong>Underlying Disease(s):</strong> {{ item.underlying }}</div>
-                                        <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure }}</div>
-                                        <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
-                                        <div class="detail-row"><strong>Notes:</strong> {{ item.notes }}</div>
+                            <div v-if="filter === FILTERS.SUCCEED">
+                                <div v-if="succeedCases.length === 0" class="empty-state">
+                                    <div class="icon-wrap"><span class="material-icons">check_circle</span></div>
+                                    <h3>No completed surgery cases</h3>
+                                </div>
+                                <div v-else>
+                                    <div v-for="item in succeedCases" :key="item.id" class="case-card" @click="openCaseDetail(item)">
+                                        <div class="case-row top-row">
+                                            <span><strong>Surgery Date:</strong> {{ item.date }}</span>
+                                            <span><strong>Patient:</strong> {{ item.fullName }}</span>
+                                            <span><strong>Room:</strong> {{ item.room }}</span>
+                                        </div>
+                                        <div class="case-row">
+                                            <span><strong>Doctor:</strong> {{ doctorMap[item.doctorLicense] || item.doctorLicense || '-' }}</span>
+                                            <span><strong>Procedure:</strong> {{ item.procedure }}</span>
+                                        </div>
                                     </div>
-                                </transition>
-
-                                <div class="case-actions">
-                                    <button class="btn-success" @click.stop="markAsSucceed(item.id)">Succeed</button>
-                                    <button class="btn-delete" @click.stop="deleteCase(item.id)">Delete</button>
+                                </div>
+                                <div class="clear-wrapper" v-if="succeedCases.length > 0">
+                                    <button class="clear-btn" @click="clearSucceedCases">Clear</button>
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
 
+                <!-- ===== คอลัมน์ขวา: Stats + Doctor ===== -->
+                <div class="col-right">
 
-
+                    <!-- DASHBOARD STATS -->
+                    <div class="stats-row">
+                        <div class="stat-card blue">
+                            <div class="stat-icon">📋</div>
+                            <div class="stat-info">
+                                <div class="stat-number">{{ upcomingCases.length }}</div>
+                                <div class="stat-label">Upcoming Queues</div>
+                            </div>
+                        </div>
+                        <div class="stat-card green">
+                            <div class="stat-icon">✅</div>
+                            <div class="stat-info">
+                                <div class="stat-number">{{ succeedCases.length }}</div>
+                                <div class="stat-label">Completed</div>
+                            </div>
+                        </div>
+                        <div class="stat-card purple">
+                            <div class="stat-icon">👨‍⚕️</div>
+                            <div class="stat-info">
+                                <div class="stat-number">{{ doctorList.length }}</div>
+                                <div class="stat-label">Doctors</div>
+                            </div>
+                        </div>
+                        <div class="stat-card orange">
+                            <div class="stat-icon">📅</div>
+                            <div class="stat-info">
+                                <div class="stat-number">{{ todayQueues.length }}</div>
+                                <div class="stat-label">Today's Queues</div>
+                            </div>
+                        </div>
                     </div>
 
-
-                    <div v-if="filter === FILTERS.SUCCEED">
-                        <div v-if="succeedCases.length === 0" class="empty-state">
-                            <div class="icon-wrap">
-                                <span class="material-icons">check_circle</span>
-                            </div>
-                            <h3>No completed surgery cases</h3>
+                    <!-- DOCTOR MANAGEMENT -->
+                    <div class="doctor-section">
+                        <div class="section-header">
+                            <h2 class="section-title">👨‍⚕️ Doctor Accounts</h2>
                         </div>
-
-                        <div v-else>
-                            <div v-for="item in succeedCases" :key="item.id" class="case-card"
-                                @click="openCaseDetail(item)">
-                                <div class="case-row top-row">
-                                    <span><strong>Surgery Date:</strong> {{ item.date }}</span>
-                                    <span><strong>Patient:</strong> {{ item.fullName }}</span>
-                                    <span><strong>Room:</strong> {{ item.room }}</span>
-                                </div>
-                                <div class="case-row">
-                                    <span><strong>Doctor:</strong> {{ doctorMap[item.doctorLicense] || item.doctorLicense || '-' }}</span>
-                                    <span><strong>Procedure:</strong> {{ item.procedure }}</span>
-                                </div>
+                        <div class="doctor-table-wrap">
+                            <div v-if="doctorList.length === 0" class="empty-state" style="padding: 30px">
+                                <p>No doctor accounts found.</p>
                             </div>
-                        </div>
-                        <div class="clear-wrapper">
-                            <div class="clear-wrapper" v-if="succeedCases.length > 0">
-                                <button class="clear-btn" @click="clearSucceedCases">Clear</button>
-                            </div>
+                            <table v-else class="doctor-table">
+                                <thead>
+                                    <tr>
+                                        <th>License</th>
+                                        <th>Name</th>
+                                        <th>Working Day</th>
+                                        <th>Role</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="doc in doctorList" :key="doc.license">
+                                        <td>{{ doc.license }}</td>
+                                        <td>{{ doc.doctorName }}</td>
+                                        <td>{{ doc.day }}</td>
+                                        <td>
+                                            <span class="role-badge" :class="doc.role === 'admin' ? 'admin' : 'user'">
+                                                {{ doc.role === 'admin' ? '🛡️ Admin' : '👤 User' }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <button v-if="doc.role !== 'admin'" class="btn-delete-doc" @click="deleteDoctor(doc.license, doc.doctorName)">Delete</button>
+                                            <span v-else class="protected-text">Protected</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
 
@@ -464,7 +445,7 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
 .dashboard-container { padding: 20px; flex-grow: 1; }
 .main-title { text-align: center; color: #1a3a5f; font-size: 1.6rem; font-weight: bold; margin: 30px 0; }
 
-.queue-card { width: 90%; max-width: 500px; margin: 0 auto 30px auto; background: white; border-radius: 20px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05); overflow: hidden; }
+.queue-card { width: 100%; margin: 0 0 30px 0; background: white; border-radius: 20px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05); overflow: hidden; }
 .queue-filter { display: flex; padding: 15px; gap: 10px; background: #f8f9fa; }
 .queue-filter button { flex: 1; padding: 10px 0; border-radius: 10px; border: 1px solid #eee; background: white; color: #444; font-weight: 600; cursor: pointer; transition: 0.3s; }
 .queue-filter button.active { background: #1a3a5f; color: white; border-color: #1a3a5f; }
@@ -514,7 +495,7 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
 .floating-add-btn { position: fixed; bottom: 35px; right: 35px; background: #1a3a5f; color: white; border: none; padding: 14px 24px; border-radius: 50px; font-size: 15px; font-weight: 600; cursor: pointer; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25); z-index: 100; transition: 0.2s ease; }
 .floating-add-btn:hover { background: #244b7a; transform: translateY(-3px); }
 
-.info-section { max-width: 500px; margin: 0 auto 50px auto; background: #eef2f7; padding: 20px; border-radius: 16px; }
+.info-section { width: 100%; margin: 0 auto 50px auto; background: #eef2f7; padding: 20px; border-radius: 16px; }
 .info-header { display: flex; align-items: center; gap: 8px; margin-bottom: 15px; color: #1a3a5f; }
 .info-list { list-style: none; padding: 0; margin: 0; }
 .info-list li { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; color: #4a5e75; font-size: 0.95rem; }
@@ -523,8 +504,19 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
 .expand-enter-active, .expand-leave-active { transition: all 0.25s ease; }
 .expand-enter-from, .expand-leave-to { opacity: 0; transform: translateY(-6px); }
 
+/* --- Two Column Layout --- */
+.two-col-layout { display: flex; flex-direction: column; gap: 24px; }
+.col-left { width: 100%; }
+.col-right { width: 100%; }
+
+@media (min-width: 1024px) {
+    .two-col-layout { flex-direction: row; align-items: flex-start; }
+    .col-left { flex: 1; min-width: 0; }
+    .col-right { width: 420px; flex-shrink: 0; }
+}
+
 /* --- Stats Dashboard --- */
-.stats-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; max-width: 500px; margin: 0 auto 24px auto; }
+.stats-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
 .stat-card { background: white; border-radius: 16px; padding: 16px; display: flex; align-items: center; gap: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); border-left: 4px solid; }
 .stat-card.blue { border-color: #1a3a5f; }
 .stat-card.green { border-color: #2e7d32; }
@@ -535,7 +527,7 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
 .stat-label { font-size: 11px; color: #888; margin-top: 3px; }
 
 /* --- Doctor Management --- */
-.doctor-section { width: 90%; max-width: 600px; margin: 0 auto 30px auto; background: white; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); overflow: hidden; }
+.doctor-section { width: 100%; margin: 0 0 30px 0; background: white; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); overflow: hidden; }
 .section-header { padding: 16px 20px; background: #f8f9fa; border-bottom: 1px solid #eee; }
 .section-title { margin: 0; font-size: 1rem; color: #1a3a5f; font-weight: 700; }
 .doctor-table-wrap { overflow-x: auto; }
