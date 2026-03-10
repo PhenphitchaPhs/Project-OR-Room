@@ -3,29 +3,155 @@ import { cors } from 'hono/cors'
 
 type Bindings = {
   DB: D1Database
-  RESEND_API_KEY: string // 🟢 เพิ่มบรรทัดนี้เพื่อรับ API Key ของระบบส่งอีเมล
+  RESEND_API_KEY: string
 }
 
 const app = new Hono<{ Bindings: Bindings }>()
 
-// เปิด CORS ให้หน้าบ้าน (Vue) เข้ามาจิ้มได้
+// เปิด CORS ให้หน้าบ้าน (Vue) เข้ามาใช้งานได้
 app.use('/*', cors())
 
-// 🟢 1. ดึงคิวทั้งหมด (รองรับการกรองด้วย License หมอ)
-app.get('/api/bookings', async (c) => {
-  const license = c.req.query('license')
+
+// ==========================================
+// 🔐 1. AUTHENTICATION (ระบบยืนยันตัวตน)
+// ==========================================
+
+// 🟢 สมัครสมาชิก (Register) - อัปเดตเพิ่ม Email
+app.post('/api/register', async (c) => {
   try {
-    const { results } = license
-      ? await c.env.DB.prepare('SELECT * FROM bookings WHERE doctorLicense = ? ORDER BY date ASC').bind(license).all()
-      : await c.env.DB.prepare('SELECT * FROM bookings ORDER BY date ASC').all()
-      
+    const { license, doctorName, email, password, day } = await c.req.json()
+
+    if (!license || !doctorName || !email || !password || !day) {
+      return c.json({ error: 'กรุณากรอกข้อมูลให้ครบถ้วน' }, 400)
+    }
+
+    // เช็ก License ซ้ำ
+    const existingUser = await c.env.DB.prepare('SELECT * FROM users WHERE license = ?').bind(license).first()
+    if (existingUser) return c.json({ error: 'License นี้ถูกใช้งานแล้ว' }, 400)
+
+    // เช็ก Email ซ้ำ
+    const existingEmail = await c.env.DB.prepare('SELECT * FROM users WHERE email = ?').bind(email).first()
+    if (existingEmail) return c.json({ error: 'Email นี้ถูกใช้งานแล้ว' }, 400)
+
+    // บันทึกข้อมูล (เพิ่ม role เริ่มต้นเป็น 'user')
+    await c.env.DB.prepare(`
+      INSERT INTO users (license, doctorName, email, password, day, role) 
+      VALUES (?, ?, ?, ?, ?, 'user')
+    `).bind(license, doctorName, email, password, day).run()
+
+    return c.json({ success: true, message: 'สมัครสมาชิกสำเร็จ' }, 201)
+  } catch (e) {
+    console.error(e)
+    return c.json({ error: 'ระบบสมัครสมาชิกขัดข้อง' }, 500)
+  }
+})
+
+// 🟢 เข้าสู่ระบบ (Login)
+app.post('/api/login', async (c) => {
+  const { license, password } = await c.req.json()
+  try {
+    const user = await c.env.DB.prepare('SELECT * FROM users WHERE license = ? AND password = ?').bind(license, password).first()
+    if (user) return c.json({ success: true, user })
+    return c.json({ error: 'เลข License หรือ รหัสผ่านไม่ถูกต้อง!' }, 401)
+  } catch (e) {
+    return c.json({ error: 'DB Fetch Error' }, 500)
+  }
+})
+
+// 🟢 ลืมรหัสผ่าน (Demo Mode)
+app.post('/api/forgot-password', async (c) => {
+  const { email } = await c.req.json()
+  try {
+    const user = await c.env.DB.prepare('SELECT * FROM users WHERE email = ?').bind(email).first()
+    if (!user) return c.json({ error: 'ไม่พบอีเมลนี้ในระบบ' }, 404)
+
+    const token = crypto.randomUUID()
+    const expiry = Date.now() + 3600000 
+
+    await c.env.DB.prepare('UPDATE users SET reset_token = ?, reset_token_expiry = ? WHERE email = ?').bind(token, expiry, email).run()
+
+    const resetLink = `https://project-or-room-i5pxiod0r-phenphitcha67s-projects.vercel.app/newpassword?token=${token}`
+    
+    return c.json({ success: true, demoLink: resetLink, message: 'Demo Mode: ข้ามการส่งอีเมลจริง' })
+  } catch (e) {
+    return c.json({ error: 'ระบบขัดข้อง' }, 500)
+  }
+})
+
+
+// ==========================================
+// 👤 2. USERS MANAGEMENT (จัดการผู้ใช้งาน)
+// ==========================================
+
+// 🟢 ดึงรายชื่อผู้ใช้ทั้งหมด (สำหรับ Admin)
+app.get('/api/users', async (c) => {
+  try {
+    const { results } = await c.env.DB.prepare('SELECT license, doctorName, email, day, role FROM users').all()
     return c.json(results)
   } catch (e) {
     return c.json({ error: 'DB Fetch Error' }, 500)
   }
 })
 
-// 🟢 2. เพิ่มคิวใหม่ (ใช้หน้า Booking)
+// 🟢 ดึงข้อมูลผู้ใช้รายคน
+app.get('/api/users/:license', async (c) => {
+  const license = c.req.param('license')
+  try {
+    const user = await c.env.DB.prepare('SELECT day FROM users WHERE license = ?').bind(license).first()
+    if (user) return c.json(user)
+    return c.json({ error: 'ไม่พบผู้ใช้' }, 404)
+  } catch (e) {
+    return c.json({ error: 'DB Fetch Error' }, 500)
+  }
+})
+
+// 🟢 เปลี่ยนวันทำงาน
+app.put('/api/users/:license/day', async (c) => {
+  const { day } = await c.req.json()
+  const license = c.req.param('license')
+  try {
+    const info = await c.env.DB.prepare('UPDATE users SET day = ? WHERE license = ?').bind(day, license).run()
+    if (info.meta.changes === 0) return c.json({ error: `หา License '${license}' ไม่เจอในระบบ` }, 404)
+    return c.json({ success: true })
+  } catch (e) {
+    return c.json({ error: 'Update Failed' }, 500)
+  }
+})
+
+// 🔴 ลบบัญชีผู้ใช้ (ห้ามลบ Admin และไม่ลบข้อมูลคิวผ่าตัด)
+app.delete('/api/users/:license', async (c) => {
+  const license = c.req.param('license')
+  try {
+    const user = await c.env.DB.prepare('SELECT role FROM users WHERE license = ?').bind(license).first()
+    if (!user) return c.json({ error: 'ไม่พบบัญชีนี้ในระบบ' }, 404)
+    if (user.role === 'admin') return c.json({ error: 'ไม่อนุญาตให้ลบบัญชี Admin' }, 403)
+
+    await c.env.DB.prepare('DELETE FROM users WHERE license = ?').bind(license).run()
+    return c.json({ success: true, message: 'ลบบัญชีเรียบร้อยแล้ว (ข้อมูลคนไข้ยังคงอยู่)' })
+  } catch (e) {
+    return c.json({ error: 'ระบบลบข้อมูลขัดข้อง' }, 500)
+  }
+})
+
+
+// ==========================================
+// 🏥 3. BOOKINGS (จัดการคิวผ่าตัด)
+// ==========================================
+
+// 🟢 ดึงคิวทั้งหมด (รองรับการกรองด้วย License)
+app.get('/api/bookings', async (c) => {
+  const license = c.req.query('license')
+  try {
+    const { results } = license
+      ? await c.env.DB.prepare('SELECT * FROM bookings WHERE doctorLicense = ? ORDER BY date ASC').bind(license).all()
+      : await c.env.DB.prepare('SELECT * FROM bookings ORDER BY date ASC').all()
+    return c.json(results)
+  } catch (e) {
+    return c.json({ error: 'DB Fetch Error' }, 500)
+  }
+})
+
+// 🟢 เพิ่มคิวใหม่
 app.post('/api/bookings', async (c) => {
   const b = await c.req.json()
   try {
@@ -43,110 +169,7 @@ app.post('/api/bookings', async (c) => {
   }
 })
 
-// 🔴 3. ลบคิว (สำหรับปุ่ม Delete ในหน้า Home)
-app.delete('/api/bookings/:id', async (c) => {
-  const id = c.req.param('id')
-  try {
-    await c.env.DB.prepare('DELETE FROM bookings WHERE id = ?').bind(id).run()
-    return c.json({ success: true })
-  } catch (e) {
-    return c.json({ error: 'DB Delete Error' }, 500)
-  }
-})
-
-// 🟢 4. API สำหรับสมัครสมาชิก (Register)
-app.post('/api/register', async (c) => {
-  const { license, doctorName, password, day } = await c.req.json()
-  try {
-    await c.env.DB.prepare(`
-      INSERT INTO users (license, doctorName, password, day)
-      VALUES (?, ?, ?, ?)
-    `).bind(license, doctorName, password, day).run()
-    
-    return c.json({ success: true }, 201)
-  } catch (e) {
-    // ถ้า Insert ไม่ผ่าน มักจะเกิดจากเลข License ซ้ำ (ติด UNIQUE constraint)
-    return c.json({ error: 'มีเลข License นี้ในระบบแล้ว หรือเกิดข้อผิดพลาด' }, 400)
-  }
-})
-
-// 🟢 5. API สำหรับเข้าสู่ระบบ (Login)
-app.post('/api/login', async (c) => {
-  const { license, password } = await c.req.json()
-  try {
-    // ค้นหาว่ามี License และ Password นี้ในฐานข้อมูลหรือไม่
-    const user = await c.env.DB.prepare(`
-      SELECT * FROM users WHERE license = ? AND password = ?
-    `).bind(license, password).first()
-
-    if (user) {
-      return c.json({ success: true, user })
-    } else {
-      return c.json({ error: 'เลข License หรือ รหัสผ่านไม่ถูกต้อง!' }, 401)
-    }
-  } catch (e) {
-    return c.json({ error: 'DB Fetch Error' }, 500)
-  }
-})
-
-// 🟢 API 1: สำหรับดึงข้อมูลวันทำงานของคุณหมอ (ถามผ่าน License)
-app.get('/api/users/:license', async (c) => {
-  const license = c.req.param('license')
-  try {
-    // ไปดึงค่า day จากตาราง users
-    const user = await c.env.DB.prepare('SELECT day FROM users WHERE license = ?').bind(license).first()
-    if (user) {
-      return c.json(user)
-    }
-    return c.json({ error: 'ไม่พบผู้ใช้' }, 404)
-  } catch (e) {
-    return c.json({ error: 'DB Fetch Error' }, 500)
-  }
-})
-
-// 🟢 API 2: สำหรับอัปเดตเปลี่ยนวันทำงานใน Cloudflare
-app.put('/api/users/:license/day', async (c) => {
-  const { day } = await c.req.json()
-  const license = c.req.param('license')   // ดึงจาก URL แทน body
-  try {
-    // ใช้ตัวแปร info มารับผลลัพธ์การรันคำสั่ง
-    const info = await c.env.DB.prepare('UPDATE users SET day = ? WHERE license = ?').bind(day, license).run()
-    
-    // 🚨 เช็กว่าอัปเดตไปกี่บรรทัด ถ้าเป็น 0 แปลว่าหาเลข License นั้นไม่เจอในฐานข้อมูล!
-    if (info.meta.changes === 0) {
-      console.log(`❌ ไม่พบ License: "${license}" ในฐานข้อมูล`)
-      return c.json({ error: `หา License '${license}' ไม่เจอในฐานข้อมูล Cloudflare!` }, 404)
-    }
-
-    console.log(`✅ อัปเดตวันทำงานเป็น ${day} ให้ License: ${license} สำเร็จ!`)
-    return c.json({ success: true })
-  } catch (e) {
-    return c.json({ error: 'Update Failed' }, 500)
-  }
-})
-
-// 🟢 ค้นหาข้อมูลผู้ป่วยเก่าจาก HN (สำหรับ autofill)
-app.get('/api/patients/:hn', async (c) => {
-  const hn = c.req.param('hn')
-  try {
-    const patient = await c.env.DB.prepare(`
-      SELECT hn, fullName, dob, gender, underlying 
-      FROM bookings 
-      WHERE hn = ? 
-      ORDER BY createdAt DESC 
-      LIMIT 1
-    `).bind(hn).first()
-    
-    if (patient) {
-      return c.json(patient)
-    }
-    return c.json({ error: 'ไม่พบผู้ป่วย' }, 404)
-  } catch (e) {
-    return c.json({ error: 'DB Fetch Error' }, 500)
-  }
-})
-
-// 🟢 อัปเดต status ของ booking
+// 🟢 อัปเดตสถานะคิว (เช่น Upcoming -> Succeed)
 app.patch('/api/bookings/:id/status', async (c) => {
   const id = c.req.param('id')
   const { status } = await c.req.json()
@@ -158,101 +181,47 @@ app.patch('/api/bookings/:id/status', async (c) => {
   }
 })
 
-// 🔴 ลบบัญชีผู้ใช้
-app.delete('/api/users/:license', async (c) => {
-  const license = c.req.param('license')
-  try {
-    await c.env.DB.prepare('DELETE FROM users WHERE license = ?').bind(license).run()
-    return c.json({ success: true })
-  } catch (e) {
-    return c.json({ error: 'Delete Failed' }, 500)
-  }
-})
-
-// GET ดึงรายชื่อหมอทั้งหมด (สำหรับ Admin)
-app.get('/api/users', async (c) => {
-  try {
-    const { results } = await c.env.DB.prepare('SELECT license, doctorName, day, role FROM users').all()
-    return c.json(results)
-  } catch (e) {
-    return c.json({ error: 'DB Fetch Error' }, 500)
-  }
-})
-
-// 🟢 6. API สำหรับอัปเดตลำดับคิวแบบ Manual (Drag & Drop)
+// 🟢 อัปเดตลำดับคิวแบบลากวาง (Drag & Drop)
 app.put('/api/bookings/reorder', async (c) => {
   const { updates } = await c.req.json()
   try {
-    // updates คือ Array ของ { id: 1, queueOrder: 1 } ที่ส่งมาจากหน้าเว็บ
-    const statements = updates.map((u: any) => 
-      c.env.DB.prepare('UPDATE bookings SET queueOrder = ? WHERE id = ?').bind(u.queueOrder, u.id)
-    )
-    
-    // ใช้ batch เพื่อสั่งอัปเดตหลายๆ คิวพร้อมกันในรวดเดียว
+    const statements = updates.map((u: any) => c.env.DB.prepare('UPDATE bookings SET queueOrder = ? WHERE id = ?').bind(u.queueOrder, u.id))
     await c.env.DB.batch(statements)
-    
     return c.json({ success: true })
   } catch (e) {
     return c.json({ error: 'Reorder Failed' }, 500)
   }
 })
 
-// 🟢 7. API สำหรับลืมรหัสผ่าน (Demo Mode สำหรับส่งอาจารย์)
-app.post('/api/forgot-password', async (c) => {
-  const { email } = await c.req.json()
+// 🔴 ลบคิวผ่าตัด
+app.delete('/api/bookings/:id', async (c) => {
+  const id = c.req.param('id')
   try {
-    // 1. เช็กว่ามีอีเมลนี้ในระบบจริงไหม
-    const user = await c.env.DB.prepare('SELECT * FROM users WHERE email = ?').bind(email).first()
-    if (!user) {
-      return c.json({ error: 'ไม่พบอีเมลนี้ในระบบ' }, 404)
-    }
-
-    // 2. สร้าง Token สำหรับรีเซ็ต และกำหนดเวลาหมดอายุ (1 ชั่วโมง)
-    const token = crypto.randomUUID()
-    const expiry = Date.now() + 3600000 
-
-    // 3. บันทึก Token ลงฐานข้อมูล
-    await c.env.DB.prepare('UPDATE users SET reset_token = ?, reset_token_expiry = ? WHERE email = ?')
-      .bind(token, expiry, email).run()
-
-    // 4. สร้างลิงก์วาร์ปไปหน้าตั้งรหัสผ่านใหม่
-    const resetLink = `https://project-or-room-i5pxiod0r-phenphitcha67s-projects.vercel.app/newpassword?token=${token}`
-    
-    // 💡 ส่งลิงก์กลับไปให้หน้าบ้าน (Vue) เด้งให้กดเลย โดยไม่ต้องส่งอีเมลจริง
-    return c.json({ 
-      success: true, 
-      demoLink: resetLink,
-      message: 'Demo Mode: ข้ามการส่งอีเมลจริง'
-    })
-
+    await c.env.DB.prepare('DELETE FROM bookings WHERE id = ?').bind(id).run()
+    return c.json({ success: true })
   } catch (e) {
-    console.error(e)
-    return c.json({ error: 'ระบบขัดข้อง' }, 500)
+    return c.json({ error: 'DB Delete Error' }, 500)
   }
 })
 
-// 🟢 8. API สำหรับลบบัญชีผู้ใช้ (ลบแค่บัญชี ข้อมูลคนไข้ยังอยู่ และห้ามลบ Admin)
-app.delete('/api/users/:license', async (c) => {
-  const license = c.req.param('license')
-  
+
+// ==========================================
+// 😷 4. PATIENTS (ข้อมูลผู้ป่วย)
+// ==========================================
+
+// 🟢 ค้นหาข้อมูลผู้ป่วยเก่าจาก HN (สำหรับ autofill)
+app.get('/api/patients/:hn', async (c) => {
+  const hn = c.req.param('hn')
   try {
-    // 1. เช็กก่อนว่ามีบัญชีนี้ไหม และเป็น Admin หรือเปล่า
-    const user = await c.env.DB.prepare('SELECT role FROM users WHERE license = ?').bind(license).first()
+    const patient = await c.env.DB.prepare(`
+      SELECT hn, fullName, dob, gender, underlying 
+      FROM bookings WHERE hn = ? ORDER BY createdAt DESC LIMIT 1
+    `).bind(hn).first()
     
-    if (!user) {
-      return c.json({ error: 'ไม่พบบัญชีนี้ในระบบ' }, 404)
-    }
-    if (user.role === 'admin') {
-      return c.json({ error: 'ไม่อนุญาตให้ลบบัญชี Admin' }, 403)
-    }
-
-    // 2. ลบแค่บัญชีผู้ใช้ออกจากตาราง users เท่านั้น (ข้อมูลคิวใน bookings จะไม่ถูกแตะต้อง)
-    await c.env.DB.prepare('DELETE FROM users WHERE license = ?').bind(license).run()
-
-    return c.json({ success: true, message: 'ลบบัญชีเรียบร้อยแล้ว (ข้อมูลคนไข้ยังคงอยู่)' })
+    if (patient) return c.json(patient)
+    return c.json({ error: 'ไม่พบผู้ป่วย' }, 404)
   } catch (e) {
-    console.error(e)
-    return c.json({ error: 'ระบบลบข้อมูลขัดข้อง' }, 500)
+    return c.json({ error: 'DB Fetch Error' }, 500)
   }
 })
 
