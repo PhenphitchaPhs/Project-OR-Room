@@ -6,16 +6,15 @@
   "engines": {
     "node": "^20.19.0 || >=22.12.0"
   },
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build", 
-    "preview": "vite preview",
-    "test:e2e": "playwright test",
-    "build-only": "vite build",
-    "type-check": "vue-tsc --build",
-    "lint": "eslint . --fix --cache",
-    "format": "prettier --write --experimental-cli src/"
-  },
+ "scripts": {
+  "dev": "vite",
+  "build": "vite build",
+  "preview": "vite preview",
+  "build-only": "vite build",
+  "type-check": "vue-tsc --build",
+  "lint": "eslint . --fix --cache",
+  "format": "prettier --write --experimental-cli src/"
+}
   "dependencies": {
     "@iconify/vue": "^5.0.0",
     "axios": "^1.13.2",
