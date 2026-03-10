@@ -72,6 +72,82 @@
         <div class="dashboard-container">
             <h1 class="main-title">Surgery Queue Management</h1>
 
+            <!-- ===== DASHBOARD STATS ===== -->
+            <div class="stats-row">
+                <div class="stat-card blue">
+                    <div class="stat-icon">📋</div>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ upcomingCases.length }}</div>
+                        <div class="stat-label">Upcoming Queues</div>
+                    </div>
+                </div>
+                <div class="stat-card green">
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ succeedCases.length }}</div>
+                        <div class="stat-label">Completed</div>
+                    </div>
+                </div>
+                <div class="stat-card purple">
+                    <div class="stat-icon">👨‍⚕️</div>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ doctorList.length }}</div>
+                        <div class="stat-label">Doctors</div>
+                    </div>
+                </div>
+                <div class="stat-card orange">
+                    <div class="stat-icon">📅</div>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ todayQueues.length }}</div>
+                        <div class="stat-label">Today's Queues</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== DOCTOR MANAGEMENT ===== -->
+            <div class="doctor-section">
+                <div class="section-header">
+                    <h2 class="section-title">👨‍⚕️ Doctor Accounts</h2>
+                </div>
+                <div class="doctor-table-wrap">
+                    <div v-if="doctorList.length === 0" class="empty-state" style="padding: 30px">
+                        <p>No doctor accounts found.</p>
+                    </div>
+                    <table v-else class="doctor-table">
+                        <thead>
+                            <tr>
+                                <th>License</th>
+                                <th>Name</th>
+                                <th>Working Day</th>
+                                <th>Role</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="doc in doctorList" :key="doc.license">
+                                <td>{{ doc.license }}</td>
+                                <td>{{ doc.doctorName }}</td>
+                                <td>{{ doc.day }}</td>
+                                <td>
+                                    <span class="role-badge" :class="doc.role === 'admin' ? 'admin' : 'user'">
+                                        {{ doc.role === 'admin' ? '🛡️ Admin' : '👤 User' }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <button 
+                                        v-if="doc.role !== 'admin'"
+                                        class="btn-delete-doc" 
+                                        @click="deleteDoctor(doc.license, doc.doctorName)">
+                                        Delete
+                                    </button>
+                                    <span v-else class="protected-text">Protected</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
             <div class="queue-card">
                 <div class="queue-filter">
                     <button :class="{ active: filter === FILTERS.UPCOMING }" @click="filter = FILTERS.UPCOMING">
@@ -201,7 +277,8 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 
-const doctorMap = ref({}) 
+const doctorMap = ref({})
+const doctorList = ref([])
 const expandedId = ref(null)
 
 const toggleDetail = (id) => { expandedId.value = expandedId.value === id ? null : id }
@@ -227,6 +304,7 @@ onMounted(async () => {
         const res2 = await fetch('https://or-room-backend.rockzee2018.workers.dev/api/users')
         const users = await res2.json()
         if (Array.isArray(users)) {
+            doctorList.value = users
             users.forEach(u => { doctorMap.value[u.license] = u.doctorName })
         }
     } catch (e) { console.error('ดึงรายชื่อหมอไม่สำเร็จ', e) }
@@ -257,6 +335,23 @@ const sortCases = (arr) => {
 
 const upcomingCases = computed(() => sortCases(bookings.value.filter(item => item.status === FILTERS.UPCOMING || !item.status)))
 const succeedCases = computed(() => sortCases(bookings.value.filter(item => item.status === FILTERS.SUCCEED)))
+
+const todayStr = new Date().toISOString().split('T')[0]
+const todayQueues = computed(() => bookings.value.filter(b => b.date === todayStr && b.status !== 'Succeed'))
+
+const deleteDoctor = async (license, name) => {
+    if (!confirm(`ลบบัญชี "${name}" ออกจากระบบ?\n(ข้อมูลคิวผ่าตัดของหมอยังคงอยู่)`)) return
+    try {
+        const res = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/users/${license}`, { method: 'DELETE' })
+        const data = await res.json()
+        if (res.ok) {
+            doctorList.value = doctorList.value.filter(d => d.license !== license)
+            alert('✅ ลบบัญชีสำเร็จ')
+        } else {
+            alert('❌ ' + (data.error || 'ลบไม่สำเร็จ'))
+        }
+    } catch (e) { alert('❌ เกิดข้อผิดพลาด') }
+}
 
 
 // ================= ระบบ Drag & Drop เลื่อนคิว =================
@@ -427,6 +522,34 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
 .case-detail { margin-top: 14px; padding: 14px; background: #f8fafc; border-radius: 10px; border: 1px solid #e3e8ef; font-size: 13px; line-height: 1.6; }
 .expand-enter-active, .expand-leave-active { transition: all 0.25s ease; }
 .expand-enter-from, .expand-leave-to { opacity: 0; transform: translateY(-6px); }
+
+/* --- Stats Dashboard --- */
+.stats-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; max-width: 500px; margin: 0 auto 24px auto; }
+.stat-card { background: white; border-radius: 16px; padding: 16px; display: flex; align-items: center; gap: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); border-left: 4px solid; }
+.stat-card.blue { border-color: #1a3a5f; }
+.stat-card.green { border-color: #2e7d32; }
+.stat-card.purple { border-color: #6a1b9a; }
+.stat-card.orange { border-color: #e65100; }
+.stat-icon { font-size: 24px; }
+.stat-number { font-size: 1.6rem; font-weight: 700; color: #1a3a5f; line-height: 1; }
+.stat-label { font-size: 11px; color: #888; margin-top: 3px; }
+
+/* --- Doctor Management --- */
+.doctor-section { width: 90%; max-width: 600px; margin: 0 auto 30px auto; background: white; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); overflow: hidden; }
+.section-header { padding: 16px 20px; background: #f8f9fa; border-bottom: 1px solid #eee; }
+.section-title { margin: 0; font-size: 1rem; color: #1a3a5f; font-weight: 700; }
+.doctor-table-wrap { overflow-x: auto; }
+.doctor-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.doctor-table th { background: #f0f4f8; color: #1a3a5f; padding: 10px 14px; text-align: left; font-weight: 600; }
+.doctor-table td { padding: 10px 14px; border-bottom: 1px solid #f0f0f0; color: #333; }
+.doctor-table tr:last-child td { border-bottom: none; }
+.doctor-table tr:hover td { background: #fafbfc; }
+.role-badge { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+.role-badge.admin { background: #e8f0fe; color: #1a3a5f; }
+.role-badge.user { background: #f0f4f8; color: #555; }
+.btn-delete-doc { background: #b71c1c; color: white; border: none; padding: 4px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; }
+.btn-delete-doc:hover { background: #8b0000; }
+.protected-text { font-size: 11px; color: #aaa; font-style: italic; }
 
 .clear-wrapper { display: flex; justify-content: flex-end; margin: 10px 0; }
 .clear-btn { background-color: #ffe500; color: white; border: none; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-weight: 500; }
