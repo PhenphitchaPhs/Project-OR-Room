@@ -1,25 +1,48 @@
-# Project OR Room
-ระบบจัดการคิวห้องผ่าตัด (Surgery Queue Management)
+# 🏥 Project OR Room
+**ระบบจัดการคิวห้องผ่าตัด (Surgery Queue Management)**
 
-เป็นระบบจัดการคิวห้องผ่าตัดอัตโนมัติ โดยมีข้อมูลของคนไข้ที่สามารถคำนวณได้ ยกตัวอย่างเช่น อายุ เพศ ประเภทการเข้ารับการผ่าตัด ประโยชน์คือ ช่วยให้หมอไม่ต้องมาจัดการคิวคนไข้ด้วยตัวเอง
+ระบบจัดการคิวห้องผ่าตัดอัตโนมัติ ที่คำนวณลำดับคิวจากข้อมูลคนไข้ เช่น อายุ เพศ และประเภทการผ่าตัด ช่วยให้แพทย์ไม่ต้องจัดการคิวด้วยตัวเอง ลดภาระงานและเพิ่มประสิทธิภาพการให้บริการ
 
-Main feature
-ระบบ login ที่เป็นส่วนตัว
-ระบบเพิ่มคิวผู้ป่วย
+---
 
-เทคโนโลยีที่ใช้
-Vue
-HTML
-TypeSctipt
+## ✨ Main Features
 
-Installation
-Git clone https://github.com/PhenphitchaPhs/Project-OR-Room.git
+- 🔐 ระบบ Login ที่เป็นส่วนตัวสำหรับแพทย์แต่ละท่าน
+- 📋 ระบบเพิ่มและจัดการคิวผู้ป่วย
+- 🤖 จัดเรียงคิวอัตโนมัติตามอายุ เพศ และวันผ่าตัด
+- 🗓️ ปฏิทินแสดงตารางผ่าตัด
+- 🛡️ ระบบ Admin สำหรับจัดการบัญชีแพทย์และดูภาพรวมสถิติ
+
+---
+
+## 🛠️ เทคโนโลยีที่ใช้
+
+| Frontend | Backend | Database | Deploy |
+|----------|---------|----------|--------|
+| Vue 3 | Hono (Cloudflare Workers) | Cloudflare D1 | Vercel |
+| TypeScript | | | |
+| HTML / CSS | | | |
+
+---
+
+## 🚀 Live Demo
+https://project-or-room.vercel.app
+
+## 💻 Installation (Local Development)
+```bash
+git clone https://github.com/PhenphitchaPhs/Project-OR-Room.git
+cd frontend-v
 npm install
 npm run dev
+```
 
-Account Test
-License: 12345
-Password: 123456**
+---
 
-Signup
-Secret Key: OR-UP01
+## 🔑 Account Test
+
+| Role | License | Password |
+|------|---------|----------|
+| User | `12345` | `123456**` |
+| Admin | `admin01` | `24680@` |
+
+> **Signup Secret Key:** `OR-UP01`
