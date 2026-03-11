@@ -132,7 +132,8 @@ const showLayout = computed(() => {
     '/admin-home',
     '/admin-calendar',
     '/admin-add-patient',
-    '/choose-doctor'
+    '/choose-doctor',
+    '/admin-dashboard'
   ]
   return !hiddenPages.includes(route.path)
 })

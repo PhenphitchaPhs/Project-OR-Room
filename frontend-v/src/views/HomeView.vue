@@ -193,11 +193,7 @@
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
                                         <div class="detail-row"><strong>Notes:</strong> {{ item.notes || '-' }}</div>
-                                        <div class="detail-row"><strong>Urgency:</strong> 
-                                            {{ item.urgency === 'Emergency' ? '🔴 Emergency' : item.urgency === 'Urgent' ? '🟡 Urgent' : item.urgency === 'Normal' ? '🟢 Normal' : '-' }}
-                                        </div>
-                                        <div class="detail-row"><strong>NPO Risk:</strong> {{ item.isNpoRisk ? '🍼 Yes' : '-' }}</div>
-                                        <div class="detail-row"><strong>Infection:</strong> {{ item.isInfected ? '🦠 Yes' : '-' }}</div>
+
                                     </div>
                                 </transition>
 
