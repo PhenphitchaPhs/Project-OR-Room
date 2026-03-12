@@ -114,7 +114,7 @@ const isDayModalOpen = ref(false) // สถานะเปิด/ปิด Pop-u
 const router = useRouter()
 const route = useRoute() 
 const userLicense = computed(() => localStorage.getItem('userLicense') || '------')
-const selectedDay = ref('...')
+const selectedDay = ref(localStorage.getItem('selectedDay') || '...')
 
 // สถานะการเลือกวัน
 const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
@@ -140,13 +140,19 @@ const showLayout = computed(() => {
 
 onMounted(async () => {
   const license = localStorage.getItem('userLicense')
-  if (license) {
+  const savedDay = localStorage.getItem('selectedDay')
+
+  if (savedDay) {
+    selectedDay.value = savedDay
+    tempSelectedDay.value = savedDay
+  } else if (license) {
     try {
       const res = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/users/${license}`)
       const data = await res.json()
       if (data.day) {
         selectedDay.value = data.day
         tempSelectedDay.value = data.day
+        localStorage.setItem('selectedDay', data.day)
       }
     } catch (e) {
       console.error('ดึงวันทำงานไม่สำเร็จ', e)
@@ -176,6 +182,7 @@ const confirmDayChange = async () => {
     if (!response.ok) throw new Error("API Error")
 
     selectedDay.value = tempSelectedDay.value
+    localStorage.setItem('selectedDay', tempSelectedDay.value)
     isDayModalOpen.value = false
     alert("✅ อัปเดตวันทำงานสำเร็จ!")
 

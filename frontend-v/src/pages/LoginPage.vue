@@ -92,7 +92,8 @@ const login = async () => {
       localStorage.setItem("isLoggedIn", "true");
       localStorage.setItem("userLicense", data.user.license); 
       localStorage.setItem("doctorName", data.user.doctorName); 
-      localStorage.setItem("userRole", data.user.role || 'user'); // ป้องกันกรณีไม่มี Role ส่งมา
+      localStorage.setItem("userRole", data.user.role || 'user');
+      localStorage.setItem("selectedDay", data.user.day || 'Monday');
 
       alert("ล็อกอินสำเร็จ ยินดีต้อนรับเข้าสู่ระบบ!");
       router.push("/home");
