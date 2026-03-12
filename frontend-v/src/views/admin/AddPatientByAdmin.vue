@@ -60,6 +60,12 @@
                 </div>
                 <span class="license-text">{{ userLicense }}</span>
             </div>
+            <button class="nav-back-btn" @click="router.push('/admin-home')">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24">
+                    <path fill="white" d="M20 11H7.83l5.59-5.59L12 4l-8 8l8 8l1.41-1.41L7.83 13H20z"/>
+                </svg>
+                <span>Back</span>
+            </button>
             <button class="logout-btn" @click="isLogoutModalOpen = true">
                 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24">
                     <path fill="white"
@@ -116,18 +122,6 @@
 
             <textarea rows="4" placeholder="Additional Notes" v-model="form.notes"></textarea>
 
-            <!-- NPO Risk & Infection -->
-            <div class="checkbox-group">
-                <label class="checkbox-item" :class="{ 'checked-npo': form.isNpoRisk }">
-                    <input type="checkbox" v-model="form.isNpoRisk" />
-                    <span>🍼 NPO Risk</span>
-                </label>
-                <label class="checkbox-item" :class="{ 'checked-inf': form.isInfected }">
-                    <input type="checkbox" v-model="form.isInfected" />
-                    <span>🦠 Infection Risk</span>
-                </label>
-            </div>
-
             <!-- Surgery Detail -->
             <h3 class="section-title">Surgery Detail</h3>
 
@@ -138,13 +132,6 @@
                     <option v-for="doc in doctors" :key="doc.license" :value="doc.license">
                         {{ doc.doctorName }} ({{ doc.license }})
                     </option>
-                </select>
-
-                <!-- Urgency -->
-                <select v-model="form.urgency">
-                    <option value="Normal">🟢 Normal</option>
-                    <option value="Urgent">🟡 Urgent</option>
-                    <option value="Emergency">🔴 Emergency</option>
                 </select>
 
                 <!-- OR Room -->
@@ -227,6 +214,7 @@ const lookupHN = async () => {
             form.fullName = p.fullName
             form.gender = p.gender
             form.disease = p.underlying || ''
+            if (p.age) form.age = p.age
             hnStatus.value = 'found'
         } else {
             hnStatus.value = 'notfound'
@@ -276,9 +264,9 @@ const handleSubmit = async () => {
                 gender: form.gender,
                 procedure: form.procedure,
                 date: form.date,
-                urgency: form.urgency,
-                isNpoRisk: form.isNpoRisk,
-                isInfected: form.isInfected,
+                urgency: 'Normal',
+                isNpoRisk: 0,
+                isInfected: 0,
                 underlying: form.disease,
                 notes: form.notes,
                 doctorLicense: form.doctorLicense
@@ -418,6 +406,8 @@ const handleLogout = () => {
     color: white;
 }
 
+.nav-back-btn { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.18); border: 1.5px solid rgba(255,255,255,0.35); color: white; padding: 7px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; margin-left: auto; margin-right: 10px; transition: background 0.2s; }
+.nav-back-btn:hover { background: rgba(255,255,255,0.28); }
 .logout-btn {
     background: transparent;
     border: none;
