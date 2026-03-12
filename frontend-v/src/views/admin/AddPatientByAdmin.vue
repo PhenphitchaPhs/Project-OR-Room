@@ -96,7 +96,8 @@
                         style="position:absolute;right:10px;top:14px;font-size:11px;color:#888">👤 ใหม่</span>
                 </div>
 
-                <input type="number" placeholder="Age" v-model="form.age" />
+                <input type="number" placeholder="Age" v-model="form.age" readonly class="age-read-only" :title="form.dob ? 'คำนวณจากวันเกิด' : 'กรอก DOB ก่อน'" />
+                <input type="date" v-model="form.dob" :max="todayStr" placeholder="Date of Birth" @change="updateAge" />
 
                 <select v-model="form.gender">
                     <option value="">Select Gender</option>
@@ -195,13 +196,28 @@ onMounted(async () => {
     }
 })
 
+const today = new Date()
+today.setHours(0, 0, 0, 0)
+const offset = today.getTimezoneOffset() * 60000
+const todayStr = new Date(today.getTime() - offset).toISOString().split('T')[0]
+
 const form = reactive({
-    fullName: '', hn: '', age: '', gender: '',
+    fullName: '', hn: '', age: '', dob: '', gender: '',
     disease: '', allergy: '', bloodType: '',
     notes: '', doctorLicense: '', room: '',
     date: '', procedure: '', urgency: 'Normal',
     isNpoRisk: false, isInfected: false
 })
+
+const updateAge = () => {
+    if (!form.dob) return
+    const birth = new Date(form.dob)
+    const ref = form.date ? new Date(form.date) : new Date()
+    let age = ref.getFullYear() - birth.getFullYear()
+    const m = ref.getMonth() - birth.getMonth()
+    if (m < 0 || (m === 0 && ref.getDate() < birth.getDate())) age--
+    form.age = age >= 0 ? age : 0
+}
 
 // autofill ข้อมูลผู้ป่วยเก่าจาก HN
 const lookupHN = async () => {
@@ -214,7 +230,8 @@ const lookupHN = async () => {
             form.fullName = p.fullName
             form.gender = p.gender
             form.disease = p.underlying || ''
-            if (p.age) form.age = p.age
+            if (p.dob) { form.dob = p.dob; updateAge() }
+            else if (p.age) form.age = p.age
             hnStatus.value = 'found'
         } else {
             hnStatus.value = 'notfound'
@@ -259,7 +276,7 @@ const handleSubmit = async () => {
             body: JSON.stringify({
                 hn: form.hn,
                 fullName: form.fullName,
-                dob: '',
+                dob: form.dob,
                 age: form.age,
                 gender: form.gender,
                 procedure: form.procedure,
@@ -440,6 +457,7 @@ const handleLogout = () => {
     color: #1f3a66;
 }
 
+.age-read-only { background: #f0f4f8; color: #555; cursor: not-allowed; }
 .grid-4 {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
