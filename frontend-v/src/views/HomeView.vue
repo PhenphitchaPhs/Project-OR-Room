@@ -225,26 +225,21 @@
                         </div>
 
                         <div v-else>
-                            <div v-for="item in succeedCases" :key="item.id" class="case-card"
+                            <div v-for="item in succeedCases" :key="item.id" class="case-card succeed-item"
                                 @click="openCaseDetail(item)">
-
-                                <div class="case-row top-row">
-                                    <span><strong>Surgery Date:</strong> {{ item.date }}</span>
-                                    <span><strong>Patient:</strong> {{ item.fullName }}</span>
-                                    <span><strong>Room:</strong> {{ item.room }}</span>
+                                <div class="case-grid">
+                                    <div class="grid-row">
+                                        <span><strong>Date:</strong> {{ item.date }}</span>
+                                        <span><strong>Room:</strong> {{ item.room }}</span>
+                                    </div>
+                                    <div class="grid-row">
+                                        <span><strong>HN:</strong> {{ item.hn }}</span>
+                                        <span><strong>Patient:</strong> {{ item.fullName }}</span>
+                                    </div>
+                                    <div class="grid-row single">
+                                        <span><strong>Procedure:</strong> {{ item.procedure }}</span>
+                                    </div>
                                 </div>
-
-                                <div class="case-row">
-                                    <span><strong>Doctor:</strong> {{ doctorName || 'Dr. ' + userLicense }}</span>
-                                    <span><strong>Procedure:</strong> {{ item.procedure }}</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="clear-wrapper">
-                            <div class="clear-wrapper" v-if="succeedCases.length > 0">
-                                <button class="clear-btn" @click="clearSucceedCases">
-                                    Clear
-                                </button>
                             </div>
                         </div>
                     </div>
@@ -530,10 +525,6 @@ const markAsSucceed = async (id) => {
         alert('❌ อัปเดต status ไม่สำเร็จ')
     }
 }
-
-const clearSucceedCases = () => {
-    if (confirm("ล้างประวัติ?")) bookings.value = bookings.value.filter(item => item.status !== FILTERS.SUCCEED)
-}
 </script>
 
 <style scoped>
@@ -707,6 +698,15 @@ const clearSucceedCases = () => {
     margin-left: 10px;
     margin-right: 10px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* --- Succeed Style --- */
+.succeed-item {
+    border-left: 5px solid #03c172;
+    background: #fdfdfd;
+}
+.succeed-item:hover {
+    background: #f0fff4;
 }
 
 .icon-wrap {
@@ -1227,25 +1227,6 @@ const clearSucceedCases = () => {
     border: 1px solid #e0e6ed;
 }
 
-.clear-wrapper {
-    display: flex;
-    justify-content: flex-end;
-    margin: 10px 0;
-}
-
-.clear-btn {
-    background-color: #ffe500;
-    color: white;
-    border: none;
-    padding: 6px 14px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: 500;
-}
-
-.clear-btn:hover {
-    background-color: #ffd500;
-}
 /* 🔥 แก้ไข Checkbox ให้เกาะกลุ่มกันสวยๆ */
 .checkbox-group {
     display: flex;

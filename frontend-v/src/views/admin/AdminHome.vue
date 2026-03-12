@@ -143,26 +143,25 @@
                                     <h3>No completed surgery cases</h3>
                                 </div>
                                 <div v-else>
-                                    <div v-for="item in succeedCases" :key="item.id" class="case-card" @click="openCaseDetail(item)">
-                                        <div class="case-row top-row">
-                                            <span><strong>Surgery Date:</strong> {{ item.date }}</span>
-                                            <span><strong>Patient:</strong> {{ item.fullName }}</span>
-                                            <span><strong>Room:</strong> {{ item.room }}</span>
-                                        </div>
-                                        <div class="case-row">
-                                            <span><strong>Doctor:</strong> {{ doctorMap[item.doctorLicense] || item.doctorLicense || '-' }}</span>
-                                            <span><strong>Procedure:</strong> {{ item.procedure }}</span>
+                                    <div v-for="item in succeedCases" :key="item.id" class="case-card succeed-item" @click="openCaseDetail(item)">
+                                        <div class="case-grid">
+                                            <div class="grid-row">
+                                                <span><strong>Surgery Date:</strong> {{ item.date }}</span>
+                                                <span><strong>Room:</strong> {{ item.room }}</span>
+                                            </div>
+                                            <div class="grid-row">
+                                                <span><strong>Patient:</strong> {{ item.fullName }} ({{ item.hn }})</span>
+                                                <span><strong>Doctor:</strong> {{ doctorMap[item.doctorLicense] || item.doctorLicense || '-' }}</span>
+                                            </div>
+                                            <div class="grid-row single">
+                                                <span><strong>Procedure:</strong> {{ item.procedure }}</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="clear-wrapper" v-if="succeedCases.length > 0">
-                                    <button class="clear-btn" @click="clearSucceedCases">Clear</button>
-                                </div>
                             </div>
                         </div>
-            </div><!-- end queue-card -->
-
-            <div class="info-section">
+            </div><div class="info-section">
                 <div class="info-header">
                     <span class="material-icons info-icon">info</span>
                     <h3>Additional Information</h3>
@@ -328,13 +327,6 @@ const deleteCase = async (id) => {
     } catch (e) { alert('❌ ลบไม่สำเร็จ') }
 }
 
-const clearSucceedCases = async () => {
-    if (!confirm('ล้างประวัติทั้งหมด?')) return
-    const succeedIds = bookings.value.filter(b => b.status === 'Succeed').map(b => b.id)
-    await Promise.all(succeedIds.map(id => fetch(`https://or-room-backend.rockzee2018.workers.dev/api/bookings/${id}`, { method: 'DELETE' })))
-    bookings.value = bookings.value.filter(b => b.status !== 'Succeed')
-}
-
 // Modal logic
 const isDayModalOpen = ref(false)
 const isLogoutModalOpen = ref(false)
@@ -403,6 +395,15 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
 .btn-success { background: #0d47a1; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-size: 13px; cursor: pointer; }
 .btn-delete { background: #b71c1c; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-size: 13px; cursor: pointer; }
 
+/* --- Succeed Style --- */
+.succeed-item {
+    border-left: 5px solid #03c172;
+    background: #fdfdfd;
+}
+.succeed-item:hover {
+    background: #f0fff4;
+}
+
 /* --- Reset Button --- */
 .reset-wrapper { display: flex; justify-content: flex-end; margin-bottom: 10px; padding-right: 10px; }
 .btn-reset { display: flex; align-items: center; gap: 5px; background: #f0f2f5; color: #555; border: 1px solid #ddd; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; transition: 0.2s; }
@@ -466,8 +467,4 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
 .btn-delete-doc { background: #b71c1c; color: white; border: none; padding: 4px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; }
 .btn-delete-doc:hover { background: #8b0000; }
 .protected-text { font-size: 11px; color: #aaa; font-style: italic; }
-
-.clear-wrapper { display: flex; justify-content: flex-end; margin: 10px 0; }
-.clear-btn { background-color: #ffe500; color: white; border: none; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-weight: 500; }
-.clear-btn:hover { background-color: #ffd500; }
 </style>
