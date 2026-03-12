@@ -149,13 +149,20 @@ const checkValidDate = async () => {
         form.date = ''; return
     }
 
-    // เช็คเฉพาะวันทำงานของหมอ
+    // เช็คเฉพาะวันทำงานของหมอ (ดึงจาก API โดยตรง)
     const dayMap = { 'Monday':1, 'Tuesday':2, 'Wednesday':3, 'Thursday':4, 'Friday':5 }
-    const workingDay = localStorage.getItem('selectedDay')
+    const license = localStorage.getItem('userLicense')
     const selectedDow = new Date(form.date + 'T00:00:00').getDay()
-    if (workingDay && dayMap[workingDay] !== selectedDow) {
-        alert(`❌ คุณทำงานเฉพาะวัน ${workingDay} เท่านั้น กรุณาเลือกวัน${workingDay}`)
-        form.date = ''; return
+    try {
+        const res = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/users/${license}`)
+        const userData = await res.json()
+        const workingDay = userData.day
+        if (workingDay && dayMap[workingDay] !== selectedDow) {
+            alert(`❌ คุณทำงานเฉพาะวัน ${workingDay} เท่านั้น กรุณาเลือกวัน${workingDay}`)
+            form.date = ''; return
+        }
+    } catch(e) {
+        console.error('ดึงวันทำงานไม่สำเร็จ', e)
     }
 
     // เช็ค 7 ชั่วโมง (420 นาที)
@@ -222,11 +229,18 @@ const submitForm = async () => {
     }
     
     const dayMap = { 'Monday':1, 'Tuesday':2, 'Wednesday':3, 'Thursday':4, 'Friday':5 }
-    const workingDay = localStorage.getItem('selectedDay')
+    const license = localStorage.getItem('userLicense')
     const selectedDow = new Date(form.date + 'T00:00:00').getDay()
-    if (workingDay && dayMap[workingDay] !== selectedDow) {
-        alert(`❌ คุณทำงานเฉพาะวัน ${workingDay} เท่านั้น`)
-        return
+    try {
+        const res = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/users/${license}`)
+        const userData = await res.json()
+        const workingDay = userData.day
+        if (workingDay && dayMap[workingDay] !== selectedDow) {
+            alert(`❌ คุณทำงานเฉพาะวัน ${workingDay} เท่านั้น`)
+            return
+        }
+    } catch(e) {
+        console.error('ดึงวันทำงานไม่สำเร็จ', e)
     }
 
     const payload = {
