@@ -153,7 +153,7 @@ onMounted(async () => {
         const bData = await resBookings.json()
         const uData = await resUsers.json()
         bookings.value = Array.isArray(bData) ? bData : []
-        doctorList.value = Array.isArray(uData) ? uData : []
+        doctorList.value = Array.isArray(uData) ? uData.filter(u => u.role !== 'admin') : []
     } catch (e) {
         console.error('โหลดข้อมูลไม่สำเร็จ', e)
     } finally {
