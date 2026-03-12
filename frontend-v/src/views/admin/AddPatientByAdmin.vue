@@ -111,14 +111,6 @@
 
             <div class="grid-3">
                 <input type="text" placeholder="Underlying Disease" v-model="form.disease" />
-                <input type="text" placeholder="Drug Allergy" v-model="form.allergy" />
-                <select v-model="form.bloodType">
-                    <option value="">Select Blood Type</option>
-                    <option>A</option>
-                    <option>B</option>
-                    <option>AB</option>
-                    <option>O</option>
-                </select>
             </div>
 
             <textarea rows="4" placeholder="Additional Notes" v-model="form.notes"></textarea>
@@ -243,7 +235,31 @@ const lookupHN = async () => {
 
 // เช็ค 7 ชั่วโมง (420 นาที) รวมทุกหมอ
 const checkValidDate = async () => {
-    if (!form.date || !form.procedure) return
+    if (!form.date) return
+
+    // เช็ควันเสาร์-อาทิตย์
+    const selected = new Date(form.date)
+    const dow = selected.getDay()
+    if (dow === 0 || dow === 6) {
+        alert('❌ วันเสาร์-อาทิตย์ ห้องผ่าตัดปิดให้บริการ')
+        form.date = ''; return
+    }
+
+    // เช็ควันทำงานของหมอที่เลือก
+    if (form.doctorLicense) {
+        const dayMap = { 'Monday':1, 'Tuesday':2, 'Wednesday':3, 'Thursday':4, 'Friday':5 }
+        try {
+            const res = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/users/${form.doctorLicense}`)
+            const userData = await res.json()
+            const workingDay = userData.day
+            if (workingDay && dayMap[workingDay] !== dow) {
+                alert(`❌ หมอคนนี้ทำงานเฉพาะวัน ${workingDay} เท่านั้น`)
+                form.date = ''; return
+            }
+        } catch(e) { console.error('ดึงวันทำงานหมอไม่สำเร็จ', e) }
+    }
+
+    if (!form.procedure) return
     try {
         const res = await fetch('https://or-room-backend.rockzee2018.workers.dev/api/bookings')
         const allBookings = await res.json()
