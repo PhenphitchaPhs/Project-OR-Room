@@ -7,7 +7,7 @@
 
         <Transition name="slide">
             <aside v-if="isDrawerOpen" class="side-drawer">
-                
+
                 <div class="drawer-header">
                     <div class="drawer-user-info">
                         <div class="avatar-circle">
@@ -75,7 +75,8 @@
                 <div class="white-modal-card">
                     <div class="warning-icon">⚠️</div>
                     <h2 class="modal-msg-title red-text">Delete Account?</h2>
-                    <p class="modal-desc">Your account will be deleted, but patient surgery data will remain in the system.</p>
+                    <p class="modal-desc">Your account will be deleted, but patient surgery data will remain in the
+                        system.</p>
                     <div class="modal-button-group">
                         <button class="btn-cancel-gray" @click="isDeleteAccModalOpen = false">Cancel</button>
                         <button class="btn-confirm-red" @click="handleDeleteAccount">Delete</button>
@@ -104,6 +105,7 @@
         </Transition>
 
         <header class="top-nav">
+
             <div class="user-group" @click="isDrawerOpen = true">
                 <div class="avatar-circle small">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
@@ -111,18 +113,82 @@
                             d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10s10-4.48 10-10S17.52 2 12 2m0 4c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6m0 14c-2.03 0-4.43-.82-6.14-2.88a9.947 9.947 0 0 1 12.28 0C16.43 19.18 14.03 20 12 20" />
                     </svg>
                 </div>
+
                 <span class="license-text">{{ userLicense }}</span>
             </div>
+
+            <!-- SEARCH -->
+            <div class="search-box">
+                <span class="material-icons search-icon">search</span>
+
+                <input type="text" v-model="searchHN" placeholder="Search HN..." />
+            </div>
+
             <button class="logout-btn" @click="isLogoutModalOpen = true">
                 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24">
                     <path fill="white"
                         d="M5 21q-.825 0-1.412-.587T3 19V5q0-.825.588-1.412T5 3h6q.425 0 .713.288T12 4t-.288.713T11 5H5v14h6q.425 0 .713.288T12 20t-.288.713T11 21zm12.175-8H10q-.425 0-.712-.288T9 12t.288-.712T10 11h7.175L15.3 9.125q-.275-.275-.275-.675t.275-.7.7-.313t.725.288L20.3 11.3q.3.3.3.7t-.3.7l-3.575 3.575q-.3.3-.712.288t-.713-.313q-.275-.3-.262-.712t.287-.688z" />
                 </svg>
             </button>
+
         </header>
 
         <div class="dashboard-container">
             <h1 class="main-title">Surgery Queue Management</h1>
+            <!-- OR Capacity Card -->
+            <div class="or-capacity-card">
+
+                <div class="capacity-header">
+                    <div class="capacity-title">
+                        <span class="material-icons">monitor_heart</span>
+                        <span>OR Usage Today</span>
+                    </div>
+
+                    <span>{{ usedMinutes }}/420 mins</span>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="capacity-bar">
+                    <div class="capacity-fill" :style="{
+                        width: usagePercent + '%',
+                        background: progressColor
+                    }"></div>
+                </div>
+
+                <!-- Detail -->
+                <div class="capacity-detail">
+
+                    <div class="remaining-time">
+                        <span class="material-icons small-icon">schedule</span>
+                        <span>{{ remainingHour }}h {{ remainingMin }}m left</span>
+                    </div>
+
+                    <div class="capacity-status" :class="{
+                        warning: usagePercent >= 70 && usagePercent < 90,
+                        danger: usagePercent >= 90
+                    }">
+
+                        <span class="material-icons small-icon">
+                            {{
+                                usagePercent >= 90
+                                    ? 'warning'
+                                    : 'check_circle'
+                            }}
+                        </span>
+
+                        <span>
+                            {{
+                                usagePercent >= 90
+                                    ? 'OR almost full'
+                                    : 'Next surgery can fit'
+                            }}
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
 
             <div class="queue-card">
                 <div class="queue-filter">
@@ -146,7 +212,7 @@
                             <h3>No upcoming surgery cases</h3>
                             <p class="sub-text">Please ensure all patient records are updated.</p>
                         </div>
-                        
+
                         <div v-else>
                             <div class="reset-wrapper">
                                 <button class="btn-reset" @click="resetQueue">
@@ -154,13 +220,9 @@
                                 </button>
                             </div>
 
-                            <div v-for="(item, index) in upcomingCases" :key="item.id" 
-                            class="case-card drag-item"
-                            draggable="true"
-                            @dragstart="onDragStart(index, item.id)"
-                            @dragover.prevent
-                            @drop="onDrop(index)"
-                            @click="toggleDetail(item.id)">
+                            <div v-for="(item, index) in upcomingCases" :key="item.id" class="case-card drag-item"
+                                draggable="true" @dragstart="onDragStart(index, item.id)" @dragover.prevent
+                                @drop="onDrop(index)" @click="toggleDetail(item.id)">
 
                                 <div class="case-grid">
 
@@ -189,8 +251,10 @@
                                             <strong>Gender:</strong>
                                             {{ item.gender === 'male' ? 'ชาย' : 'หญิง' }}
                                         </div>
-                                        <div class="detail-row"><strong>Underlying Disease(s):</strong> {{ item.underlying || '-' }}</div>
-                                        <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure }}</div>
+                                        <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
+                                            item.underlying || '-' }}</div>
+                                        <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
+                                            }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
                                         <div class="detail-row"><strong>Notes:</strong> {{ item.notes || '-' }}</div>
 
@@ -198,12 +262,8 @@
                                 </transition>
 
                                 <div class="case-actions">
-                                    <button class="btn-success" @click.stop="markAsSucceed(item.id)">
-                                        Succeed
-                                    </button>
-
                                     <button class="btn-delete" @click.stop="deleteCase(item.id)">
-                                        Delete
+                                        Cancel
                                     </button>
                                 </div>
 
@@ -217,31 +277,163 @@
 
                     <div v-if="filter === FILTERS.SUCCEED">
 
-                        <div v-if="succeedCases.length === 0" class="empty-state">
-                            <div class="icon-wrap">
-                                <span class="material-icons">check_circle</span>
-                            </div>
-                            <h3>No completed surgery cases</h3>
+                        <!-- SUB TAB -->
+                        <div class="queue-filter sub-filter">
+
+                            <button :class="{ active: succeedTab === FILTERS.COMPLETE }"
+                                @click="succeedTab = FILTERS.COMPLETE">
+                                Complete
+                            </button>
+
+                            <button :class="{ active: succeedTab === FILTERS.NOT_COMPLETE }"
+                                @click="succeedTab = FILTERS.NOT_COMPLETE">
+                                Not Complete
+                            </button>
+
                         </div>
 
-                        <div v-else>
-                            <div v-for="item in succeedCases" :key="item.id" class="case-card succeed-item"
-                                @click="openCaseDetail(item)">
-                                <div class="case-grid">
-                                    <div class="grid-row">
-                                        <span><strong>Date:</strong> {{ item.date }}</span>
-                                        <span><strong>Room:</strong> {{ item.room }}</span>
-                                    </div>
-                                    <div class="grid-row">
-                                        <span><strong>HN:</strong> {{ item.hn }}</span>
-                                        <span><strong>Patient:</strong> {{ item.fullName }}</span>
-                                    </div>
-                                    <div class="grid-row single">
-                                        <span><strong>Procedure:</strong> {{ item.procedure }}</span>
-                                    </div>
+                        <!-- COMPLETE -->
+                        <div v-if="succeedTab === FILTERS.COMPLETE">
+
+                            <div v-if="completeCases.length === 0" class="empty-state">
+
+                                <div class="icon-wrap">
+                                    <span class="material-icons">check_circle</span>
                                 </div>
+
+                                <h3>No completed surgery cases</h3>
+
                             </div>
+
+                            <div v-else>
+
+                                <div v-for="item in completeCases" :key="item.id" class="case-card succeed-item"
+                                    @click="toggleDetail(item.id)">
+
+                                    <div class="case-grid">
+
+                                        <div class="grid-row">
+                                            <span><strong>Surgery Date:</strong> {{ item.date }}</span>
+                                            <span><strong>Room:</strong> {{ item.room }}</span>
+                                        </div>
+
+                                        <div class="grid-row">
+                                            <span><strong>Patient:</strong> {{ item.fullName }}</span>
+                                            <span><strong>Procedure:</strong> {{ item.procedure }}</span>
+                                        </div>
+
+                                        <div class="grid-row single">
+                                            <span><strong>Doctor:</strong> {{ doctorName || 'Dr. ' + userLicense
+                                                }}</span>
+                                        </div>
+
+                                    </div>
+
+                                    <!-- DETAIL -->
+                                    <transition name="expand">
+
+                                        <div v-if="expandedId === item.id" class="case-detail">
+
+                                            <div class="detail-row">
+                                                <strong>HN:</strong> {{ item.hn }}
+                                            </div>
+
+                                            <div class="detail-row">
+                                                <strong>Full Name:</strong> {{ item.fullName }}
+                                            </div>
+
+                                            <div class="detail-row">
+                                                <strong>Age:</strong> {{ item.age }}
+                                            </div>
+
+                                            <div class="detail-row">
+                                                <strong>Gender:</strong>
+                                                {{ item.gender === 'male' ? 'ชาย' : 'หญิง' }}
+                                            </div>
+
+                                            <div class="detail-row">
+                                                <strong>Underlying Disease(s):</strong>
+                                                {{ item.underlying || '-' }}
+                                            </div>
+
+                                            <div class="detail-row">
+                                                <strong>Procedure:</strong>
+                                                {{ item.procedure }}
+                                            </div>
+
+                                            <div class="detail-row">
+                                                <strong>Date:</strong>
+                                                {{ item.date }}
+                                            </div>
+
+                                            <div class="detail-row">
+                                                <strong>Notes:</strong>
+                                                {{ item.notes || '-' }}
+                                            </div>
+
+                                        </div>
+
+                                    </transition>
+
+                                </div>
+
+                            </div>
+
                         </div>
+
+                        <!-- NOT COMPLETE -->
+                        <div v-if="succeedTab === FILTERS.NOT_COMPLETE">
+
+                            <div v-if="notCompleteCases.length === 0" class="empty-state">
+
+                                <div class="icon-wrap">
+                                    <span class="material-icons">event_busy</span>
+                                </div>
+
+                                <h3>No incomplete surgery cases</h3>
+
+                            </div>
+
+                            <div v-else>
+
+                                <div v-for="item in notCompleteCases" :key="item.id" class="case-card not-complete-item"
+                                    @click="toggleDetail(item.id)">
+
+
+                                    <div class="case-grid">
+
+                                        <div class="grid-row">
+                                            <span><strong>Date:</strong> {{ item.date }}</span>
+                                            <span><strong>Patient:</strong> {{ item.fullName }}</span>
+                                        </div>
+
+                                        <div class="grid-row">
+                                            <span><strong>Procedure:</strong> {{ item.procedure }}</span>
+                                        </div>
+
+                                    </div>
+
+                                    <!-- ACTION -->
+                                    <div class="case-actions">
+
+                                        <button class="btn-restore" @click.stop="restoreCase(item.id)">
+
+                                            <span class="material-icons">
+                                                restore
+                                            </span>
+
+                                            Back to Upcoming
+
+                                        </button>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
                     </div>
 
                 </div>
@@ -275,17 +467,151 @@
 </template>
 
 <script setup>
+
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
+
+
+const searchHN = ref('')
+
+const FILTERS = {
+    UPCOMING: 'Upcoming',
+    SUCCEED: 'Succeed',
+    COMPLETE: 'Complete',
+    NOT_COMPLETE: 'Not Complete'
+}
+const MAX_MINUTES = 420
+
+
+
+// หา "วันผ่าที่ใกล้ที่สุด"
+const nearestSurgeryDate = computed(() => {
+
+    const upcomingBookings = bookings.value.filter(item =>
+        (item.status === FILTERS.UPCOMING || !item.status)
+        && item.date
+    )
+
+    if (upcomingBookings.length === 0) {
+        return null
+    }
+
+    // เรียงวันที่ใกล้ที่สุด
+    const sorted = [...upcomingBookings].sort(
+        (a, b) => new Date(a.date) - new Date(b.date)
+    )
+
+    return sorted[0].date
+
+})
+
+// รวมเวลาเฉพาะ "วันใกล้ที่สุด"
+const usedMinutes = computed(() => {
+
+    return bookings.value
+
+        .filter(item => {
+
+            const isUpcoming =
+                item.status === FILTERS.UPCOMING || !item.status
+
+            const sameNearestDate =
+                item.date === nearestSurgeryDate.value
+
+            return isUpcoming && sameNearestDate
+
+        })
+
+        .reduce((sum, booking) => {
+
+            const match =
+                booking.procedure?.match(/(\d+)\s*mins?/i)
+
+            const minutes =
+                match ? parseInt(match[1]) : 0
+
+            return sum + minutes
+
+        }, 0)
+
+})
+const restoreCase = async (id) => {
+
+    if (!confirm('Move this case back to Upcoming?')) return
+
+    try {
+
+        const res = await fetch(
+            `https://or-room-backend.rockzee2018.workers.dev/api/bookings/${id}/status`,
+            {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    status: FILTERS.UPCOMING
+                })
+            }
+        )
+
+        if (!res.ok) throw new Error()
+
+        const target = bookings.value.find(item => item.id === id)
+
+        if (target) {
+            target.status = FILTERS.UPCOMING
+        }
+
+    } catch (e) {
+
+        console.error(e)
+        alert('Failed to restore case')
+
+    }
+
+}
+
+// เปอร์เซ็นต์ progress
+const usagePercent = computed(() => {
+    return Math.min((usedMinutes.value / MAX_MINUTES) * 100, 100)
+})
+
+// เวลาคงเหลือ
+const remainingMinutes = computed(() => {
+    return Math.max(MAX_MINUTES - usedMinutes.value, 0)
+})
+
+const remainingHour = computed(() => {
+    return Math.floor(remainingMinutes.value / 60)
+})
+
+const remainingMin = computed(() => {
+    return remainingMinutes.value % 60
+})
+
+// เปลี่ยนสี progress bar
+const progressColor = computed(() => {
+
+    if (usagePercent.value >= 90) {
+        return '#dc2626'
+    }
+
+    if (usagePercent.value >= 70) {
+        return '#f59e0b'
+    }
+
+    return '#1e3a8a'
+})
 
 const router = useRouter()
 const API_URL = 'https://or-room-backend.rockzee2018.workers.dev/api/bookings'
 
 // --- State ---
 const bookings = ref([])
-const userLicense = ref('') 
-const doctorName = ref('') 
+const userLicense = ref('')
+const doctorName = ref('')
 const filter = ref('Upcoming')
+const succeedTab = ref(FILTERS.COMPLETE)
 const expandedId = ref(null)
 const isLoading = ref(false)
 
@@ -293,7 +619,7 @@ const selectedDay = ref('Monday')
 const tempSelectedDay = ref('Monday')
 const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
 
-const FILTERS = { UPCOMING: 'Upcoming', SUCCEED: 'Succeed' }
+
 
 // ================= ระบบจัดเรียงคิว (รวม Drag&Drop แบบใหม่) =================
 const sortCases = (arr) => {
@@ -301,12 +627,12 @@ const sortCases = (arr) => {
     return [...arr].sort((a, b) => {
         // Tier 0: เรียงตามวันก่อนเสมอ
         if (a.date !== b.date) return new Date(a.date) - new Date(b.date)
-        
+
         // 🌟 ถ้าผู้ใช้เคยลากคิวจัดลำดับ (queueOrder) ให้ยึดตามที่ผู้ใช้จัดเป็นหลัก!
         const qA = a.queueOrder || 999
         const qB = b.queueOrder || 999
         if (qA !== qB) return qA - qB
-        
+
         // ถ้าเป็นคิวใหม่ (ยังไม่เคยลากจัด) ให้ใช้ระบบอัจฉริยะแบบเดิม
         const urgA = urgencyScore[a.urgency] || 1
         const urgB = urgencyScore[b.urgency] || 1
@@ -334,8 +660,21 @@ const sortCases = (arr) => {
 
 // ================= Computed Properties =================
 const upcomingCases = computed(() => sortCases(bookings.value.filter(item => item.status === FILTERS.UPCOMING || !item.status)))
-const succeedCases = computed(() => sortCases(bookings.value.filter(item => item.status === FILTERS.SUCCEED)))
+const completeCases = computed(() =>
+    sortCases(
+        bookings.value.filter(
+            item => item.status === FILTERS.COMPLETE
+        )
+    )
+)
 
+const notCompleteCases = computed(() =>
+    sortCases(
+        bookings.value.filter(
+            item => item.status === FILTERS.NOT_COMPLETE
+        )
+    )
+)
 
 // ================= ระบบ Drag & Drop เลื่อนคิว =================
 const draggedIndex = ref(null)
@@ -428,13 +767,13 @@ const fetchBookings = async () => {
 onMounted(() => {
     const savedLicense = localStorage.getItem('userLicense')
     const savedName = localStorage.getItem('doctorName')
-    
+
     if (savedLicense) {
         userLicense.value = savedLicense
-        fetchUserDay(savedLicense) 
+        fetchUserDay(savedLicense)
     }
     if (savedName) doctorName.value = savedName
-    fetchBookings() 
+    fetchBookings()
 })
 
 // ================= ฟังก์ชันเปลี่ยนวัน =================
@@ -503,11 +842,42 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
 const closeDetailModal = () => { isDetailModalOpen.value = false }
 
 const deleteCase = async (id) => {
-    if (!confirm('Confirm delete?')) return
+
+    if (!confirm('Move this case to Not Complete?')) return
+
     try {
-        bookings.value = bookings.value.filter(item => item.id !== id)
-        await fetch(`${API_URL}/${id}`, { method: 'DELETE' })
-    } catch (e) { console.error(e) }
+
+        const res = await fetch(
+            `https://or-room-backend.rockzee2018.workers.dev/api/bookings/${id}/status`,
+            {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    status: FILTERS.NOT_COMPLETE
+                })
+            }
+        )
+
+        if (!res.ok) throw new Error()
+
+        // update UI
+        const target = bookings.value.find(item => item.id === id)
+
+        if (target) {
+            target.status = FILTERS.NOT_COMPLETE
+        }
+
+        alert('✅ Moved to Not Complete')
+
+    } catch (e) {
+
+        console.error(e)
+        alert('❌ Failed to update case')
+
+    }
+
 }
 const markAsSucceed = async (id) => {
     try {
@@ -517,7 +887,7 @@ const markAsSucceed = async (id) => {
             body: JSON.stringify({ status: 'Succeed' })
         })
         if (!res.ok) throw new Error()
-        
+
         // อัปเดต UI
         const target = bookings.value.find(item => item.id === id)
         if (target) { target.status = FILTERS.SUCCEED; filter.value = FILTERS.SUCCEED; }
@@ -705,6 +1075,7 @@ const markAsSucceed = async (id) => {
     border-left: 5px solid #03c172;
     background: #fdfdfd;
 }
+
 .succeed-item:hover {
     background: #f0fff4;
 }
@@ -1086,17 +1457,20 @@ const markAsSucceed = async (id) => {
 }
 
 .btn-delete {
-    background: #b71c1c;
+    background: #e53935;
     color: white;
     border: none;
-    padding: 6px 14px;
-    border-radius: 8px;
+    padding: 8px 18px;
+    border-radius: 10px;
     font-size: 13px;
+    font-weight: 600;
     cursor: pointer;
+    transition: 0.2s ease;
 }
 
 .btn-delete:hover {
-    background: #d32f2f;
+    background: #c62828;
+    transform: translateY(-1px);
 }
 
 /* ---------- Floating Add Button ---------- */
@@ -1238,9 +1612,12 @@ const markAsSucceed = async (id) => {
 .check-label {
     display: flex !important;
     align-items: center !important;
-    justify-content: flex-start !important; /* บังคับชิดซ้าย */
-    gap: 10px !important; /* ระยะห่างระหว่างกล่องกับข้อความ */
-    width: fit-content !important; /* 👈 สำคัญ: ไม่ให้กล่องยาวเต็มบรรทัด */
+    justify-content: flex-start !important;
+    /* บังคับชิดซ้าย */
+    gap: 10px !important;
+    /* ระยะห่างระหว่างกล่องกับข้อความ */
+    width: fit-content !important;
+    /* 👈 สำคัญ: ไม่ให้กล่องยาวเต็มบรรทัด */
     cursor: pointer;
 }
 
@@ -1250,15 +1627,19 @@ input[type="checkbox"] {
     margin: 0 !important;
     flex-shrink: 0;
 }
+
 .drag-item {
     cursor: grab;
-    user-select: none; /* ป้องกันการคลุมดำข้อความ */
+    user-select: none;
+    /* ป้องกันการคลุมดำข้อความ */
     -webkit-user-select: none;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
+
 .drag-item:active {
     cursor: grabbing;
-    transform: scale(1.02); /* ขยายการ์ดนิดนึงให้รู้ว่ากำลังหยิบ */
+    transform: scale(1.02);
+    /* ขยายการ์ดนิดนึงให้รู้ว่ากำลังหยิบ */
     box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
     opacity: 0.9;
 }
@@ -1270,6 +1651,7 @@ input[type="checkbox"] {
     margin-bottom: 10px;
     padding-right: 10px;
 }
+
 .btn-reset {
     display: flex;
     align-items: center;
@@ -1284,11 +1666,167 @@ input[type="checkbox"] {
     font-weight: 600;
     transition: 0.2s;
 }
+
 .btn-reset:hover {
     background: #e4e6e9;
     color: #1a3a5f;
 }
+
 .btn-reset .material-icons {
     font-size: 16px;
+}
+
+/* ===== OR CAPACITY ===== */
+
+.or-capacity-card {
+    width: 100%;
+    max-width: 340px;
+    margin: 0 auto 20px auto;
+
+    background: #ffffff;
+    border-radius: 16px;
+
+    padding: 14px 16px;
+
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+
+    border: 1px solid #e5e7eb;
+}
+
+.capacity-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    font-size: 14px;
+    font-weight: 700;
+
+    color: #1e3a8a;
+
+    margin-bottom: 10px;
+}
+
+.capacity-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.capacity-title .material-icons {
+    font-size: 18px;
+}
+
+.capacity-bar {
+    width: 100%;
+    height: 10px;
+
+    background: #e5e7eb;
+
+    border-radius: 999px;
+    overflow: hidden;
+
+    margin-bottom: 10px;
+}
+
+.capacity-fill {
+    height: 100%;
+    border-radius: 999px;
+
+    transition: 0.3s ease;
+}
+
+.capacity-detail {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    font-size: 12px;
+    color: #4b5563;
+}
+
+.remaining-time {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.capacity-status {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+
+    font-weight: 600;
+    color: #16a34a;
+}
+
+.capacity-status.warning {
+    color: #f59e0b;
+}
+
+.capacity-status.danger {
+    color: #dc2626;
+}
+
+.small-icon {
+    font-size: 15px;
+}
+
+
+
+
+.btn-restore {
+
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    background: #1e3a8a;
+    color: white;
+
+    border: none;
+    border-radius: 10px;
+
+    padding: 8px 14px;
+
+    cursor: pointer;
+}
+
+.btn-restore .material-icons {
+    font-size: 18px;
+}
+
+/*.เสิรชบาร์*/
+.top-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.search-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    background: white;
+    border: 1px solid #d1d5db;
+    border-radius: 12px;
+
+    padding: 8px 14px;
+    width: 260px;
+    margin-left: 60%;
+}
+
+.search-box input {
+    border: none;
+    outline: none;
+    width: 100%;
+    font-size: 14px;
+    background: transparent;
+}
+
+.search-icon {
+    color: #6b7280;
+    font-size: 20px;
 }
 </style>
