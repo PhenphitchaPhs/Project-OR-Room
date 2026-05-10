@@ -308,8 +308,9 @@
 
                             <div v-else>
 
-                                <div v-for="item in completeCases" :key="item.id" class="case-card succeed-item"
-                                    @click="toggleDetail(item.id)">
+                                <div v-for="item in completeCases" :key="item.id"
+                                    :ref="el => setCaseRef(el, item.hn, FILTERS.COMPLETE)"
+                                    class="case-card succeed-item" @click="toggleDetail(item.id)">
 
                                     <div class="case-grid">
 
@@ -397,8 +398,9 @@
 
                             <div v-else>
 
-                                <div v-for="item in notCompleteCases" :key="item.id" class="case-card not-complete-item"
-                                    @click="toggleDetail(item.id)">
+                                <div v-for="item in notCompleteCases" :key="item.id"
+                                    :ref="el => setCaseRef(el, item.hn, FILTERS.NOT_COMPLETE)"
+                                    class="case-card not-complete-item" @click="toggleDetail(item.id)">
 
 
                                     <div class="case-grid">
@@ -469,7 +471,7 @@
 
 <script setup>
 
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 
 
@@ -477,30 +479,64 @@ const searchHN = ref('')
 
 const caseRefs = ref({})
 
-const setCaseRef = (el, hn) => {
-    if (el) {
-        caseRefs.value[hn] = el
+const setCaseRef = (el, hn, tab = FILTERS.UPCOMING) => {
+    if (!el) return
+
+    caseRefs.value[hn] = {
+        el,
+        tab
     }
 }
 
-const searchCase = () => {
+const searchCase = async () => {
 
-    const target = caseRefs.value[searchHN.value]
+    const targetData = caseRefs.value[searchHN.value]
 
-    if (target) {
+    if (!targetData) return
 
-        target.scrollIntoView({
+    const searchCase = async () => {
+        const hn = searchHN.value
+        if (!hn) return
+
+        const targetData = caseRefs.value[hn]
+        if (!targetData) return
+
+        await nextTick()
+
+        const el = targetData.el
+        if (!el) return
+
+        el.scrollIntoView({
             behavior: 'smooth',
             block: 'center'
         })
 
-        target.classList.add('highlight-case')
+        let highlightClass = 'highlight-case'
+
+        if (targetData.tab === FILTERS.NOT_COMPLETE) {
+            highlightClass = 'highlight-case-yellow'
+        }
+
+        el.classList.add(highlightClass)
 
         setTimeout(() => {
-            target.classList.remove('highlight-case')
+            el.classList.remove(highlightClass)
         }, 2500)
-
     }
+    await nextTick()
+
+    const target = targetData.el
+
+    target.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center'
+    })
+
+    target.classList.add('highlight-case')
+
+    setTimeout(() => {
+        target.classList.remove('highlight-case')
+    }, 2500)
 }
 
 
@@ -1860,10 +1896,45 @@ input[type="checkbox"] {
     font-size: 20px;
 }
 
+
 .highlight-case {
-    animation: glowHighlight 2s ease;
-    border: 2px solid #2563eb !important;
+    border: 2px solid #2563eb;
     box-shadow: 0 0 25px rgba(37, 99, 235, 0.45);
+    animation: glowBlue 2s ease;
+}
+
+.highlight-case-yellow {
+    border: 2px solid #facc15;
+    box-shadow: 0 0 25px rgba(250, 204, 21, 0.5);
+    animation: glowYellow 2s ease;
+}
+
+@keyframes glowBlue {
+    0% {
+        transform: scale(1);
+    }
+
+    30% {
+        transform: scale(1.02);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes glowYellow {
+    0% {
+        transform: scale(1);
+    }
+
+    30% {
+        transform: scale(1.02);
+    }
+
+    100% {
+        transform: scale(1);
+    }
 }
 
 @keyframes glowHighlight {
