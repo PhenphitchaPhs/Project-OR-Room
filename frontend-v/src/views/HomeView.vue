@@ -121,7 +121,7 @@
             <div class="search-box">
                 <span class="material-icons search-icon">search</span>
 
-                <input type="text" v-model="searchHN" placeholder="Search HN..." />
+                <input type="text" v-model="searchHN" placeholder="Search HN..." @keyup.enter="searchCase" />
             </div>
 
             <button class="logout-btn" @click="isLogoutModalOpen = true">
@@ -220,9 +220,10 @@
                                 </button>
                             </div>
 
-                            <div v-for="(item, index) in upcomingCases" :key="item.id" class="case-card drag-item"
-                                draggable="true" @dragstart="onDragStart(index, item.id)" @dragover.prevent
-                                @drop="onDrop(index)" @click="toggleDetail(item.id)">
+                            <div v-for="(item, index) in upcomingCases" :key="item.id"
+                                :ref="el => setCaseRef(el, item.hn)" class="case-card drag-item" draggable="true"
+                                @dragstart="onDragStart(index, item.id)" @dragover.prevent @drop="onDrop(index)"
+                                @click="toggleDetail(item.id)">
 
                                 <div class="case-grid">
 
@@ -473,6 +474,35 @@ import { useRouter } from 'vue-router'
 
 
 const searchHN = ref('')
+
+const caseRefs = ref({})
+
+const setCaseRef = (el, hn) => {
+    if (el) {
+        caseRefs.value[hn] = el
+    }
+}
+
+const searchCase = () => {
+
+    const target = caseRefs.value[searchHN.value]
+
+    if (target) {
+
+        target.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
+        })
+
+        target.classList.add('highlight-case')
+
+        setTimeout(() => {
+            target.classList.remove('highlight-case')
+        }, 2500)
+
+    }
+}
+
 
 const FILTERS = {
     UPCOMING: 'Upcoming',
@@ -1828,5 +1858,26 @@ input[type="checkbox"] {
 .search-icon {
     color: #6b7280;
     font-size: 20px;
+}
+
+.highlight-case {
+    animation: glowHighlight 2s ease;
+    border: 2px solid #2563eb !important;
+    box-shadow: 0 0 25px rgba(37, 99, 235, 0.45);
+}
+
+@keyframes glowHighlight {
+
+    0% {
+        transform: scale(1);
+    }
+
+    30% {
+        transform: scale(1.02);
+    }
+
+    100% {
+        transform: scale(1);
+    }
 }
 </style>
