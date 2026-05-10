@@ -6,334 +6,191 @@
                 <polyline points="15 18 9 12 15 6" />
             </svg>
         </button>
+
         <div class="card">
+            <!-- ส่วนแจ้งเตือนเคสวันพรุ่งนี้ -->
+            <div v-if="tomorrowCount > 0" class="reminder-banner">
+                📢 Reminder: พรุ่งนี้มีนัดผ่าตัดทั้งหมด <strong>{{ tomorrowCount }}</strong> เคส
+            </div>
+
             <h1 class="title">Scheduling a surgery</h1>
 
             <form @submit.prevent="submitForm">
-
+                <!-- Patient Information -->
                 <div class="section-group">
                     <label class="group-label">Patient Information</label>
                     <div class="grid-2-col">
-                       <div style="position: relative;">
-                        <input type="text" v-model="form.hn" placeholder="HN" 
-                        class="input-field green-theme" 
-                        @blur="lookupHN" />
-                        <span v-if="hnStatus === 'loading'" style="position:absolute; right:12px; top:12px; font-size:12px; color:#888">⏳ กำลังค้นหา...</span>
-                        <span v-if="hnStatus === 'found'" style="position:absolute; right:12px; top:12px; font-size:12px; color:#2e7d32">✅ พบข้อมูล</span>
-                        <span v-if="hnStatus === 'notfound'" style="position:absolute; right:12px; top:12px; font-size:12px; color:#888">👤 ผู้ป่วยใหม่</span>
-                    </div>
+                        <div style="position: relative;">
+                            <input type="text" v-model="form.hn" placeholder="HN" class="input-field green-theme" @blur="lookupHN" />
+                            <span v-if="hnStatus === 'loading'" class="status-tag">⏳</span>
+                            <span v-if="hnStatus === 'found'" class="status-tag" style="color:#2e7d32">✅ Found</span>
+                        </div>
                         <input type="text" v-model="form.fullName" placeholder="Full Name" class="input-field green-theme" />
                         
                         <div class="split-input-row">
-                            <input type="date" v-model="form.dob" :max="maxDobDate" class="input-field green-theme date-box" title="Date of Birth" />
-                            <input type="text" :value="calculatedAge !== '' ? calculatedAge + ' ปี' : 'อายุ'" readonly class="input-field age-read-only" title="อายุคำนวณอัตโนมัติ" />
-                        </div>
-
-                        <textarea v-model="form.disease" placeholder="Underlying Disease(s)" class="input-field green-theme textarea-auto" rows="1"></textarea>
-                    </div>
-                </div>
-
-                <div class="flex-row-desktop">
-                    <div class="flex-item">
-                        <label class="group-label">Gender</label>
-                        <div class="gender-wrapper">
-                            <label class="gender-box male" :class="{ active: form.gender === 'male' }">
-                                <input type="radio" name="gender" value="male" v-model="form.gender" /> Male
-                            </label>
-                            <label class="gender-box female" :class="{ active: form.gender === 'female' }">
-                                <input type="radio" name="gender" value="female" v-model="form.gender" /> Female
-                            </label>
-                        </div>
-                    </div>
-
-                    <div class="flex-item">
-                        <label class="group-label">Proposed Procedure</label>
-                        <div class="select-wrapper">
-                            <select v-model="form.procedure" class="input-field green-theme">
-                                <option value="" disabled>Surgery list</option>
-                                <option v-for="proc in procedureList" :key="proc.name" :value="proc.name">
-                                    {{ proc.name }}
-                                </option>
+                            <input type="number" v-model="form.age" placeholder="Age (ปี)" min="0" max="120" class="input-field green-theme" />
+                            <select v-model="form.gender" class="input-field green-theme">
+                                <option value="" disabled>Gender</option>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
                             </select>
                         </div>
+                        <textarea v-model="form.disease" placeholder="Underlying Disease(s)" class="input-field green-theme" rows="1"></textarea>
                     </div>
                 </div>
 
+                <!-- Surgery Details -->
                 <div class="section-group">
-                    <label class="group-label">Surgery Date</label>
-                    <input type="date" v-model="form.date" :min="minDate" @change="checkValidDate" class="input-field green-theme" />
+                    <label class="group-label">Surgery Details</label>
+                    <div class="grid-2-col">
+                        <select v-model="form.procedure" class="input-field green-theme">
+                            <option value="" disabled>Select Procedure</option>
+                            <option v-for="proc in procedureList" :key="proc.name" :value="proc.name">{{ proc.name }}</option>
+                        </select>
+                        <input type="date" v-model="form.date" :min="minDate" @change="checkValidDate" class="input-field green-theme" />
+                    </div>
                 </div>
 
+                <!-- Pre-op Notes & Admission (เอาแค่วันที่ออก เหลือแต่ Note) -->
                 <div class="section-group">
-                    <label class="group-label">Notes</label>
-                    <textarea v-model="form.notes" placeholder="Remarks" class="input-field blue-theme note-box" rows="2"></textarea>
+                    <label class="group-label">Pre-operative & Admission Notes</label>
+                    <div class="notes-grid">
+                        <div class="note-item">
+                            <span class="mini-label">CXR</span>
+                            <input type="text" v-model="form.cxrNote" placeholder="CXR result / finding" class="input-field" />
+                        </div>
+                        <div class="note-item">
+                            <span class="mini-label">ECG</span>
+                            <input type="text" v-model="form.ecgNote" placeholder="ECG result / rhythm" class="input-field" />
+                        </div>
+                        <div class="note-item">
+                            <span class="mini-label">Lab</span>
+                            <input type="text" v-model="form.labNote" placeholder="Lab results (Hb, Plt, etc.)" class="input-field" />
+                        </div>
+                        <div class="note-item highlight-note">
+                            <span class="mini-label">Admission</span>
+                            <input type="text" v-model="form.admNote" placeholder="Admission plan / ward" class="input-field" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Other Remarks -->
+                <div class="section-group">
+                    <label class="group-label">Other Remarks</label>
+                    <textarea v-model="form.notes" placeholder="Additional details..." class="input-field blue-theme note-box" rows="2"></textarea>
                 </div>
 
                 <div class="btn-area">
-                    <button type="submit" class="confirm-btn">Confirm</button>
+                    <button type="submit" class="confirm-btn">Confirm Booking</button>
                 </div>
-
             </form>
         </div>
     </div>
 </template>
 
 <script setup>
-import { reactive, ref, computed } from 'vue'
+import { reactive, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
+const tomorrowCount = ref(0)
+const hnStatus = ref('')
+
+const form = reactive({
+    hn: '', fullName: '', age: '', gender: '', disease: '', 
+    procedure: '', date: '', notes: '',
+    cxrNote: '', ecgNote: '', labNote: '', admNote: ''
+})
 
 const procedureList = ref([
     { name: "Appendectomy (ผ่าตัดไส้ติ่ง) - 60 min", min: 60 },
     { name: "Laparoscopic Cholecystectomy / LC - 120 min", min: 120 },
     { name: "Cesarean Section / C-Section - 60 min", min: 60 },
-    { name: "Herniorrhaphy (ผ่าตัดไส้เลื่อน) - 90 min", min: 90 },
     { name: "Total Knee Arthroplasty / TKA - 180 min", min: 180 },
-    { name: "Thyroidectomy (ผ่าตัดต่อมไทรอยด์) - 120 min", min: 120 },
-    { name: "Modified Radical Mastectomy / MRM - 120 min", min: 120 },
-    { name: "Cataract Surgery (ผ่าตัดต้อกระจก) - 30 min", min: 30 },
-    { name: "Hemorrhoidectomy (ผ่าตัดริดสีดวง) - 45 min", min: 45 },
-    { name: "Exploratory Laparotomy (เปิดช่องท้อง) - 180 min", min: 180 }
+    { name: "Cataract Surgery (ผ่าตัดต้อกระจก) - 30 min", min: 30 }
 ])
 
-const officialHolidays = [
-    "01-01", "04-06", "04-13", "04-14", "04-15", "05-01", 
-    "05-04", "06-03", "07-28", "08-12", "10-13", "10-23", 
-    "12-05", "12-10", "12-31"
-]
+const todayStr = new Date().toISOString().split('T')[0]
+const minDate = ref(todayStr)
 
-const form = reactive({
-    hn: '', fullName: '', dob: '', disease: '', gender: '', procedure: '', date: '', notes: ''
-})
-
-const goHome = () => router.push('/home')
-
-const today = new Date();
-today.setHours(0, 0, 0, 0);
-const offset = today.getTimezoneOffset() * 60000;
-const todayStr = new Date(today.getTime() - offset).toISOString().split('T')[0];
-
-const minDate = ref(todayStr); 
-const maxDobDate = ref(todayStr); 
-
-const calculatedAge = computed(() => {
-    if (!form.dob) return '';
-    
-    const birthDate = new Date(form.dob);
-    const referenceDate = form.date ? new Date(form.date) : new Date();
-    
-    let age = referenceDate.getFullYear() - birthDate.getFullYear();
-    const monthDiff = referenceDate.getMonth() - birthDate.getMonth();
-    
-    if (monthDiff < 0 || (monthDiff === 0 && referenceDate.getDate() < birthDate.getDate())) {
-        age--;
-    }
-    
-    return age >= 0 ? age : 0;
-})
-
-const isHolidayOrWeekend = (dateString) => {
-    const selected = new Date(dateString)
-    const day = selected.getDay()
-    const monthDay = dateString.substring(5)
-    return day === 0 || day === 6 || officialHolidays.includes(monthDay)
-}
-
-const checkValidDate = async () => {
-    if (!form.date) return
-
-    // เช็ควันหยุด
-    if (isHolidayOrWeekend(form.date)) {
-        alert('❌ วันหยุดราชการ หรือ วันเสาร์-อาทิตย์ ห้องผ่าตัดปิดให้บริการ')
-        form.date = ''; return
-    }
-
-    // เช็คเฉพาะวันทำงานของหมอ (ดึงจาก API โดยตรง)
-    const dayMap = { 'Monday':1, 'Tuesday':2, 'Wednesday':3, 'Thursday':4, 'Friday':5 }
-    const license = localStorage.getItem('userLicense')
-    const selectedDow = new Date(form.date + 'T00:00:00').getDay()
+onMounted(async () => {
     try {
-        const res = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/users/${license}`)
-        const userData = await res.json()
-        const workingDay = userData.day
-        if (workingDay && dayMap[workingDay] !== selectedDow) {
-            alert(`❌ คุณทำงานเฉพาะวัน ${workingDay} เท่านั้น กรุณาเลือกวัน${workingDay}`)
-            form.date = ''; return
-        }
-    } catch(e) {
-        console.error('ดึงวันทำงานไม่สำเร็จ', e)
-    }
-
-    // เช็ค 7 ชั่วโมง (420 นาที)
-    try {
+        const tomorrow = new Date()
+        tomorrow.setDate(tomorrow.getDate() + 1)
+        const tomStr = tomorrow.toISOString().split('T')[0]
         const res = await fetch('https://or-room-backend.rockzee2018.workers.dev/api/bookings')
-        const allBookings = await res.json()
-        const sameDayBookings = allBookings.filter(b => b.date === form.date && b.status !== 'Succeed')
-        
-        const usedMinutes = sameDayBookings.reduce((sum, b) => {
-            const match = b.procedure?.match(/(\d+)\s*min/)
-            return sum + (match ? parseInt(match[1]) : 0)
-        }, 0)
-
-        const selectedProc = procedureList.value.find(p => p.name === form.procedure)
-        const newProcMin = selectedProc ? selectedProc.min : 0
-        
-        if (usedMinutes + newProcMin > 420) {
-            const remaining = 420 - usedMinutes
-            alert(`❌ วันที่ ${form.date} มีเวลาเหลือแค่ ${remaining} นาที แต่ procedure นี้ใช้ ${newProcMin} นาที\nกรุณาเลือกวันอื่น`)
-            form.date = ''; return
+        if (res.ok) {
+            const data = await res.json()
+            tomorrowCount.value = data.filter(b => b.date === tomStr).length
         }
-    } catch(e) {
-        console.error('เช็คความจุไม่สำเร็จ', e)
-    }
-}
-
-//เพิ่ม autofill เมื่อกรอก HN
-const hnStatus = ref('') // '', 'loading', 'found', 'notfound'
+    } catch (e) { console.error("Reminder failed", e) }
+})
 
 const lookupHN = async () => {
-    if (form.hn.length < 3) return  // รอให้กรอกอย่างน้อย 3 ตัวก่อน
-    
+    if (form.hn.length < 3) return
     hnStatus.value = 'loading'
     try {
         const res = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/patients/${form.hn}`)
-        
         if (res.ok) {
-            const patient = await res.json()
-            // autofill ข้อมูล
-            form.fullName = patient.fullName
-            form.dob = patient.dob
-            form.gender = patient.gender
-            form.disease = patient.underlying || ''
+            const p = await res.json()
+            form.fullName = p.fullName; form.gender = p.gender; form.disease = p.underlying || ''
             hnStatus.value = 'found'
-        } else {
-            hnStatus.value = 'notfound'
-        }
-    } catch (e) {
-        hnStatus.value = 'notfound'
+        } else { hnStatus.value = 'notfound' }
+    } catch (e) { hnStatus.value = 'notfound' }
+}
+
+const checkValidDate = () => {
+    if (!form.date) return
+    const day = new Date(form.date).getDay()
+    if (day === 0 || day === 6) {
+        alert('❌ วันหยุดเสาร์-อาทิตย์')
+        form.date = ''
     }
 }
 
-// เปลี่ยนเป็น async function เพื่อให้ใช้ await fetch ได้
 const submitForm = async () => {
-    // 1. เช็กข้อมูลพื้นฐาน
-    if (!form.hn || !form.fullName || !form.dob || !form.gender || !form.procedure || !form.date) {
-        alert('กรุณากรอกข้อมูลให้ครบ')
+    if (!form.hn || !form.fullName || !form.age || !form.date) {
+        alert('กรุณากรอกข้อมูลสำคัญให้ครบถ้วน')
         return
     }
-
-    if (isHolidayOrWeekend(form.date)) {
-        alert('❌ ไม่สามารถจองคิวในวันหยุดราชการหรือเสาร์-อาทิตย์ได้ครับ')
-        return
-    }
-    
-    const dayMap = { 'Monday':1, 'Tuesday':2, 'Wednesday':3, 'Thursday':4, 'Friday':5 }
-    const license = localStorage.getItem('userLicense')
-    const selectedDow = new Date(form.date + 'T00:00:00').getDay()
+    const payload = { ...form, doctorLicense: localStorage.getItem('userLicense'), status: 'Pending' }
     try {
-        const res = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/users/${license}`)
-        const userData = await res.json()
-        const workingDay = userData.day
-        if (workingDay && dayMap[workingDay] !== selectedDow) {
-            alert(`❌ คุณทำงานเฉพาะวัน ${workingDay} เท่านั้น`)
-            return
-        }
-    } catch(e) {
-        console.error('ดึงวันทำงานไม่สำเร็จ', e)
-    }
-
-    const payload = {
-        hn: form.hn,
-        fullName: form.fullName, 
-        dob: form.dob,
-        age: calculatedAge.value, 
-        gender: form.gender,
-        procedure: form.procedure,
-        date: form.date,
-        urgency: 'Normal',
-        isNpoRisk: 0,
-        isInfected: 0,
-        underlying: form.disease,
-        notes: form.notes,
-        doctorLicense: localStorage.getItem('userLicense')
-    }
-
-    try {
-        // 3. ยิงข้อมูลไปหา Hono API ของเรา
-        const response = await fetch('https://or-room-backend.rockzee2018.workers.dev/api/bookings', {
+        const res = await fetch('https://or-room-backend.rockzee2018.workers.dev/api/bookings', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         })
-
-        if (!response.ok) throw new Error('Network response was not ok')
-
-        alert("✅ จองคิวสำเร็จ! ข้อมูลถูกบันทึกลง Cloudflare D1 เรียบร้อยแล้ว")
-        
-        // ล้างค่าในฟอร์ม
-        Object.keys(form).forEach(key => form[key] = '')
-        
-        // เด้งกลับหน้า Home
-        router.push('/home')
-
-    } catch (error) {
-        console.error("Error saving booking:", error)
-        alert("❌ เกิดข้อผิดพลาดในการบันทึกข้อมูลลงฐานข้อมูล")
-    }
+        if (res.ok) {
+            alert("✅ จองคิวสำเร็จ!"); router.push('/home')
+        }
+    } catch (e) { alert("❌ เกิดข้อผิดพลาด") }
 }
+
+const goHome = () => router.push('/home')
 </script>
 
 <style scoped>
-/* ===== GLOBAL FIX ===== */
-* { box-sizing: border-box; }
-.page-wrapper { display: flex; justify-content: center; padding: 20px; width: 100%; min-height: 100vh; background: linear-gradient(135deg, #0f2a47, #1e3a5f); }
-.card { position: relative; background: #ffffff; width: 100%; max-width: 500px; padding: 25px; border-radius: 14px; box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15); }
-.title { color: #0f2a47; text-align: center; font-size: 24px; font-weight: 700; margin-bottom: 25px; }
-.group-label { display: block; color: #1e3a5f; margin-bottom: 8px; font-weight: 600; }
-.section-group { margin-bottom: 20px; }
-input, textarea, select { width: 100%; box-sizing: border-box; }
+.page-wrapper { display: flex; justify-content: center; padding: 20px; min-height: 100vh; background: linear-gradient(135deg, #0f2a47, #1e3a5f); }
+.card { background: #fff; width: 100%; max-width: 700px; padding: 30px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); position: relative; }
 
-.input-field { padding: 12px; border-radius: 10px; border: 1px solid #d6e2f1; background: #f4f8fd; font-size: 14px; margin-bottom: 12px; transition: 0.25s; }
-.input-field:focus { outline: none; border: 1px solid #0f2a47; background: #ffffff; }
+.reminder-banner { background: #fff3cd; color: #856404; padding: 12px; border-radius: 10px; margin-bottom: 20px; border-left: 5px solid #ffc107; font-size: 14px; }
+.title { color: #0f2a47; text-align: center; font-size: 22px; margin-bottom: 25px; }
 
-/* 🔴 โซนใหม่: ตกแต่งกล่อง DOB และ Age ให้อยู่คู่กัน */
-.split-input-row { 
-    display: flex; 
-    gap: 12px; 
-    width: 100%; 
-}
-.date-box { 
-    flex: 2; /* ให้กล่องปฏิทินกว้างกว่านิดนึง */
-}
-.age-read-only { 
-    flex: 1; /* ให้กล่องอายุกะทัดรัดลง */
-    background: #e9ecef !important; /* สีเทาอ่อนให้รู้ว่าพิมพ์ไม่ได้ */
-    color: #495057; 
-    text-align: center; 
-    font-weight: 600;
-    cursor: not-allowed; /* เปลี่ยนเมาส์เป็นเครื่องหมายห้าม */
-    border: 1px solid #ced4da;
-}
+.notes-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.note-item { display: flex; flex-direction: column; gap: 4px; }
+.mini-label { font-size: 11px; font-weight: 700; color: #666; margin-left: 5px; }
+.highlight-note { grid-column: span 2; background: #f0f7ff; padding: 8px; border-radius: 8px; }
 
-textarea { resize: none; overflow-wrap: break-word; }
-.textarea-auto { overflow: hidden; min-height: 40px; }
-.gender-wrapper { display: flex; gap: 10px; margin-bottom: 15px; }
-.gender-box { flex: 1; padding: 10px; text-align: center; border-radius: 10px; cursor: pointer; font-weight: 600; border: 2px solid transparent; transition: 0.3s ease; }
-.gender-box.male { background: #e0f2fe; color: #1d4ed8; }
-.gender-box.male.active { background: #1d4ed8; color: white; border: 2px solid #1e40af; }
-.gender-box.female { background: #fce7f3; color: #db2777; }
-.gender-box.female.active { background: #db2777; color: white; border: 2px solid #be185d; }
+.input-field { width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #d6e2f1; background: #f4f8fd; font-size: 14px; box-sizing: border-box; }
+.grid-2-col { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+.split-input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 15px; }
 
-.confirm-btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #0f2a47, #1e3a5f); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; }
-.back-btn { position: absolute; top: 20px; left: 20px; z-index: 100; width: 40px; height: 40px; border-radius: 50%; border: none; background: #eef3fb; display: flex; justify-content: center; align-items: center; cursor: pointer; color: #0f2a47; }
+.confirm-btn { width: 100%; padding: 15px; background: #1e3a5f; color: white; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; margin-top: 20px; }
+.back-btn { position: absolute; top: 20px; left: 20px; width: 35px; height: 35px; border-radius: 50%; border: none; background: #f0f4f8; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 
-@media (min-width: 1024px) {
-    .card { max-width: 1000px; padding: 40px; }
-    .grid-2-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-    .input-field { margin-bottom: 0; }
-    .flex-row-desktop { display: flex; gap: 30px; margin-bottom: 20px; }
-    .flex-item { flex: 1; }
-    .confirm-btn { width: 200px; margin: 0 auto; display: block; }
+@media (max-width: 600px) {
+    .notes-grid { grid-template-columns: 1fr; }
+    .highlight-note { grid-column: span 1; }
+    .grid-2-col { grid-template-columns: 1fr; }
 }
 </style>
