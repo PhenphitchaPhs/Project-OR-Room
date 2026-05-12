@@ -8,7 +8,6 @@
         </button>
 
         <div class="card">
-            <!-- ส่วนแจ้งเตือนเคสวันพรุ่งนี้ -->
             <div v-if="tomorrowCount > 0" class="reminder-banner">
                 📢 Reminder: พรุ่งนี้มีนัดผ่าตัดทั้งหมด <strong>{{ tomorrowCount }}</strong> เคส
             </div>
@@ -16,7 +15,6 @@
             <h1 class="title">Scheduling a surgery</h1>
 
             <form @submit.prevent="submitForm">
-                <!-- Patient Information -->
                 <div class="section-group">
                     <label class="group-label">Patient Information</label>
                     <div class="grid-2-col">
@@ -39,7 +37,6 @@
                     </div>
                 </div>
 
-                <!-- Surgery Details -->
                 <div class="section-group">
                     <label class="group-label">Surgery Details</label>
                     <div class="grid-2-col">
@@ -51,30 +48,40 @@
                     </div>
                 </div>
 
-                <!-- Pre-op Notes & Admission (เอาแค่วันที่ออก เหลือแต่ Note) -->
                 <div class="section-group">
                     <label class="group-label">Pre-operative & Admission Notes</label>
                     <div class="notes-grid">
                         <div class="note-item">
-                            <span class="mini-label">CXR</span>
-                            <input type="text" v-model="form.cxrNote" placeholder="CXR result / finding" class="input-field" />
+                            <span class="mini-label">CXR (Date & Note)</span>
+                            <div class="date-note-row">
+                                <input type="date" v-model="form.cxrDate" class="input-field date-input" />
+                                <input type="text" v-model="form.cxrNote" placeholder="CXR result / finding" class="input-field" />
+                            </div>
                         </div>
                         <div class="note-item">
-                            <span class="mini-label">ECG</span>
-                            <input type="text" v-model="form.ecgNote" placeholder="ECG result / rhythm" class="input-field" />
+                            <span class="mini-label">ECG (Date & Note)</span>
+                            <div class="date-note-row">
+                                <input type="date" v-model="form.ecgDate" class="input-field date-input" />
+                                <input type="text" v-model="form.ecgNote" placeholder="ECG result / rhythm" class="input-field" />
+                            </div>
                         </div>
                         <div class="note-item">
-                            <span class="mini-label">Lab</span>
-                            <input type="text" v-model="form.labNote" placeholder="Lab results (Hb, Plt, etc.)" class="input-field" />
+                            <span class="mini-label">Lab (Date & Note)</span>
+                            <div class="date-note-row">
+                                <input type="date" v-model="form.labDate" class="input-field date-input" />
+                                <input type="text" v-model="form.labNote" placeholder="Lab results (Hb, Plt, etc.)" class="input-field" />
+                            </div>
                         </div>
                         <div class="note-item highlight-note">
-                            <span class="mini-label">Admission</span>
-                            <input type="text" v-model="form.admNote" placeholder="Admission plan / ward" class="input-field" />
+                            <span class="mini-label">Admission (Date & Note)</span>
+                            <div class="date-note-row">
+                                <input type="date" v-model="form.admDate" class="input-field date-input" />
+                                <input type="text" v-model="form.admNote" placeholder="Admission plan / ward" class="input-field" />
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Other Remarks -->
                 <div class="section-group">
                     <label class="group-label">Other Remarks</label>
                     <textarea v-model="form.notes" placeholder="Additional details..." class="input-field blue-theme note-box" rows="2"></textarea>
@@ -96,10 +103,14 @@ const router = useRouter()
 const tomorrowCount = ref(0)
 const hnStatus = ref('')
 
+// เพิ่มตัวแปรเก็บวันที่สำหรับ CXR, ECG, Lab, Adm
 const form = reactive({
     hn: '', fullName: '', age: '', gender: '', disease: '', 
     procedure: '', date: '', notes: '',
-    cxrNote: '', ecgNote: '', labNote: '', admNote: ''
+    cxrDate: '', cxrNote: '', 
+    ecgDate: '', ecgNote: '', 
+    labDate: '', labNote: '', 
+    admDate: '', admNote: ''
 })
 
 const procedureList = ref([
@@ -176,10 +187,14 @@ const goHome = () => router.push('/home')
 .reminder-banner { background: #fff3cd; color: #856404; padding: 12px; border-radius: 10px; margin-bottom: 20px; border-left: 5px solid #ffc107; font-size: 14px; }
 .title { color: #0f2a47; text-align: center; font-size: 22px; margin-bottom: 25px; }
 
-.notes-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.note-item { display: flex; flex-direction: column; gap: 4px; }
+.notes-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.note-item { display: flex; flex-direction: column; gap: 6px; }
 .mini-label { font-size: 11px; font-weight: 700; color: #666; margin-left: 5px; }
-.highlight-note { grid-column: span 2; background: #f0f7ff; padding: 8px; border-radius: 8px; }
+.highlight-note { grid-column: span 2; background: #f0f7ff; padding: 12px; border-radius: 8px; }
+
+/* จัดเรียงวันที่และ Note ให้อยู่บรรทัดเดียวกัน */
+.date-note-row { display: flex; gap: 8px; }
+.date-input { max-width: 130px; }
 
 .input-field { width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #d6e2f1; background: #f4f8fd; font-size: 14px; box-sizing: border-box; }
 .grid-2-col { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
@@ -192,5 +207,30 @@ const goHome = () => router.push('/home')
     .notes-grid { grid-template-columns: 1fr; }
     .highlight-note { grid-column: span 1; }
     .grid-2-col { grid-template-columns: 1fr; }
+    
+    /* ถ้าย่อจอให้ช่อง Date กับ Note เรียงลงมาแทน */
+    .date-note-row { flex-direction: column; }
+    .date-input { max-width: 100%; }
+}
+
+/* เพิ่มระยะห่างด้านบนของแต่ละหมวดหมู่ (ดันให้ห่างจากส่วนก่อนหน้า) */
+.section-group {
+    margin-top: 32px; 
+}
+
+/* ยกเว้นหมวดหมู่แรกสุด ไม่ต้องให้มีระยะห่างด้านบน */
+.section-group:first-child {
+    margin-top: 0;
+}
+
+/* จัดทรงข้อความหัวข้อ (Label) ให้สวยงามและเว้นระยะจากช่องกรอกข้อมูล */
+.group-label {
+    display: block;
+    font-size: 16px;
+    font-weight: 700;
+    color: #1e3a5f;
+    margin-bottom: 12px; /* เว้นระยะด้านล่าง ไม่ให้ชิดช่องกรอกข้อมูลเกินไป */
+    border-bottom: 2px solid #f0f4f8; /* (เสริม) เพิ่มเส้นใต้บางๆ ให้แบ่งโซนดูง่ายขึ้น */
+    padding-bottom: 6px;
 }
 </style>
