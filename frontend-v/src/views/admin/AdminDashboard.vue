@@ -152,8 +152,22 @@ onMounted(async () => {
         ])
         const bData = await resBookings.json()
         const uData = await resUsers.json()
-        bookings.value = Array.isArray(bData) ? bData : []
-        doctorList.value = Array.isArray(uData) ? uData.filter(u => u.role !== 'admin') : []
+
+        bookings.value = Array.isArray(bData) ? bData : (bData?.bookings ?? bData?.data ?? [])
+
+        // รองรับทุก shape ที่ API อาจ return
+        let userArray = []
+        if (Array.isArray(uData)) {
+            userArray = uData
+        } else if (Array.isArray(uData?.users)) {
+            userArray = uData.users
+        } else if (Array.isArray(uData?.data)) {
+            userArray = uData.data
+        } else if (Array.isArray(uData?.results)) {
+            userArray = uData.results
+        }
+
+        doctorList.value = userArray.filter(u => u.role === 'user')
     } catch (e) {
         console.error('โหลดข้อมูลไม่สำเร็จ', e)
     } finally {

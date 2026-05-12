@@ -115,6 +115,38 @@
 
             <textarea rows="4" placeholder="Additional Notes" v-model="form.notes"></textarea>
 
+            <h3 class="section-title">Pre-operative & Admission Notes</h3>
+<div class="grid-2">
+    <div>
+        <label class="note-label">CXR (Date & Note)</label>
+        <div class="date-note-row">
+            <input type="date" v-model="form.cxrDate" class="date-input" />
+            <input type="text" v-model="form.cxrNote" placeholder="CXR result / finding" />
+        </div>
+    </div>
+    <div>
+        <label class="note-label">ECG (Date & Note)</label>
+        <div class="date-note-row">
+            <input type="date" v-model="form.ecgDate" class="date-input" />
+            <input type="text" v-model="form.ecgNote" placeholder="ECG result / rhythm" />
+        </div>
+    </div>
+    <div>
+        <label class="note-label">Lab (Date & Note)</label>
+        <div class="date-note-row">
+            <input type="date" v-model="form.labDate" class="date-input" />
+            <input type="text" v-model="form.labNote" placeholder="Lab results" />
+        </div>
+    </div>
+    <div>
+        <label class="note-label">Admission (Date & Note)</label>
+        <div class="date-note-row">
+            <input type="date" v-model="form.admDate" class="date-input" />
+            <input type="text" v-model="form.admNote" placeholder="Admission plan / ward" />
+        </div>
+    </div>
+</div>
+
             <!-- Surgery Detail -->
             <h3 class="section-title">Surgery Detail</h3>
 
@@ -198,7 +230,10 @@ const form = reactive({
     disease: '', allergy: '', bloodType: '',
     notes: '', doctorLicense: '', room: '',
     date: '', procedure: '', urgency: 'Normal',
-    isNpoRisk: false, isInfected: false
+    isNpoRisk: false, isInfected: false,
+    // 👇 เพิ่มบรรทัดด้านล่างนี้เข้าไป 👇
+    cxrDate: '', cxrNote: '', ecgDate: '', ecgNote: '',
+    labDate: '', labNote: '', admDate: '', admNote: ''
 })
 
 const updateAge = () => {
@@ -302,7 +337,12 @@ const handleSubmit = async () => {
                 isInfected: 0,
                 underlying: form.disease,
                 notes: form.notes,
-                doctorLicense: form.doctorLicense
+                doctorLicense: form.doctorLicense,
+                // 👇 เพิ่มบรรทัดด้านล่างนี้เข้าไป 👇
+                cxrDate: form.cxrDate, cxrNote: form.cxrNote,
+                ecgDate: form.ecgDate, ecgNote: form.ecgNote,
+                labDate: form.labDate, labNote: form.labNote,
+                admDate: form.admDate, admNote: form.admNote
             })
         })
         if (!res.ok) throw new Error()
@@ -686,5 +726,32 @@ textarea {
     .btn-container {
         justify-content: center;
     }
+}
+
+/* เพิ่ม CSS สำหรับ Pre-op Notes */
+.grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    margin-top: 15px;
+}
+.note-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1f3a66;
+    margin-bottom: 6px;
+    display: block;
+}
+.date-note-row {
+    display: flex;
+    gap: 8px;
+}
+.date-input {
+    max-width: 140px;
+}
+
+@media (max-width: 900px) {
+    .grid-2 { grid-template-columns: 1fr; }
+    .date-input { max-width: 120px; }
 }
 </style>

@@ -19,32 +19,36 @@
                     <label class="group-label">Patient Information</label>
                     <div class="grid-2-col">
                         <div style="position: relative;">
-                            <input type="text" v-model="form.hn" placeholder="HN" class="input-field green-theme" @blur="lookupHN" />
+                            <input type="text" v-model="form.hn" placeholder="HN" class="input-field green-theme" @blur="lookupHN" required />
                             <span v-if="hnStatus === 'loading'" class="status-tag">⏳</span>
                             <span v-if="hnStatus === 'found'" class="status-tag" style="color:#2e7d32">✅ Found</span>
                         </div>
-                        <input type="text" v-model="form.fullName" placeholder="Full Name" class="input-field green-theme" />
+                        <input type="text" v-model="form.fullName" placeholder="Full Name" class="input-field green-theme" required />
                         
                         <div class="split-input-row">
-                            <input type="number" v-model="form.age" placeholder="Age (ปี)" min="0" max="120" class="input-field green-theme" />
-                            <select v-model="form.gender" class="input-field green-theme">
+                            <input type="number" v-model="form.age" placeholder="Age (ปี)" min="0" max="120" class="input-field green-theme" required />
+                            <select v-model="form.gender" class="input-field green-theme" required>
                                 <option value="" disabled>Gender</option>
                                 <option value="male">Male</option>
                                 <option value="female">Female</option>
                             </select>
                         </div>
-                        <textarea v-model="form.disease" placeholder="Underlying Disease(s)" class="input-field green-theme" rows="1"></textarea>
+                        <textarea v-model="form.disease" placeholder="Underlying Disease(s)" class="input-field green-theme" rows="1" required></textarea>
                     </div>
                 </div>
 
                 <div class="section-group">
                     <label class="group-label">Surgery Details</label>
                     <div class="grid-2-col">
-                        <select v-model="form.procedure" class="input-field green-theme">
+                        <select v-model="form.procedure" class="input-field green-theme" @change="checkValidDate" required>
                             <option value="" disabled>Select Procedure</option>
-                            <option v-for="proc in procedureList" :key="proc.name" :value="proc.name">{{ proc.name }}</option>
+                            <optgroup v-for="group in procedureGroups" :key="group.label" :label="group.label">
+                                <option v-for="proc in group.options" :key="proc.name" :value="proc.name">
+                                    {{ proc.name }}
+                                </option>
+                            </optgroup>
                         </select>
-                        <input type="date" v-model="form.date" :min="minDate" @change="checkValidDate" class="input-field green-theme" />
+                        <input type="date" v-model="form.date" :min="minDate" @change="checkValidDate" class="input-field green-theme" required />
                     </div>
                 </div>
 
@@ -103,7 +107,6 @@ const router = useRouter()
 const tomorrowCount = ref(0)
 const hnStatus = ref('')
 
-// เพิ่มตัวแปรเก็บวันที่สำหรับ CXR, ECG, Lab, Adm
 const form = reactive({
     hn: '', fullName: '', age: '', gender: '', disease: '', 
     procedure: '', date: '', notes: '',
@@ -113,12 +116,44 @@ const form = reactive({
     admDate: '', admNote: ''
 })
 
-const procedureList = ref([
-    { name: "Appendectomy (ผ่าตัดไส้ติ่ง) - 60 min", min: 60 },
-    { name: "Laparoscopic Cholecystectomy / LC - 120 min", min: 120 },
-    { name: "Cesarean Section / C-Section - 60 min", min: 60 },
-    { name: "Total Knee Arthroplasty / TKA - 180 min", min: 180 },
-    { name: "Cataract Surgery (ผ่าตัดต้อกระจก) - 30 min", min: 30 }
+// ข้อมูลหัตถการแบ่งตามแผนก เพื่อความเป็นระเบียบ
+const procedureGroups = ref([
+    {
+        label: "ศัลยกรรมทั่วไป (General Surgery)",
+        options: [
+            { name: "Appendectomy (ผ่าตัดไส้ติ่ง) - 60 min" },
+            { name: "Laparoscopic Cholecystectomy / LC (ผ่าตัดนิ่วในถุงน้ำดี) - 120 min" },
+            { name: "Herniorrhaphy (ผ่าตัดไส้เลื่อน) - 90 min" },
+            { name: "Thyroidectomy (ผ่าตัดต่อมไทรอยด์) - 120 min" },
+            { name: "Modified Radical Mastectomy / MRM (ผ่าตัดมะเร็งเต้านม) - 120 min" },
+            { name: "Hemorrhoidectomy (ผ่าตัดริดสีดวง) - 45 min" },
+            { name: "Exploratory Laparotomy (ผ่าตัดเปิดช่องท้อง) - 180 min" }
+        ]
+    },
+    {
+        label: "สูตินรีเวช (OB/GYN)",
+        options: [
+            { name: "Cesarean Section / C-Section (ผ่าคลอด) - 60 min" },
+            { name: "Total Abdominal Hysterectomy / TAH (ผ่าตัดมดลูก) - 120 min" },
+            { name: "Tubal Resection / TR (ทำหมันหญิง) - 30 min" }
+        ]
+    },
+    {
+        label: "กระดูกและข้อ (Orthopedics)",
+        options: [
+            { name: "Total Knee Arthroplasty / TKA (ผ่าตัดเปลี่ยนผิวข้อเข่า) - 180 min" },
+            { name: "Total Hip Arthroplasty / THA (ผ่าตัดเปลี่ยนข้อสะโพก) - 180 min" },
+            { name: "ORIF (ผ่าตัดใส่เหล็กดามกระดูกหัก) - 120 min" }
+        ]
+    },
+    {
+        label: "เฉพาะทางอื่นๆ (Others)",
+        options: [
+            { name: "Cataract Surgery (ผ่าตัดต้อกระจก) - 30 min" },
+            { name: "TURP (ผ่าตัดส่องกล้องต่อมลูกหมาก) - 90 min" },
+            { name: "Tonsillectomy (ผ่าตัดทอนซิล) - 45 min" }
+        ]
+    }
 ])
 
 const todayStr = new Date().toISOString().split('T')[0]
@@ -150,31 +185,105 @@ const lookupHN = async () => {
     } catch (e) { hnStatus.value = 'notfound' }
 }
 
-const checkValidDate = () => {
+const checkValidDate = async () => {
     if (!form.date) return
-    const day = new Date(form.date).getDay()
-    if (day === 0 || day === 6) {
-        alert('❌ วันหยุดเสาร์-อาทิตย์')
+
+    const selected = new Date(form.date)
+    const dow = selected.getDay()
+
+    // 1. เช็กวันหยุดเสาร์-อาทิตย์
+    if (dow === 0 || dow === 6) {
+        alert('❌ วันเสาร์-อาทิตย์ ห้องผ่าตัดปิดให้บริการครับ')
         form.date = ''
+        return
     }
+
+    // 2. เช็กวันทำงานของหมอ
+    const license = localStorage.getItem('userLicense')
+    if (license) {
+        const dayMap = { 'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4, 'Friday': 5 }
+        try {
+            const res = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/users/${license}`)
+            const userData = await res.json()
+            const workingDay = userData.day
+
+            if (workingDay && dayMap[workingDay] !== dow) {
+                alert(`❌ คุณสามารถจองคิวได้เฉพาะวัน ${workingDay} ซึ่งเป็นวันทำงานของคุณเท่านั้นครับ`)
+                form.date = ''
+                return
+            }
+        } catch(e) { console.error('เช็กวันทำงานไม่สำเร็จ', e) }
+    }
+
+    // 3. เช็กความจุห้องผ่าตัด (Max 420 นาที)
+    if (!form.procedure) return 
+    try {
+        const res = await fetch('https://or-room-backend.rockzee2018.workers.dev/api/bookings')
+        const allBookings = await res.json()
+        
+        const sameDayBookings = allBookings.filter(b => b.date === form.date && b.status !== 'Succeed')
+        
+        const usedMinutes = sameDayBookings.reduce((sum, b) => {
+            const match = b.procedure?.match(/(\d+)\s*min/)
+            return sum + (match ? parseInt(match[1]) : 0)
+        }, 0)
+
+        const matchProc = form.procedure?.match(/(\d+)\s*min/)
+        const newProcMin = matchProc ? parseInt(matchProc[1]) : 0
+
+        if (usedMinutes + newProcMin > 420) {
+            const remaining = 420 - usedMinutes
+            alert(`❌ วันที่ ${form.date} คิวเต็มแล้วครับ!\n(เหลือเวลาแค่ ${remaining} นาที แต่หัตถการนี้ใช้ ${newProcMin} นาที)\nกรุณาเลือกวันอื่นครับ`)
+            form.date = ''
+        }
+    } catch(e) { console.error('เช็กความจุห้องผ่าตัดไม่สำเร็จ', e) }
 }
 
 const submitForm = async () => {
-    if (!form.hn || !form.fullName || !form.age || !form.date) {
-        alert('กรุณากรอกข้อมูลสำคัญให้ครบถ้วน')
+    // ตรวจสอบว่ากรอกข้อมูลหลักครบหรือไม่
+    if (!form.hn || !form.fullName || !form.age || !form.gender || !form.disease || !form.date || !form.procedure) {
+        alert('กรุณากรอกข้อมูล Patient Information และ Surgery Details ให้ครบถ้วนทุกช่องครับ')
         return
     }
-    const payload = { ...form, doctorLicense: localStorage.getItem('userLicense'), status: 'Pending' }
+    
+    const payload = { 
+        hn: form.hn,
+        fullName: form.fullName,
+        age: form.age,
+        gender: form.gender || '',
+        procedure: form.procedure,
+        date: form.date,
+        underlying: form.disease, 
+        notes: form.notes,
+        cxrDate: form.cxrDate, cxrNote: form.cxrNote,
+        ecgDate: form.ecgDate, ecgNote: form.ecgNote,
+        labDate: form.labDate, labNote: form.labNote,
+        admDate: form.admDate, admNote: form.admNote,
+        dob: null,
+        urgency: 'Normal',
+        isNpoRisk: false,
+        isInfected: false,
+        doctorLicense: localStorage.getItem('userLicense')
+    }
+    
     try {
         const res = await fetch('https://or-room-backend.rockzee2018.workers.dev/api/bookings', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         })
+        
         if (res.ok) {
-            alert("✅ จองคิวสำเร็จ!"); router.push('/home')
+            alert("✅ จองคิวสำเร็จ!")
+            router.push('/home')
+        } else {
+            const errData = await res.json().catch(() => ({}))
+            alert(`❌ บันทึกไม่สำเร็จ: ${errData.error || 'เซิร์ฟเวอร์ปฏิเสธการรับข้อมูล'}`)
         }
-    } catch (e) { alert("❌ เกิดข้อผิดพลาด") }
+    } catch (e) { 
+        console.error(e)
+        alert("❌ ระบบขัดข้อง ไม่สามารถติดต่อเซิร์ฟเวอร์ได้") 
+    }
 }
 
 const goHome = () => router.push('/home')
@@ -192,7 +301,6 @@ const goHome = () => router.push('/home')
 .mini-label { font-size: 11px; font-weight: 700; color: #666; margin-left: 5px; }
 .highlight-note { grid-column: span 2; background: #f0f7ff; padding: 12px; border-radius: 8px; }
 
-/* จัดเรียงวันที่และ Note ให้อยู่บรรทัดเดียวกัน */
 .date-note-row { display: flex; gap: 8px; }
 .date-input { max-width: 130px; }
 
@@ -207,30 +315,23 @@ const goHome = () => router.push('/home')
     .notes-grid { grid-template-columns: 1fr; }
     .highlight-note { grid-column: span 1; }
     .grid-2-col { grid-template-columns: 1fr; }
-    
-    /* ถ้าย่อจอให้ช่อง Date กับ Note เรียงลงมาแทน */
     .date-note-row { flex-direction: column; }
     .date-input { max-width: 100%; }
 }
 
-/* เพิ่มระยะห่างด้านบนของแต่ละหมวดหมู่ (ดันให้ห่างจากส่วนก่อนหน้า) */
-.section-group {
-    margin-top: 32px; 
-}
+.section-group { margin-top: 32px; }
+.section-group:first-child { margin-top: 0; }
 
-/* ยกเว้นหมวดหมู่แรกสุด ไม่ต้องให้มีระยะห่างด้านบน */
-.section-group:first-child {
-    margin-top: 0;
-}
-
-/* จัดทรงข้อความหัวข้อ (Label) ให้สวยงามและเว้นระยะจากช่องกรอกข้อมูล */
 .group-label {
     display: block;
     font-size: 16px;
     font-weight: 700;
     color: #1e3a5f;
-    margin-bottom: 12px; /* เว้นระยะด้านล่าง ไม่ให้ชิดช่องกรอกข้อมูลเกินไป */
-    border-bottom: 2px solid #f0f4f8; /* (เสริม) เพิ่มเส้นใต้บางๆ ให้แบ่งโซนดูง่ายขึ้น */
+    margin-bottom: 12px; 
+    border-bottom: 2px solid #f0f4f8; 
     padding-bottom: 6px;
 }
+
+/* ตกแต่งสถานะการค้น HN */
+.status-tag { position: absolute; right: 10px; top: 10px; font-size: 12px; }
 </style>
