@@ -97,7 +97,11 @@
                         <p><strong>Procedure:</strong> {{ selectedCase.procedure }}</p>
                         <p><strong>Surgery Date:</strong> {{ selectedCase.date }}</p>
                         <p><strong>Underlying:</strong> {{ selectedCase.underlying || '-' }}</p>
-                        <p><strong>Notes:</strong> {{ selectedCase.notes || '-' }}</p>
+                        <p><strong>CXR:</strong> {{ selectedCase.cxrDate || '-' }} | {{ selectedCase.cxrNote || '-' }}</p>
+                        <p><strong>ECG:</strong> {{ selectedCase.ecgDate || '-' }} | {{ selectedCase.ecgNote || '-' }}</p>
+                        <p><strong>Lab:</strong> {{ selectedCase.labDate || '-' }} | {{ selectedCase.labNote || '-' }}</p>
+                        <p><strong>Admission:</strong> {{ selectedCase.admDate || '-' }} | {{ selectedCase.admNote || '-' }}</p>
+                        <p><strong>Other Notes:</strong> {{ selectedCase.notes || '-' }}</p>
                     </div>
                     <button class="close-detail-btn" @click="closeDetailModal">Close</button>
                 </div>
@@ -257,6 +261,12 @@
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
                                             }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
+
+                                        <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{ item.cxrNote || '-' }}</div>
+                                        <div class="detail-row"><strong>ECG:</strong> {{ item.ecgDate || '-' }} | {{ item.ecgNote || '-' }}</div>
+                                        <div class="detail-row"><strong>Lab:</strong> {{ item.labDate || '-' }} | {{ item.labNote || '-' }}</div>
+                                        <div class="detail-row"><strong>Admission:</strong> {{ item.admDate || '-' }} | {{ item.admNote || '-' }}</div>
+
                                         <div class="detail-row"><strong>Notes:</strong> {{ item.notes || '-' }}</div>
 
                                     </div>
