@@ -97,10 +97,14 @@
                         <p><strong>Procedure:</strong> {{ selectedCase.procedure }}</p>
                         <p><strong>Surgery Date:</strong> {{ selectedCase.date }}</p>
                         <p><strong>Underlying:</strong> {{ selectedCase.underlying || '-' }}</p>
-                        <p><strong>CXR:</strong> {{ selectedCase.cxrDate || '-' }} | {{ selectedCase.cxrNote || '-' }}</p>
-                        <p><strong>ECG:</strong> {{ selectedCase.ecgDate || '-' }} | {{ selectedCase.ecgNote || '-' }}</p>
-                        <p><strong>Lab:</strong> {{ selectedCase.labDate || '-' }} | {{ selectedCase.labNote || '-' }}</p>
-                        <p><strong>Admission:</strong> {{ selectedCase.admDate || '-' }} | {{ selectedCase.admNote || '-' }}</p>
+                        <p><strong>CXR:</strong> {{ selectedCase.cxrDate || '-' }} | {{ selectedCase.cxrNote || '-' }}
+                        </p>
+                        <p><strong>ECG:</strong> {{ selectedCase.ecgDate || '-' }} | {{ selectedCase.ecgNote || '-' }}
+                        </p>
+                        <p><strong>Lab:</strong> {{ selectedCase.labDate || '-' }} | {{ selectedCase.labNote || '-' }}
+                        </p>
+                        <p><strong>Admission:</strong> {{ selectedCase.admDate || '-' }} | {{ selectedCase.admNote ||
+                            '-' }}</p>
                         <p><strong>Other Notes:</strong> {{ selectedCase.notes || '-' }}</p>
                     </div>
                     <button class="close-detail-btn" @click="closeDetailModal">Close</button>
@@ -125,7 +129,8 @@
             <div class="search-box">
                 <span class="material-icons search-icon">search</span>
 
-                <input type="text" v-model="searchHN" placeholder="Search HN..." @keyup.enter="searchCase" />
+                <input type="text" v-model="searchHN" placeholder="Search patient, HN, procedure..."
+                    @keyup.enter="searchCase" />
             </div>
 
             <button class="logout-btn" @click="isLogoutModalOpen = true">
@@ -201,7 +206,7 @@
                     </button>
 
                     <button :class="{ active: filter === FILTERS.SUCCEED }" @click="filter = FILTERS.SUCCEED">
-                        Succeed
+                        Pass
                     </button>
                 </div>
 
@@ -224,10 +229,9 @@
                                 </button>
                             </div>
 
-                            <div v-for="(item, index) in upcomingCases" :key="item.id"
-                                :ref="el => setCaseRef(el, item.hn)" class="case-card drag-item" draggable="true"
-                                @dragstart="onDragStart(index, item.id)" @dragover.prevent @drop="onDrop(index)"
-                                @click="toggleDetail(item.id)">
+                            <div v-for="(item, index) in upcomingCases" :key="item.id" :ref="el => setCaseRef(el, item)"
+                                class="case-card drag-item" draggable="true" @dragstart="onDragStart(index, item.id)"
+                                @dragover.prevent @drop="onDrop(index)" @click="toggleDetail(item.id)">
 
                                 <div class="case-grid">
 
@@ -262,10 +266,14 @@
                                             }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
 
-                                        <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{ item.cxrNote || '-' }}</div>
-                                        <div class="detail-row"><strong>ECG:</strong> {{ item.ecgDate || '-' }} | {{ item.ecgNote || '-' }}</div>
-                                        <div class="detail-row"><strong>Lab:</strong> {{ item.labDate || '-' }} | {{ item.labNote || '-' }}</div>
-                                        <div class="detail-row"><strong>Admission:</strong> {{ item.admDate || '-' }} | {{ item.admNote || '-' }}</div>
+                                        <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
+                                            item.cxrNote || '-' }}</div>
+                                        <div class="detail-row"><strong>ECG:</strong> {{ item.ecgDate || '-' }} | {{
+                                            item.ecgNote || '-' }}</div>
+                                        <div class="detail-row"><strong>Lab:</strong> {{ item.labDate || '-' }} | {{
+                                            item.labNote || '-' }}</div>
+                                        <div class="detail-row"><strong>Admission:</strong> {{ item.admDate || '-' }} |
+                                            {{ item.admNote || '-' }}</div>
 
                                         <div class="detail-row"><strong>Notes:</strong> {{ item.notes || '-' }}</div>
 
@@ -298,7 +306,7 @@
 
                             <button :class="{ active: succeedTab === FILTERS.NOT_COMPLETE }"
                                 @click="succeedTab = FILTERS.NOT_COMPLETE">
-                                Not Complete
+                                {{ FILTERS.NOT_COMPLETE }}
                             </button>
 
                         </div>
@@ -319,8 +327,8 @@
                             <div v-else>
 
                                 <div v-for="item in completeCases" :key="item.id"
-                                    :ref="el => setCaseRef(el, item.hn, FILTERS.COMPLETE)"
-                                    class="case-card succeed-item" @click="toggleDetail(item.id)">
+                                    :ref="el => setCaseRef(el, item, FILTERS.COMPLETE)" class="case-card succeed-item"
+                                    @click="toggleDetail(item.id)">
 
                                     <div class="case-grid">
 
@@ -409,7 +417,7 @@
                             <div v-else>
 
                                 <div v-for="item in notCompleteCases" :key="item.id"
-                                    :ref="el => setCaseRef(el, item.hn, FILTERS.NOT_COMPLETE)"
+                                    :ref="el => setCaseRef(el, item, FILTERS.NOT_COMPLETE)"
                                     class="case-card not-complete-item" @click="toggleDetail(item.id)">
 
 
@@ -484,79 +492,121 @@
 import { ref, onMounted, computed, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 
+const FILTERS = {
+    UPCOMING: 'Upcoming',
+    SUCCEED: 'Pass',
+    COMPLETE: 'Complete',
+    NOT_COMPLETE: 'Cancelled'
+}
+
 
 const searchHN = ref('')
 
 const caseRefs = ref({})
 
-const setCaseRef = (el, hn, tab = FILTERS.UPCOMING) => {
-    if (!el) return
+const normalizeText = (text) => {
+    return String(text || '')
+        .toLowerCase()
+        .replace(/\s+/g, '')
+}
 
-    caseRefs.value[hn] = {
+const setCaseRef = (el, item, tab = FILTERS.UPCOMING) => {
+
+    if (!el || !item?.id) return
+
+    caseRefs.value[item.id] = {
         el,
-        tab
+        tab,
+        item
     }
 }
 
 const searchCase = async () => {
 
-    const targetData = caseRefs.value[searchHN.value]
+    const keyword = normalizeText(searchHN.value)
 
-    if (!targetData) return
+    if (!keyword) return
 
-    const searchCase = async () => {
-        const hn = searchHN.value
-        if (!hn) return
+    let targetList = []
 
-        const targetData = caseRefs.value[hn]
-        if (!targetData) return
+    // CURRENT TAB ONLY
+    if (filter.value === FILTERS.UPCOMING) {
 
-        await nextTick()
+        targetList = upcomingCases.value.map(item => ({
+            item,
+            tab: FILTERS.UPCOMING
+        }))
 
-        const el = targetData.el
-        if (!el) return
+    } else if (
+        filter.value === FILTERS.SUCCEED &&
+        succeedTab.value === FILTERS.COMPLETE
+    ) {
 
-        el.scrollIntoView({
-            behavior: 'smooth',
-            block: 'center'
-        })
+        targetList = completeCases.value.map(item => ({
+            item,
+            tab: FILTERS.COMPLETE
+        }))
 
-        let highlightClass = 'highlight-case'
+    } else if (
+        filter.value === FILTERS.SUCCEED &&
+        succeedTab.value === FILTERS.NOT_COMPLETE
+    ) {
 
-        if (targetData.tab === FILTERS.NOT_COMPLETE) {
-            highlightClass = 'highlight-case-yellow'
-        }
-
-        el.classList.add(highlightClass)
-
-        setTimeout(() => {
-            el.classList.remove(highlightClass)
-        }, 2500)
+        targetList = notCompleteCases.value.map(item => ({
+            item,
+            tab: FILTERS.NOT_COMPLETE
+        }))
     }
+
+    // FIND MATCH
+    const found = targetList.find(({ item }) => {
+
+        const searchableText = normalizeText([
+            item.hn,
+            item.fullName,
+            item.procedure,
+            item.underlying,
+            item.notes,
+            item.room,
+            item.date,
+            item.gender,
+            item.doctorName,
+            item.cxrNote,
+            item.ecgNote,
+            item.labNote,
+            item.admNote
+        ].join(' '))
+
+        return searchableText.includes(keyword)
+    })
+
+    if (!found) return
+
     await nextTick()
 
-    const target = targetData.el
+    const targetRef = caseRefs.value[found.item.id]
 
-    target.scrollIntoView({
+    if (!targetRef?.el) return
+
+    const el = targetRef.el
+
+    el.scrollIntoView({
         behavior: 'smooth',
         block: 'center'
     })
 
-    target.classList.add('highlight-case')
+    let highlightClass = 'highlight-case'
+
+    if (found.tab === FILTERS.NOT_COMPLETE) {
+        highlightClass = 'highlight-case-yellow'
+    }
+
+    el.classList.add(highlightClass)
 
     setTimeout(() => {
-        target.classList.remove('highlight-case')
+        el.classList.remove(highlightClass)
     }, 2500)
 }
-
-
-const FILTERS = {
-    UPCOMING: 'Upcoming',
-    SUCCEED: 'Succeed',
-    COMPLETE: 'Complete',
-    NOT_COMPLETE: 'Not Complete'
-}
-const MAX_MINUTES = 420
 
 
 
@@ -646,11 +696,12 @@ const restoreCase = async (id) => {
     }
 
 }
-
+const MAX_MINUTES = 420
 // เปอร์เซ็นต์ progress
 const usagePercent = computed(() => {
     return Math.min((usedMinutes.value / MAX_MINUTES) * 100, 100)
 })
+
 
 // เวลาคงเหลือ
 const remainingMinutes = computed(() => {
