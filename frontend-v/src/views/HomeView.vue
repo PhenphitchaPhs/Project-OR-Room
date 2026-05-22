@@ -263,7 +263,7 @@
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                        }}</div>
+                                            }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
 
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
@@ -348,7 +348,7 @@
 
                                         <div class="grid-row single">
                                             <span><strong>Doctor:</strong> {{ doctorName || 'Dr. ' + userLicense
-                                            }}</span>
+                                                }}</span>
                                         </div>
 
                                     </div>
@@ -490,23 +490,17 @@
         + Add Queue
     </button>
     <Transition name="fade">
-        <div v-if="isConfirmModalOpen" class="modal-overlay-center">
+        <div v-if="isMessageModalOpen" class="modal-overlay-center">
             <div class="white-modal-card">
 
                 <h2 class="modal-msg-title">
-                    {{ confirmMessage }}
+                    {{ messageText }}
                 </h2>
 
                 <div class="modal-button-group">
-
-                    <button class="btn-cancel-gray" @click="isConfirmModalOpen = false">
-                        Cancel
+                    <button class="btn-confirm-green" @click="isMessageModalOpen = false">
+                        OK
                     </button>
-
-                    <button class="btn-confirm-red" @click="handleConfirm">
-                        Confirm
-                    </button>
-
                 </div>
 
             </div>
@@ -522,6 +516,14 @@ import { useRouter } from 'vue-router'
 const isConfirmModalOpen = ref(false)
 const confirmMessage = ref('')
 const confirmAction = ref(null)
+
+const isMessageModalOpen = ref(false)
+const messageText = ref('')
+
+const showMessage = (message) => {
+    messageText.value = message
+    isMessageModalOpen.value = true
+}
 
 const openConfirmDialog = (message, action) => {
     confirmMessage.value = message
@@ -949,7 +951,7 @@ const resetQueue = async () => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ updates })
         })
-        alert('✅ รีเซ็ตการจัดคิวเรียบร้อย!')
+        showMessage('รีเซ็ตการจัดคิวเรียบร้อย')
     } catch (e) {
         console.error("❌ รีเซ็ตคิวไม่สำเร็จ", e)
     }
@@ -1004,11 +1006,14 @@ const confirmDayChange = async () => {
 
         selectedDay.value = tempSelectedDay.value
         isDayModalOpen.value = false
-        alert("✅ อัปเดตข้อมูลสำเร็จ!")
+        showMessage('อัปเดตข้อมูลสำเร็จ')
 
     } catch (error) {
         console.error("❌ PUT Error:", error)
-        alert("❌ ล้มเหลว!")
+        openConfirmDialog(
+            'อัปเดตข้อมูลไม่สำเร็จ',
+            null
+        )
     }
 }
 
@@ -1040,16 +1045,29 @@ const handleDeleteAccount = async () => {
         const data = await response.json()
 
         if (response.ok) {
-            alert('✅ ' + data.message)
+            openConfirmDialog(
+                data.message,
+                async () => {
+                    isDeleteAccModalOpen.value = false
+                    localStorage.clear()
+                    router.push('/login')
+                }
+            )
             isDeleteAccModalOpen.value = false // ปิด Modal
             localStorage.clear() // ล้างข้อมูลในเครื่อง
             router.push('/login') // เด้งกลับหน้าล็อกอิน
         } else {
-            alert('❌ ' + (data.error || 'ลบไม่สำเร็จ'))
+            openConfirmDialog(
+                data.error || 'ลบไม่สำเร็จ',
+                null
+            )
             isDeleteAccModalOpen.value = false
         }
     } catch (error) {
-        alert('❌ ระบบขัดข้อง ไม่สามารถติดต่อเซิร์ฟเวอร์ได้')
+        openConfirmDialog(
+            'ระบบขัดข้อง ไม่สามารถติดต่อเซิร์ฟเวอร์ได้',
+            null
+        )
         isDeleteAccModalOpen.value = false
     }
 }
@@ -1108,7 +1126,10 @@ const markAsSucceed = async (id) => {
         const target = bookings.value.find(item => item.id === id)
         if (target) { target.status = FILTERS.SUCCEED; filter.value = FILTERS.SUCCEED; }
     } catch (e) {
-        alert('❌ อัปเดต status ไม่สำเร็จ')
+        openConfirmDialog(
+            'อัปเดตสถานะไม่สำเร็จ',
+            null
+        )
     }
 }
 </script>
