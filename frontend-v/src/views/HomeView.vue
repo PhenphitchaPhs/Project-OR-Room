@@ -133,12 +133,12 @@
                     @keyup.enter="searchCase" />
             </div>
 
-            <button class="logout-btn" @click="isLogoutModalOpen = true">
+            <!-- <button class="logout-btn" @click="isLogoutModalOpen = true">
                 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24">
                     <path fill="white"
                         d="M5 21q-.825 0-1.412-.587T3 19V5q0-.825.588-1.412T5 3h6q.425 0 .713.288T12 4t-.288.713T11 5H5v14h6q.425 0 .713.288T12 20t-.288.713T11 21zm12.175-8H10q-.425 0-.712-.288T9 12t.288-.712T10 11h7.175L15.3 9.125q-.275-.275-.275-.675t.275-.7.7-.313t.725.288L20.3 11.3q.3.3.3.7t-.3.7l-3.575 3.575q-.3.3-.712.288t-.713-.313q-.275-.3-.262-.712t.287-.688z" />
                 </svg>
-            </button>
+            </button> -->
 
         </header>
 
@@ -263,7 +263,7 @@
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                        }}</div>
+                                            }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
 
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
@@ -348,7 +348,7 @@
 
                                         <div class="grid-row single">
                                             <span><strong>Doctor:</strong> {{ doctorName || 'Dr. ' + userLicense
-                                            }}</span>
+                                                }}</span>
                                         </div>
 
                                     </div>
@@ -1128,13 +1128,9 @@ const markAsSucceed = async (id) => {
     gap: 10px;
     cursor: pointer;
     color: white;
+    margin-left: 15px;
 }
 
-.logout-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-}
 
 /* --- Main Dashboard Content (UI อัปเดตใหม่) --- */
 .dashboard-container {
@@ -1554,13 +1550,17 @@ const markAsSucceed = async (id) => {
 }
 
 .grid-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: flex-start;
 }
 
 .grid-row span {
     display: block;
+    min-width: 140px;
+    flex: 1;
+    word-break: break-word;
 }
 
 .grid-row.single {
@@ -2050,6 +2050,7 @@ input[type="checkbox"] {
         max-width: unset;
         height: 30px;
         padding: 0 16px;
+        margin-left: 90px;
     }
 
     .search-box input {
@@ -2080,6 +2081,26 @@ input[type="checkbox"] {
     .search-icon {
         font-size: 26px;
     }
+
+    .case-card {
+        padding: 14px;
+    }
+
+    .grid-row {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .grid-row span {
+        width: 100%;
+        min-width: unset;
+    }
+
+    .case-grid {
+        gap: 8px;
+        font-size: 13px;
+    }
+
 
 }
 </style>
