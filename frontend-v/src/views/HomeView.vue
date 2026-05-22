@@ -263,7 +263,7 @@
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                        }}</div>
+                                            }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
 
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
@@ -299,13 +299,17 @@
                         <!-- SUB TAB -->
                         <div class="queue-filter sub-filter">
 
-                            <button :class="{ active: succeedTab === FILTERS.COMPLETE }"
-                                @click="succeedTab = FILTERS.COMPLETE">
+                            <button :class="{
+                                active: succeedTab === FILTERS.COMPLETE,
+                                'complete-active': succeedTab === FILTERS.COMPLETE
+                            }" @click="succeedTab = FILTERS.COMPLETE">
                                 Complete
                             </button>
 
-                            <button :class="{ active: succeedTab === FILTERS.NOT_COMPLETE }"
-                                @click="succeedTab = FILTERS.NOT_COMPLETE">
+                            <button :class="{
+                                active: succeedTab === FILTERS.NOT_COMPLETE,
+                                'cancelled-active': succeedTab === FILTERS.NOT_COMPLETE
+                            }" @click="succeedTab = FILTERS.NOT_COMPLETE">
                                 {{ FILTERS.NOT_COMPLETE }}
                             </button>
 
@@ -344,7 +348,7 @@
 
                                         <div class="grid-row single">
                                             <span><strong>Doctor:</strong> {{ doctorName || 'Dr. ' + userLicense
-                                            }}</span>
+                                                }}</span>
                                         </div>
 
                                     </div>
@@ -1179,6 +1183,20 @@ const markAsSucceed = async (id) => {
     background: #1a3a5f;
     color: white;
     border-color: #1a3a5f;
+}
+
+/* COMPLETE TAB */
+.sub-filter button.complete-active {
+    background: #16a34a;
+    color: white;
+    border-color: #16a34a;
+}
+
+/* CANCELLED TAB */
+.sub-filter button.cancelled-active {
+    background: #790606;
+    color: white;
+    border-color: #790606;
 }
 
 .empty-state {
