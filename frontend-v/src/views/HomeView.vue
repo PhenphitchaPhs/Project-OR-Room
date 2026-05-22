@@ -263,7 +263,7 @@
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                            }}</div>
+                                        }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
 
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
@@ -348,7 +348,7 @@
 
                                         <div class="grid-row single">
                                             <span><strong>Doctor:</strong> {{ doctorName || 'Dr. ' + userLicense
-                                                }}</span>
+                                            }}</span>
                                         </div>
 
                                     </div>
@@ -1941,11 +1941,12 @@ input[type="checkbox"] {
 }
 
 /*.เสิรชบาร์*/
+
 .top-nav {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 16px;
+    gap: 12px;
 }
 
 .search-box {
@@ -1955,26 +1956,32 @@ input[type="checkbox"] {
 
     background: white;
     border: 1px solid #d1d5db;
-    border-radius: 12px;
+    border-radius: 14px;
 
-    padding: 8px 14px;
-    width: 260px;
-    margin-left: 60%;
+    padding: 0 14px;
+
+    width: 230px;
+
+    height: 42px;
+
+    margin-left: auto;
+
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
 }
+
 
 .search-box input {
     border: none;
     outline: none;
     width: 100%;
-    font-size: 14px;
+    font-size: 15px;
     background: transparent;
 }
 
 .search-icon {
     color: #6b7280;
-    font-size: 20px;
+    font-size: 22px;
 }
-
 
 .highlight-case {
     border: 2px solid #2563eb;
@@ -2029,5 +2036,50 @@ input[type="checkbox"] {
     100% {
         transform: scale(1);
     }
+}
+
+@media (max-width: 768px) {
+
+    .top-nav {
+        gap: 10px;
+        padding: 0 12px;
+    }
+
+    .search-box {
+        flex: 1;
+        max-width: unset;
+        height: 30px;
+        padding: 0 16px;
+    }
+
+    .search-box input {
+        font-size: 16px;
+    }
+
+    .search-icon {
+        font-size: 26px;
+    }
+
+    .logout-btn svg {
+        width: 26px;
+        height: 26px;
+    }
+
+    .top-nav {
+        padding: 0 12px;
+    }
+
+    .search-box {
+        height: 40px;
+    }
+
+    .search-box input {
+        font-size: 16px;
+    }
+
+    .search-icon {
+        font-size: 26px;
+    }
+
 }
 </style>
