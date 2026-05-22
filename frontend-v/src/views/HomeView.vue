@@ -263,7 +263,7 @@
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                            }}</div>
+                                        }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
 
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
@@ -348,7 +348,7 @@
 
                                         <div class="grid-row single">
                                             <span><strong>Doctor:</strong> {{ doctorName || 'Dr. ' + userLicense
-                                                }}</span>
+                                            }}</span>
                                         </div>
 
                                     </div>
@@ -489,12 +489,55 @@
     <button class="floating-add-btn" @click="goAddPatient">
         + Add Queue
     </button>
+    <Transition name="fade">
+        <div v-if="isConfirmModalOpen" class="modal-overlay-center">
+            <div class="white-modal-card">
+
+                <h2 class="modal-msg-title">
+                    {{ confirmMessage }}
+                </h2>
+
+                <div class="modal-button-group">
+
+                    <button class="btn-cancel-gray" @click="isConfirmModalOpen = false">
+                        Cancel
+                    </button>
+
+                    <button class="btn-confirm-red" @click="handleConfirm">
+                        Confirm
+                    </button>
+
+                </div>
+
+            </div>
+        </div>
+    </Transition>
 </template>
 
 <script setup>
 
 import { ref, onMounted, computed, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
+
+const isConfirmModalOpen = ref(false)
+const confirmMessage = ref('')
+const confirmAction = ref(null)
+
+const openConfirmDialog = (message, action) => {
+    confirmMessage.value = message
+    confirmAction.value = action
+    isConfirmModalOpen.value = true
+}
+
+const handleConfirm = async () => {
+
+    if (confirmAction.value) {
+        await confirmAction.value()
+    }
+
+    isConfirmModalOpen.value = false
+    confirmAction.value = null
+}
 
 const FILTERS = {
     UPCOMING: 'Upcoming',
@@ -665,39 +708,43 @@ const usedMinutes = computed(() => {
         }, 0)
 
 })
-const restoreCase = async (id) => {
+const restoreCase = (id) => {
 
-    if (!confirm('Move this case back to Upcoming?')) return
+    openConfirmDialog(
+        'Move this case back to Upcoming?',
+        async () => {
 
-    try {
+            try {
 
-        const res = await fetch(
-            `https://or-room-backend.rockzee2018.workers.dev/api/bookings/${id}/status`,
-            {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    status: FILTERS.UPCOMING
-                })
+                const res = await fetch(
+                    `https://or-room-backend.rockzee2018.workers.dev/api/bookings/${id}/status`,
+                    {
+                        method: 'PATCH',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            status: FILTERS.UPCOMING
+                        })
+                    }
+                )
+
+                if (!res.ok) throw new Error()
+
+                const target = bookings.value.find(
+                    item => item.id === id
+                )
+
+                if (target) {
+                    target.status = FILTERS.UPCOMING
+                }
+
+            } catch (e) {
+                console.error(e)
             }
-        )
 
-        if (!res.ok) throw new Error()
-
-        const target = bookings.value.find(item => item.id === id)
-
-        if (target) {
-            target.status = FILTERS.UPCOMING
         }
-
-    } catch (e) {
-
-        console.error(e)
-        alert('Failed to restore case')
-
-    }
+    )
 
 }
 const MAX_MINUTES = 420
@@ -846,7 +893,44 @@ const onDrop = async (dropIndex) => {
 
 // ================= ฟังก์ชันรีเซ็ตคิว =================
 const resetQueue = async () => {
-    if (!confirm('ต้องการรีเซ็ตการเรียงคิว กลับไปใช้ระบบอัตโนมัติหรือไม่?')) return
+    const resetQueue = () => {
+
+        openConfirmDialog(
+            'Reset queue order and use automatic sorting?',
+            async () => {
+
+                const updates = upcomingCases.value.map(item => ({
+                    id: item.id,
+                    queueOrder: 999
+                }))
+
+                bookings.value.forEach(b => {
+                    if (b.status !== FILTERS.SUCCEED) {
+                        b.queueOrder = 999
+                    }
+                })
+
+                try {
+
+                    await fetch(
+                        'https://or-room-backend.rockzee2018.workers.dev/api/bookings/reorder',
+                        {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ updates })
+                        }
+                    )
+
+                } catch (e) {
+                    console.error(e)
+                }
+
+            }
+        )
+
+    }
 
     // 1. ตั้งค่า queueOrder เป็น 999 ให้หมด
     const updates = upcomingCases.value.map(item => {
@@ -972,42 +1056,43 @@ const handleDeleteAccount = async () => {
 const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.value = true }
 const closeDetailModal = () => { isDetailModalOpen.value = false }
 
-const deleteCase = async (id) => {
+const deleteCase = (id) => {
 
-    if (!confirm('Move this case to Not Complete?')) return
+    openConfirmDialog(
+        'Move this case to Not Complete?',
+        async () => {
 
-    try {
+            try {
 
-        const res = await fetch(
-            `https://or-room-backend.rockzee2018.workers.dev/api/bookings/${id}/status`,
-            {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    status: FILTERS.NOT_COMPLETE
-                })
+                const res = await fetch(
+                    `https://or-room-backend.rockzee2018.workers.dev/api/bookings/${id}/status`,
+                    {
+                        method: 'PATCH',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            status: FILTERS.NOT_COMPLETE
+                        })
+                    }
+                )
+
+                if (!res.ok) throw new Error()
+
+                const target = bookings.value.find(
+                    item => item.id === id
+                )
+
+                if (target) {
+                    target.status = FILTERS.NOT_COMPLETE
+                }
+
+            } catch (e) {
+                console.error(e)
             }
-        )
 
-        if (!res.ok) throw new Error()
-
-        // update UI
-        const target = bookings.value.find(item => item.id === id)
-
-        if (target) {
-            target.status = FILTERS.NOT_COMPLETE
         }
-
-        alert('✅ Moved to Not Complete')
-
-    } catch (e) {
-
-        console.error(e)
-        alert('❌ Failed to update case')
-
-    }
+    )
 
 }
 const markAsSucceed = async (id) => {
@@ -1925,8 +2010,8 @@ input[type="checkbox"] {
     align-items: center;
     gap: 6px;
 
-    background: #1e3a8a;
-    color: white;
+    background: #ffc400;
+    color: rgb(0, 0, 0);
 
     border: none;
     border-radius: 10px;
