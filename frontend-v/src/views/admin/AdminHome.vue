@@ -39,7 +39,7 @@
                     <p class="modal-desc">All your surgery data will be permanently removed.</p>
                     <div class="modal-button-group">
                         <button class="btn-cancel-gray" @click="isDeleteAccModalOpen = false">Cancel</button>
-                        <button class="btn-confirm-red" @click="handleDeleteAccount">Delete</button>
+                        <button class="btn-confirm-red" @click="handleDeleteAccount">Cancel</button>
                     </div>
                 </div>
             </div>
@@ -57,13 +57,14 @@
             </div>
             <button class="nav-calendar-btn" @click="router.push('/admin-dashboard')">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24">
-                    <path fill="white" d="M3 13h8V3H3zm0 8h8v-6H3zm10 0h8V11h-8zm0-18v6h8V3z"/>
+                    <path fill="white" d="M3 13h8V3H3zm0 8h8v-6H3zm10 0h8V11h-8zm0-18v6h8V3z" />
                 </svg>
                 <span>Dashboard</span>
             </button>
             <button class="nav-calendar-btn" @click="router.push('/admin-calendar')">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24">
-                    <path fill="white" d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2m0 16H5V10h14zm0-12H5V6h14z"/>
+                    <path fill="white"
+                        d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2m0 16H5V10h14zm0-12H5V6h14z" />
                 </svg>
                 <span>Calendar</span>
             </button>
@@ -79,106 +80,222 @@
             <h1 class="main-title">Surgery Queue Management</h1>
 
             <div class="queue-card">
-                        <div class="queue-filter">
-                            <button :class="{ active: filter === FILTERS.UPCOMING }" @click="filter = FILTERS.UPCOMING">Upcoming</button>
-                            <button :class="{ active: filter === FILTERS.SUCCEED }" @click="filter = FILTERS.SUCCEED">Succeed</button>
+                <div class="queue-filter">
+                    <button :class="{ active: filter === FILTERS.UPCOMING }" @click="filter = FILTERS.UPCOMING">
+                        Upcoming
+                    </button>
+
+                    <button :class="{ active: filter === FILTERS.PASS }" @click="filter = FILTERS.PASS">
+                        Pass
+                    </button>
+                </div>
+                <div v-if="filter === FILTERS.PASS" class="sub-filter">
+                    <button :class="{ active: passFilter === 'Completed' }" @click="passFilter = 'Completed'">
+                        Completed
+                    </button>
+
+                    <button :class="{ active: passFilter === 'Cancelled' }" @click="passFilter = 'Cancelled'">
+                        Cancelled
+                    </button>
+                </div>
+
+                <div class="tab-content-wrapper">
+                    <div v-if="filter === FILTERS.UPCOMING">
+                        <div v-if="upcomingCases.length === 0" class="empty-state">
+                            <div class="icon-wrap"><span class="material-icons">assignment</span></div>
+                            <h3>No upcoming surgery cases</h3>
+                            <p class="sub-text">Please ensure all patient records are updated.</p>
                         </div>
-
-                        <div class="tab-content-wrapper">
-                            <div v-if="filter === FILTERS.UPCOMING">
-                                <div v-if="upcomingCases.length === 0" class="empty-state">
-                                    <div class="icon-wrap"><span class="material-icons">assignment</span></div>
-                                    <h3>No upcoming surgery cases</h3>
-                                    <p class="sub-text">Please ensure all patient records are updated.</p>
-                                </div>
-                                <div v-else>
-                                    <div class="reset-wrapper">
-                                        <button class="btn-reset" @click="resetQueue">
-                                            <span class="material-icons">refresh</span> รีเซ็ตลำดับคิว
-                                        </button>
-                                    </div>
-                                    <div v-for="(item, index) in upcomingCases" :key="item.id"
-                                        class="case-card drag-item"
-                                        draggable="true"
-                                        @dragstart="onDragStart(index, item.id)"
-                                        @dragover.prevent
-                                        @drop="onDrop(index)"
-                                        @click="toggleDetail(item.id)">
-                                        <div class="case-grid">
-                                            <div class="grid-row">
-                                                <span><strong>Surgery Date:</strong> {{ item.date }}</span>
-                                                <span><strong>Room:</strong> {{ item.room }}</span>
-                                            </div>
-                                            <div class="grid-row">
-                                                <span><strong>Patient:</strong> {{ item.fullName }}</span>
-                                                <span><strong>Procedure:</strong> {{ item.procedure }}</span>
-                                            </div>
-                                            <div class="grid-row single">
-                                                <span><strong>Doctor:</strong> {{ doctorMap[item.doctorLicense] || item.doctorLicense || '-' }}</span>
-                                            </div>
-                                        </div>
-                                        <transition name="expand">
-                                            <div v-if="expandedId === item.id" class="case-detail">
-                                                <div class="detail-row"><strong>HN:</strong> {{ item.hn }}</div>
-                                                <div class="detail-row"><strong>Full Name:</strong> {{ item.fullName }}</div>
-                                                <div class="detail-row"><strong>Age:</strong> {{ item.age }}</div>
-                                                <div><strong>Gender:</strong> {{ item.gender === 'male' ? 'ชาย' : 'หญิง' }}</div>
-                                                <div class="detail-row"><strong>Underlying Disease(s):</strong> {{ item.underlying || '-' }}</div>
-                                                <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure }}</div>
-                                                <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
-                                                <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{ item.cxrNote || '-' }}</div>
-                                                <div class="detail-row"><strong>ECG:</strong> {{ item.ecgDate || '-' }} | {{ item.ecgNote || '-' }}</div>
-                                                <div class="detail-row"><strong>Lab:</strong> {{ item.labDate || '-' }} | {{ item.labNote || '-' }}</div>
-                                                <div class="detail-row"><strong>Admission:</strong> {{ item.admDate || '-' }} | {{ item.admNote || '-' }}</div>
-                                                <div class="detail-row"><strong>Notes:</strong> {{ item.notes || '-' }}</div>
-                                            </div>
-                                        </transition>
-                                        <div class="case-actions">
-                                            <button class="btn-success" @click.stop="markAsSucceed(item.id)">Succeed</button>
-                                            <button class="btn-delete" @click.stop="deleteCase(item.id)">Delete</button>
-                                        </div>
-                                    </div>
-                                </div>
+                        <div v-else>
+                            <div class="reset-wrapper">
+                                <button class="btn-reset" @click="resetQueue">
+                                    <span class="material-icons">refresh</span> รีเซ็ตลำดับคิว
+                                </button>
                             </div>
-
-                            <div v-if="filter === FILTERS.SUCCEED">
-                                <div v-if="succeedCases.length === 0" class="empty-state">
-                                    <div class="icon-wrap"><span class="material-icons">check_circle</span></div>
-                                    <h3>No completed surgery cases</h3>
-                                </div>
-                                <div v-else>
-                                    <div v-for="item in succeedCases" :key="item.id" class="case-card succeed-item" @click="openCaseDetail(item)">
-                                        <div class="case-grid">
-                                            <div class="grid-row">
-                                                <span><strong>Surgery Date:</strong> {{ item.date }}</span>
-                                                <span><strong>Room:</strong> {{ item.room }}</span>
-                                            </div>
-                                            <div class="grid-row">
-                                                <span><strong>Patient:</strong> {{ item.fullName }} ({{ item.hn }})</span>
-                                                <span><strong>Doctor:</strong> {{ doctorMap[item.doctorLicense] || item.doctorLicense || '-' }}</span>
-                                            </div>
-                                            <div class="grid-row single">
-                                                <span><strong>Procedure:</strong> {{ item.procedure }}</span>
-                                            </div>
-                                        </div>
+                            <div v-for="(item, index) in upcomingCases" :key="item.id" class="case-card drag-item"
+                                draggable="true" @dragstart="onDragStart(index, item.id)" @dragover.prevent
+                                @drop="onDrop(index)" @click="toggleDetail(item.id)">
+                                <div class="case-grid">
+                                    <div class="grid-row">
+                                        <span><strong>Surgery Date:</strong> {{ item.date }}</span>
+                                        <span><strong>Room:</strong> {{ item.room }}</span>
                                     </div>
+                                    <div class="grid-row">
+                                        <span><strong>Patient:</strong> {{ item.fullName }}</span>
+                                        <span><strong>Procedure:</strong> {{ item.procedure }}</span>
+                                    </div>
+                                    <div class="grid-row single">
+                                        <span><strong>Doctor:</strong> {{ doctorMap[item.doctorLicense] ||
+                                            item.doctorLicense || '-' }}</span>
+                                    </div>
+                                </div>
+                                <transition name="expand">
+                                    <div v-if="expandedId === item.id" class="case-detail">
+                                        <div class="detail-row"><strong>HN:</strong> {{ item.hn }}</div>
+                                        <div class="detail-row"><strong>Full Name:</strong> {{ item.fullName }}</div>
+                                        <div class="detail-row"><strong>Age:</strong> {{ item.age }}</div>
+                                        <div><strong>Gender:</strong> {{ item.gender === 'male' ? 'ชาย' : 'หญิง' }}
+                                        </div>
+                                        <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
+                                            item.underlying || '-' }}</div>
+                                        <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
+                                        }}</div>
+                                        <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
+                                        <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
+                                            item.cxrNote || '-' }}</div>
+                                        <div class="detail-row"><strong>ECG:</strong> {{ item.ecgDate || '-' }} | {{
+                                            item.ecgNote || '-' }}</div>
+                                        <div class="detail-row"><strong>Lab:</strong> {{ item.labDate || '-' }} | {{
+                                            item.labNote || '-' }}</div>
+                                        <div class="detail-row"><strong>Admission:</strong> {{ item.admDate || '-' }} |
+                                            {{ item.admNote || '-' }}</div>
+                                        <div class="detail-row"><strong>Notes:</strong> {{ item.notes || '-' }}</div>
+                                    </div>
+                                </transition>
+                                <div class="case-actions">
+                                    <button class="btn-success" @click.stop="openSucceedModal(item.id)">
+                                        Succeed
+                                    </button>
+                                    <button class="btn-delete" @click.stop="openCancelModal(item.id)">
+                                        Cancel
+                                    </button>
                                 </div>
                             </div>
                         </div>
-            </div><div class="info-section">
+                    </div>
+
+                    <div v-if="filter === FILTERS.PASS && passFilter === 'Completed'">
+                        <div v-if="completedCases.length === 0" class="empty-state">
+                            <div class="icon-wrap"><span class="material-icons">check_circle</span></div>
+                            <h3>No completed surgery cases</h3>
+                        </div>
+                        <div v-else>
+                            <div v-for="item in completedCases" :key="item.id" class="case-card succeed-item"
+                                @click="openCaseDetail(item)">
+                                <div class="case-grid">
+                                    <div class="grid-row">
+                                        <span><strong>Surgery Date:</strong> {{ item.date }}</span>
+                                        <span><strong>Room:</strong> {{ item.room }}</span>
+                                    </div>
+                                    <div class="grid-row">
+                                        <span><strong>Patient:</strong> {{ item.fullName }} ({{ item.hn }})</span>
+                                        <span><strong>Doctor:</strong> {{ doctorMap[item.doctorLicense] ||
+                                            item.doctorLicense || '-' }}</span>
+                                    </div>
+                                    <div class="grid-row single">
+                                        <span><strong>Procedure:</strong> {{ item.procedure }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-if="filter === FILTERS.PASS && passFilter === 'Cancelled'">
+                        <div v-if="cancelledCases.length === 0" class="empty-state">
+                            <div class="icon-wrap">
+                                <span class="material-icons">cancel</span>
+                            </div>
+                            <h3>No cancelled surgery cases</h3>
+                        </div>
+
+                        <div v-else>
+                            <div v-for="item in cancelledCases" :key="item.id" class="case-card cancelled-item"
+                                @click="openCaseDetail(item)">
+                                <div class="case-grid">
+                                    <div class="grid-row">
+                                        <span><strong>Surgery Date:</strong> {{ item.date }}</span>
+                                        <span><strong>Room:</strong> {{ item.room }}</span>
+                                    </div>
+
+
+                                    <div class="grid-row">
+                                        <span>
+                                            <strong>Patient:</strong>
+                                            {{ item.fullName }} ({{ item.hn }})
+                                        </span>
+
+                                        <span>
+                                            <strong>Doctor:</strong>
+                                            {{ doctorMap[item.doctorLicense] || item.doctorLicense || '-' }}
+                                        </span>
+                                    </div>
+
+                                    <div class="grid-row single">
+                                        <span>
+                                            <strong>Procedure:</strong>
+                                            {{ item.procedure }}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="case-actions">
+                                    <button class="btn-back" @click.stop="moveBackToUpcoming(item.id)">
+                                        Back to Upcoming
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+
+                </div>
+            </div>
+            <div class="info-section">
                 <div class="info-header">
                     <span class="material-icons info-icon">info</span>
                     <h3>Additional Information</h3>
                 </div>
                 <ul class="info-list">
-                    <li><span class="material-icons check-bullet">check</span> Cases can be canceled before surgery date.</li>
-                    <li><span class="material-icons check-bullet">check</span> Please arrive on time for the convenience of everyone.</li>
-                    <li><span class="material-icons check-bullet">check</span> If there is a problem, please contact staff.</li>
+                    <li><span class="material-icons check-bullet">check</span> Cases can be canceled before surgery
+                        date.</li>
+                    <li><span class="material-icons check-bullet">check</span> Please arrive on time for the convenience
+                        of everyone.</li>
+                    <li><span class="material-icons check-bullet">check</span> If there is a problem, please contact
+                        staff.</li>
                 </ul>
             </div>
         </div>
     </div>
     <button class="floating-add-btn" @click="goAddPatient">+ Add Queue</button>
+
+    <Transition name="fade">
+        <div v-if="isSucceedModalOpen" class="modal-overlay-center">
+            <div class="white-modal-card">
+                <h2 class="modal-msg-title">
+                    Are you sure this surgery is completed?
+                </h2>
+
+                <div class="modal-button-group">
+                    <button class="btn-cancel-blue" @click="isSucceedModalOpen = false">
+                        No
+                    </button>
+
+                    <button class="btn-confirm-green" @click="confirmSucceed">
+                        Yes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </Transition>
+    <Transition name="fade">
+        <div v-if="isCancelModalOpen" class="modal-overlay-center">
+            <div class="white-modal-card">
+                <h2 class="modal-msg-title red-text">
+                    Are you sure you want to cancel this case?
+                </h2>
+
+                <div class="modal-button-group">
+                    <button class="btn-cancel-blue" @click="isCancelModalOpen = false">
+                        No
+                    </button>
+
+                    <button class="btn-confirm-red" @click="confirmCancelCase">
+                        Confirm
+                    </button>
+                </div>
+            </div>
+        </div>
+    </Transition>
 </template>
 
 <script setup>
@@ -194,9 +311,108 @@ const toggleDetail = (id) => { expandedId.value = expandedId.value === id ? null
 const router = useRouter()
 const userLicense = ref('Admin')
 
-const FILTERS = { UPCOMING: 'Upcoming', SUCCEED: 'Succeed' }
+const FILTERS = {
+    UPCOMING: 'Upcoming',
+    PASS: 'Pass'
+}
 const filter = ref(FILTERS.UPCOMING)
+const passFilter = ref('Completed')
 const bookings = ref([])
+
+const moveBackToUpcoming = async (id) => {
+    try {
+        await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/bookings/${id}/status`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'Upcoming' })
+        })
+
+        const target = bookings.value.find(item => item.id === id)
+
+        if (target) {
+            target.status = 'Upcoming'
+        }
+
+        filter.value = FILTERS.UPCOMING
+
+    } catch (e) {
+        alert('❌ ย้ายกลับไม่สำเร็จ')
+    }
+}
+const isSucceedModalOpen = ref(false)
+const selectedSucceedId = ref(null)
+
+const openSucceedModal = (id) => {
+    selectedSucceedId.value = id
+    isSucceedModalOpen.value = true
+}
+
+const confirmSucceed = async () => {
+    try {
+        await fetch(
+            `https://or-room-backend.rockzee2018.workers.dev/api/bookings/${selectedSucceedId.value}/status`,
+            {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: 'Completed' })
+            }
+        )
+
+        const target = bookings.value.find(
+            item => item.id === selectedSucceedId.value
+        )
+
+        if (target) {
+            target.status = 'Completed'
+        }
+
+        filter.value = FILTERS.PASS
+        passFilter.value = 'Completed'
+
+        isSucceedModalOpen.value = false
+        selectedSucceedId.value = null
+
+    } catch (e) {
+        alert('❌ อัปเดต status ไม่สำเร็จ')
+    }
+}
+const isCancelModalOpen = ref(false)
+const selectedCancelId = ref(null)
+
+const openCancelModal = (id) => {
+    selectedCancelId.value = id
+    isCancelModalOpen.value = true
+}
+
+const confirmCancelCase = async () => {
+    try {
+        await fetch(
+            `https://or-room-backend.rockzee2018.workers.dev/api/bookings/${selectedCancelId.value}/status`,
+            {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: 'Cancelled' })
+            }
+        )
+
+        const target = bookings.value.find(
+            item => item.id === selectedCancelId.value
+        )
+
+        if (target) {
+            target.status = 'Cancelled'
+        }
+
+        filter.value = FILTERS.PASS
+        passFilter.value = 'Cancelled'
+
+        isCancelModalOpen.value = false
+        selectedCancelId.value = null
+
+    } catch (e) {
+        alert('❌ Cancel ไม่สำเร็จ')
+    }
+}
 
 onMounted(async () => {
     const savedLicense = localStorage.getItem('userLicense')
@@ -223,12 +439,12 @@ const sortCases = (arr) => {
     return [...arr].sort((a, b) => {
         // 1. เรียงตามวันผ่าตัดก่อน (วันใกล้สุดได้ก่อน)
         if (a.date !== b.date) return new Date(a.date) - new Date(b.date)
-        
+
         // 2. ถ้า manual drag ไว้ ให้ queueOrder มีผล
         const qA = a.queueOrder || 999
         const qB = b.queueOrder || 999
         if (qA !== qB) return qA - qB
-        
+
         // 3. อายุมากสุดได้ก่อน
         const ageA = parseInt(a.age) || 0
         const ageB = parseInt(b.age) || 0
@@ -241,8 +457,31 @@ const sortCases = (arr) => {
     })
 }
 
-const upcomingCases = computed(() => sortCases(bookings.value.filter(item => item.status === FILTERS.UPCOMING || !item.status)))
-const succeedCases = computed(() => sortCases(bookings.value.filter(item => item.status === FILTERS.SUCCEED)))
+const upcomingCases = computed(() =>
+    sortCases(
+        bookings.value.filter(
+            item =>
+                item.status === FILTERS.UPCOMING ||
+                !item.status
+        )
+    )
+)
+
+const completedCases = computed(() =>
+    sortCases(
+        bookings.value.filter(
+            item => item.status === 'Completed'
+        )
+    )
+)
+
+const cancelledCases = computed(() =>
+    sortCases(
+        bookings.value.filter(
+            item => item.status === 'Cancelled'
+        )
+    )
+)
 
 const todayStr = new Date().toISOString().split('T')[0]
 const todayQueues = computed(() => bookings.value.filter(b => b.date === todayStr && b.status !== 'Succeed'))
@@ -295,19 +534,7 @@ const onDrop = async (dropIndex) => {
     } catch (e) { console.error("❌ อัปเดตคิวไม่สำเร็จ", e) }
 }
 
-const resetQueue = async () => {
-    if (!confirm('ต้องการรีเซ็ตการเรียงคิว กลับไปใช้ระบบอัตโนมัติหรือไม่?')) return
-    const updates = upcomingCases.value.map(item => { return { id: item.id, queueOrder: 999 } })
-    bookings.value.forEach(b => { if (b.status !== FILTERS.SUCCEED) b.queueOrder = 999 })
-    try {
-        await fetch('https://or-room-backend.rockzee2018.workers.dev/api/bookings/reorder', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ updates })
-        })
-        alert('✅ รีเซ็ตการจัดคิวเรียบร้อย!')
-    } catch (e) { console.error("❌ รีเซ็ตคิวไม่สำเร็จ", e) }
-}
+
 
 
 // API Functions
@@ -316,19 +543,40 @@ const markAsSucceed = async (id) => {
         await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/bookings/${id}/status`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: 'Succeed' })
+            body: JSON.stringify({ status: 'Completed' })
         })
         const target = bookings.value.find(item => item.id === id)
-        if (target) { target.status = 'Succeed'; filter.value = FILTERS.SUCCEED }
+        if (target) {
+            target.status = 'Completed'; filter.value = FILTERS.PASS
+            passFilter.value = 'Completed'
+        }
     } catch (e) { alert('❌ อัปเดต status ไม่สำเร็จ') }
 }
 
 const deleteCase = async (id) => {
-    if (!confirm('ยืนยันการลบเคสนี้?')) return
+    if (!confirm('ยืนยันการยกเลิกเคสนี้?')) return
+
     try {
-        await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/bookings/${id}`, { method: 'DELETE' })
-        bookings.value = bookings.value.filter(item => item.id !== id)
-    } catch (e) { alert('❌ ลบไม่สำเร็จ') }
+        await fetch(
+            `https://or-room-backend.rockzee2018.workers.dev/api/bookings/${id}/status`,
+            {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: 'Cancelled' })
+            }
+        )
+
+        const target = bookings.value.find(item => item.id === id)
+
+        if (target) {
+            target.status = 'Cancelled'
+            filter.value = FILTERS.PASS
+            passFilter.value = 'Cancelled'
+        }
+
+    } catch (e) {
+        alert('❌ ยกเลิกเคสไม่สำเร็จ')
+    }
 }
 
 // Modal logic
@@ -351,37 +599,162 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
 @import url('https://fonts.googleapis.com/icon?family=Material+Icons');
 
 /* --- Layout & Basic --- */
-.main-layout { min-height: 100vh; display: flex; flex-direction: column; background-color: #f5f7fa; }
-.top-nav, .drawer-header { background-color: #1a3a5f !important; height: 80px; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; }
+.main-layout {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: #f5f7fa;
+}
 
-.avatar-circle { width: 48px; height: 48px; border: 2px solid white; border-radius: 50%; display: flex; justify-content: center; align-items: center; }
-.avatar-circle.small { width: 32px; height: 32px; border-width: 1px; }
+.top-nav,
+.drawer-header {
+    background-color: #1a3a5f !important;
+    height: 80px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
+}
 
-.user-group { display: flex; align-items: center; gap: 10px; cursor: pointer; color: white; }
-.logout-btn { background: none; border: none; cursor: pointer; }
-.nav-calendar-btn { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.18); border: 1.5px solid rgba(255,255,255,0.35); color: white; padding: 7px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; margin-left: auto; margin-right: 10px; transition: background 0.2s; }
-.nav-calendar-btn:hover { background: rgba(255,255,255,0.28); }
+.avatar-circle {
+    width: 48px;
+    height: 48px;
+    border: 2px solid white;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
 
-.dashboard-container { padding: 20px; flex-grow: 1; }
-.main-title { text-align: center; color: #1a3a5f; font-size: 1.6rem; font-weight: bold; margin: 30px 0; }
+.avatar-circle.small {
+    width: 32px;
+    height: 32px;
+    border-width: 1px;
+}
 
-.queue-card { width: 90%; max-width: 600px; margin: 0 auto 30px auto; background: white; border-radius: 20px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05); overflow: hidden; }
-.queue-filter { display: flex; padding: 15px; gap: 10px; background: #f8f9fa; }
-.queue-filter button { flex: 1; padding: 10px 0; border-radius: 10px; border: 1px solid #eee; background: white; color: #444; font-weight: 600; cursor: pointer; transition: 0.3s; }
-.queue-filter button.active { background: #1a3a5f; color: white; border-color: #1a3a5f; }
+.user-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    color: white;
+}
 
-.empty-state { text-align: center; padding: 60px 20px; }
-.icon-wrap { width: 70px; height: 70px; background: #f0f2f5; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin: 0 auto 20px auto; }
-.icon-wrap .material-icons { font-size: 35px; color: #90a4ae; }
+.logout-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+
+.nav-calendar-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.18);
+    border: 1.5px solid rgba(255, 255, 255, 0.35);
+    color: white;
+    padding: 7px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-left: auto;
+    margin-right: 10px;
+    transition: background 0.2s;
+}
+
+.nav-calendar-btn:hover {
+    background: rgba(255, 255, 255, 0.28);
+}
+
+.dashboard-container {
+    padding: 20px;
+    flex-grow: 1;
+}
+
+.main-title {
+    text-align: center;
+    color: #1a3a5f;
+    font-size: 1.6rem;
+    font-weight: bold;
+    margin: 30px 0;
+}
+
+.queue-card {
+    width: 90%;
+    max-width: 600px;
+    margin: 0 auto 30px auto;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    padding-bottom: 10px;
+}
+
+.queue-filter {
+    display: flex;
+    padding: 15px;
+    gap: 10px;
+    background: #f8f9fa;
+}
+
+.queue-filter button {
+    flex: 1;
+    padding: 10px 0;
+    border-radius: 10px;
+    border: 1px solid #eee;
+    background: white;
+    color: #444;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.queue-filter button.active {
+    background: #1a3a5f;
+    color: white;
+    border-color: #1a3a5f;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+}
+
+.icon-wrap {
+    width: 70px;
+    height: 70px;
+    background: #f0f2f5;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 auto 20px auto;
+}
+
+.icon-wrap .material-icons {
+    font-size: 35px;
+    color: #90a4ae;
+}
 
 /* ---------- Case Card & Drag ---------- */
-.case-card { background: #ffffff; padding: 20px; border-radius: 16px; margin-bottom: 16px; border: 1px solid #e4e9f0; cursor: pointer; }
+.case-card {
+    background: #ffffff;
+    padding: 20px;
+    border-radius: 16px;
+    margin-bottom: 16px;
+    border: 1px solid #e4e9f0;
+    cursor: pointer;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.04);
+}
+
 .drag-item {
     cursor: grab;
     user-select: none;
     -webkit-user-select: none;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
+
 .drag-item:active {
     cursor: grabbing;
     transform: scale(1.02);
@@ -389,86 +762,474 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
     opacity: 0.9;
 }
 
-.case-grid { display: flex; flex-direction: column; gap: 10px; font-size: 14px; color: #2c3e50; }
-.grid-row { display: grid; grid-template-columns: 1fr 1fr; align-items: center; }
-.grid-row span { display: block; }
-.grid-row.single { grid-template-columns: 1fr; }
-.case-grid strong { font-weight: 600; margin-right: 4px; }
+.case-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    font-size: 14px;
+    color: #2c3e50;
+}
 
-.case-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 12px; }
-.btn-success { background: #0d47a1; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-size: 13px; cursor: pointer; }
-.btn-delete { background: #b71c1c; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-size: 13px; cursor: pointer; }
+.grid-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+}
+
+.grid-row span {
+    display: block;
+}
+
+.grid-row.single {
+    grid-template-columns: 1fr;
+}
+
+.case-grid strong {
+    font-weight: 600;
+    margin-right: 4px;
+}
+
+.case-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.btn-success {
+    background: #0d47a1;
+    color: white;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.btn-delete {
+    background: #b71c1c;
+    color: white;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+}
 
 /* --- Succeed Style --- */
 .succeed-item {
     border-left: 5px solid #03c172;
     background: #fdfdfd;
 }
+
 .succeed-item:hover {
     background: #f0fff4;
 }
 
 /* --- Reset Button --- */
-.reset-wrapper { display: flex; justify-content: flex-end; margin-bottom: 10px; padding-right: 10px; }
-.btn-reset { display: flex; align-items: center; gap: 5px; background: #f0f2f5; color: #555; border: 1px solid #ddd; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; transition: 0.2s; }
-.btn-reset:hover { background: #e4e6e9; color: #1a3a5f; }
-.btn-reset .material-icons { font-size: 16px; }
+.reset-wrapper {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 10px;
+    padding-right: 10px;
+}
+
+.btn-reset {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: #f0f2f5;
+    color: #555;
+    border: 1px solid #ddd;
+    padding: 6px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    transition: 0.2s;
+}
+
+.btn-reset:hover {
+    background: #e4e6e9;
+    color: #1a3a5f;
+}
+
+.btn-reset .material-icons {
+    font-size: 16px;
+}
 
 /* --- Modals & Other UI --- */
-.modal-overlay-center { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; z-index: 4000; background: rgba(0, 0, 0, 0.4); }
-.white-modal-card { background: white; width: 90%; max-width: 320px; padding: 30px 20px; border-radius: 24px; text-align: center; }
-.btn-confirm-green { background-color: #03c172; color: white; border: none; padding: 10px 25px; border-radius: 12px; font-weight: bold; cursor: pointer; }
-.btn-cancel-blue { background-color: #6a92d4; color: white; border: none; padding: 10px 25px; border-radius: 12px; font-weight: bold; cursor: pointer; }
-.modal-button-group { display: flex; justify-content: center; gap: 15px; }
+.modal-overlay-center {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 4000;
+    background: rgba(0, 0, 0, 0.4);
+}
 
-.floating-add-btn { position: fixed; bottom: 35px; right: 35px; background: #1a3a5f; color: white; border: none; padding: 14px 24px; border-radius: 50px; font-size: 15px; font-weight: 600; cursor: pointer; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25); z-index: 100; transition: 0.2s ease; }
-.floating-add-btn:hover { background: #244b7a; transform: translateY(-3px); }
+.white-modal-card {
+    background: white;
+    width: 90%;
+    max-width: 320px;
+    padding: 30px 20px;
+    border-radius: 24px;
+    text-align: center;
+}
 
-.info-section { width: 100%; margin: 0 auto 50px auto; background: #eef2f7; padding: 20px; border-radius: 16px; }
-.info-header { display: flex; align-items: center; gap: 8px; margin-bottom: 15px; color: #1a3a5f; }
-.info-list { list-style: none; padding: 0; margin: 0; }
-.info-list li { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; color: #4a5e75; font-size: 0.95rem; }
+.btn-confirm-green {
+    background-color: #03c172;
+    color: white;
+    border: none;
+    padding: 10px 25px;
+    border-radius: 12px;
+    font-weight: bold;
+    cursor: pointer;
+}
 
-.case-detail { margin-top: 14px; padding: 14px; background: #f8fafc; border-radius: 10px; border: 1px solid #e3e8ef; font-size: 13px; line-height: 1.6; }
-.expand-enter-active, .expand-leave-active { transition: all 0.25s ease; }
-.expand-enter-from, .expand-leave-to { opacity: 0; transform: translateY(-6px); }
+.btn-cancel-blue {
+    background-color: #6a92d4;
+    color: white;
+    border: none;
+    padding: 10px 25px;
+    border-radius: 12px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.modal-button-group {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+}
+
+.floating-add-btn {
+    position: fixed;
+    bottom: 35px;
+    right: 35px;
+    background: #1a3a5f;
+    color: white;
+    border: none;
+    padding: 14px 24px;
+    border-radius: 50px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+    z-index: 100;
+    transition: 0.2s ease;
+}
+
+.floating-add-btn:hover {
+    background: #244b7a;
+    transform: translateY(-3px);
+}
+
+.info-section {
+    width: 100%;
+    margin: 0 auto 50px auto;
+    background: #eef2f7;
+    padding: 20px;
+    border-radius: 16px;
+}
+
+.info-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 15px;
+    color: #1a3a5f;
+}
+
+.info-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.info-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 12px;
+    color: #4a5e75;
+    font-size: 0.95rem;
+}
+
+.case-detail {
+    margin-top: 14px;
+    padding: 14px;
+    background: #f8fafc;
+    border-radius: 10px;
+    border: 1px solid #e3e8ef;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.expand-enter-active,
+.expand-leave-active {
+    transition: all 0.25s ease;
+}
+
+.expand-enter-from,
+.expand-leave-to {
+    opacity: 0;
+    transform: translateY(-6px);
+}
 
 /* --- Two Column Layout --- */
-.two-col-layout { display: flex; flex-direction: column; gap: 24px; }
-.col-left { width: 100%; }
-.col-right { width: 100%; }
+.two-col-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.col-left {
+    width: 100%;
+}
+
+.col-right {
+    width: 100%;
+}
 
 @media (min-width: 1024px) {
-    .two-col-layout { flex-direction: row; align-items: flex-start; }
-    .col-left { flex: 1; min-width: 0; }
-    .col-right { width: 420px; flex-shrink: 0; }
+    .two-col-layout {
+        flex-direction: row;
+        align-items: flex-start;
+    }
+
+    .col-left {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .col-right {
+        width: 420px;
+        flex-shrink: 0;
+    }
 }
 
 /* --- Stats Dashboard --- */
-.stats-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
-.stat-card { background: white; border-radius: 16px; padding: 16px; display: flex; align-items: center; gap: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); border-left: 4px solid; }
-.stat-card.blue { border-color: #1a3a5f; }
-.stat-card.green { border-color: #2e7d32; }
-.stat-card.purple { border-color: #6a1b9a; }
-.stat-card.orange { border-color: #e65100; }
-.stat-icon { font-size: 24px; }
-.stat-number { font-size: 1.6rem; font-weight: 700; color: #1a3a5f; line-height: 1; }
-.stat-label { font-size: 11px; color: #888; margin-top: 3px; }
+.stats-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.stat-card {
+    background: white;
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    border-left: 4px solid;
+}
+
+.stat-card.blue {
+    border-color: #1a3a5f;
+}
+
+.stat-card.green {
+    border-color: #2e7d32;
+}
+
+.stat-card.purple {
+    border-color: #6a1b9a;
+}
+
+.stat-card.orange {
+    border-color: #e65100;
+}
+
+.stat-icon {
+    font-size: 24px;
+}
+
+.stat-number {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #1a3a5f;
+    line-height: 1;
+}
+
+.stat-label {
+    font-size: 11px;
+    color: #888;
+    margin-top: 3px;
+}
 
 /* --- Doctor Management --- */
-.doctor-section { width: 100%; margin: 0 0 30px 0; background: white; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); overflow: hidden; }
-.section-header { padding: 16px 20px; background: #f8f9fa; border-bottom: 1px solid #eee; }
-.section-title { margin: 0; font-size: 1rem; color: #1a3a5f; font-weight: 700; }
-.doctor-table-wrap { overflow-x: auto; }
-.doctor-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.doctor-table th { background: #f0f4f8; color: #1a3a5f; padding: 10px 14px; text-align: left; font-weight: 600; }
-.doctor-table td { padding: 10px 14px; border-bottom: 1px solid #f0f0f0; color: #333; }
-.doctor-table tr:last-child td { border-bottom: none; }
-.doctor-table tr:hover td { background: #fafbfc; }
-.role-badge { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
-.role-badge.admin { background: #e8f0fe; color: #1a3a5f; }
-.role-badge.user { background: #f0f4f8; color: #555; }
-.btn-delete-doc { background: #b71c1c; color: white; border: none; padding: 4px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; }
-.btn-delete-doc:hover { background: #8b0000; }
-.protected-text { font-size: 11px; color: #aaa; font-style: italic; }
+.doctor-section {
+    width: 100%;
+    margin: 0 0 30px 0;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+}
+
+.section-header {
+    padding: 16px 20px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #eee;
+}
+
+.section-title {
+    margin: 0;
+    font-size: 1rem;
+    color: #1a3a5f;
+    font-weight: 700;
+}
+
+.doctor-table-wrap {
+    overflow-x: auto;
+}
+
+.doctor-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.doctor-table th {
+    background: #f0f4f8;
+    color: #1a3a5f;
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 600;
+}
+
+.doctor-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid #f0f0f0;
+    color: #333;
+}
+
+.doctor-table tr:last-child td {
+    border-bottom: none;
+}
+
+.doctor-table tr:hover td {
+    background: #fafbfc;
+}
+
+.role-badge {
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.role-badge.admin {
+    background: #e8f0fe;
+    color: #1a3a5f;
+}
+
+.role-badge.user {
+    background: #f0f4f8;
+    color: #555;
+}
+
+.btn-delete-doc {
+    background: #b71c1c;
+    color: white;
+    border: none;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.btn-delete-doc:hover {
+    background: #8b0000;
+}
+
+.protected-text {
+    font-size: 11px;
+    color: #aaa;
+    font-style: italic;
+}
+
+.cancelled-item {
+    border-left: 5px solid #d32f2f;
+    background: #fff5f5;
+    margin-block: 20px;
+
+}
+
+.cancelled-item:hover {
+    background: #ffecec;
+}
+
+.sub-filter {
+    display: flex;
+    gap: 10px;
+    padding: 0 15px 15px;
+    background: #f8f9fa;
+}
+
+.sub-filter button {
+    flex: 1;
+    padding: 8px 0;
+    border-radius: 10px;
+    border: 1px solid #ddd;
+    background: white;
+    color: #444;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.sub-filter button.active {
+    color: white;
+}
+
+.sub-filter button:first-child.active {
+    background: #03c168;
+    border-color: #03c168;
+}
+
+.sub-filter button:last-child.active {
+    background: #ae1414;
+    border-color: #ae1414;
+}
+
+.btn-back {
+    background: #1a3a5f;
+    color: white;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.btn-back:hover {
+    background: #244b7a;
+}
+
+.btn-confirm-red {
+    background: #c62828;
+    color: white;
+    border: none;
+    padding: 10px 25px;
+    border-radius: 12px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.red-text {
+    color: #c62828;
+}
+
+.tab-content-wrapper {
+    padding: 16px;
+}
 </style>

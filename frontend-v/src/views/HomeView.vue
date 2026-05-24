@@ -490,17 +490,23 @@
         + Add Queue
     </button>
     <Transition name="fade">
-        <div v-if="isMessageModalOpen" class="modal-overlay-center">
+        <div v-if="isConfirmModalOpen" class="modal-overlay-center">
             <div class="white-modal-card">
 
                 <h2 class="modal-msg-title">
-                    {{ messageText }}
+                    {{ confirmMessage }}
                 </h2>
 
                 <div class="modal-button-group">
-                    <button class="btn-confirm-green" @click="isMessageModalOpen = false">
-                        OK
+
+                    <button class="btn-cancel-gray" @click="isConfirmModalOpen = false">
+                        Cancel
                     </button>
+
+                    <button class="btn-confirm-red" @click="handleConfirm">
+                        Confirm
+                    </button>
+
                 </div>
 
             </div>
@@ -516,14 +522,6 @@ import { useRouter } from 'vue-router'
 const isConfirmModalOpen = ref(false)
 const confirmMessage = ref('')
 const confirmAction = ref(null)
-
-const isMessageModalOpen = ref(false)
-const messageText = ref('')
-
-const showMessage = (message) => {
-    messageText.value = message
-    isMessageModalOpen.value = true
-}
 
 const openConfirmDialog = (message, action) => {
     confirmMessage.value = message
@@ -951,7 +949,7 @@ const resetQueue = async () => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ updates })
         })
-        showMessage('รีเซ็ตการจัดคิวเรียบร้อย')
+        alert('✅ รีเซ็ตการจัดคิวเรียบร้อย!')
     } catch (e) {
         console.error("❌ รีเซ็ตคิวไม่สำเร็จ", e)
     }
@@ -1006,14 +1004,11 @@ const confirmDayChange = async () => {
 
         selectedDay.value = tempSelectedDay.value
         isDayModalOpen.value = false
-        showMessage('อัปเดตข้อมูลสำเร็จ')
+        alert("✅ อัปเดตข้อมูลสำเร็จ!")
 
     } catch (error) {
         console.error("❌ PUT Error:", error)
-        openConfirmDialog(
-            'อัปเดตข้อมูลไม่สำเร็จ',
-            null
-        )
+        alert("❌ ล้มเหลว!")
     }
 }
 
@@ -1045,29 +1040,16 @@ const handleDeleteAccount = async () => {
         const data = await response.json()
 
         if (response.ok) {
-            openConfirmDialog(
-                data.message,
-                async () => {
-                    isDeleteAccModalOpen.value = false
-                    localStorage.clear()
-                    router.push('/login')
-                }
-            )
+            alert('✅ ' + data.message)
             isDeleteAccModalOpen.value = false // ปิด Modal
             localStorage.clear() // ล้างข้อมูลในเครื่อง
             router.push('/login') // เด้งกลับหน้าล็อกอิน
         } else {
-            openConfirmDialog(
-                data.error || 'ลบไม่สำเร็จ',
-                null
-            )
+            alert('❌ ' + (data.error || 'ลบไม่สำเร็จ'))
             isDeleteAccModalOpen.value = false
         }
     } catch (error) {
-        openConfirmDialog(
-            'ระบบขัดข้อง ไม่สามารถติดต่อเซิร์ฟเวอร์ได้',
-            null
-        )
+        alert('❌ ระบบขัดข้อง ไม่สามารถติดต่อเซิร์ฟเวอร์ได้')
         isDeleteAccModalOpen.value = false
     }
 }
@@ -1126,10 +1108,7 @@ const markAsSucceed = async (id) => {
         const target = bookings.value.find(item => item.id === id)
         if (target) { target.status = FILTERS.SUCCEED; filter.value = FILTERS.SUCCEED; }
     } catch (e) {
-        openConfirmDialog(
-            'อัปเดตสถานะไม่สำเร็จ',
-            null
-        )
+        alert('❌ อัปเดต status ไม่สำเร็จ')
     }
 }
 </script>
