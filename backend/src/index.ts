@@ -86,7 +86,7 @@ app.post('/api/forgot-password', async (c) => {
 // 🟢 ดึงรายชื่อผู้ใช้ทั้งหมด (สำหรับ Admin)
 app.get('/api/users', async (c) => {
   try {
-    const { results } = await c.env.DB.prepare('SELECT license, doctorName, email, day, role FROM users').all()
+    const { results } = await c.env.DB.prepare('SELECT license, doctorName, day, role FROM users').all()
     return c.json(results)
   } catch (e) {
     return c.json({ error: 'DB Fetch Error' }, 500)
@@ -155,16 +155,23 @@ app.get('/api/bookings', async (c) => {
 app.post('/api/bookings', async (c) => {
   const b = await c.req.json()
   try {
+    // อัปเดตคำสั่ง INSERT ให้รองรับข้อมูล cxr, ecg, lab, adm
     await c.env.DB.prepare(`
-      INSERT INTO bookings (hn, fullName, dob, age, gender, procedure, date, urgency, isNpoRisk, isInfected, underlying, notes, status, room, doctorLicense, createdAt)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now', '+7 hours'))
+      INSERT INTO bookings (
+        hn, fullName, dob, age, gender, procedure, date, urgency, isNpoRisk, isInfected, underlying, 
+        cxrDate, cxrNote, ecgDate, ecgNote, labDate, labNote, admDate, admNote, 
+        notes, status, room, doctorLicense, createdAt
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now', '+7 hours'))
     `).bind(
       b.hn, b.fullName, b.dob, b.age, b.gender, b.procedure, 
-      b.date, b.urgency, b.isNpoRisk ? 1 : 0, b.isInfected ? 1 : 0, 
-      b.underlying, b.notes, 'Upcoming', 'OR-01', b.doctorLicense 
+      b.date, b.urgency, b.isNpoRisk ? 1 : 0, b.isInfected ? 1 : 0, b.underlying, 
+      b.cxrDate, b.cxrNote, b.ecgDate, b.ecgNote, b.labDate, b.labNote, b.admDate, b.admNote, 
+      b.notes, 'Upcoming', 'OR-01', b.doctorLicense 
     ).run()
     return c.json({ success: true }, 201)
   } catch (e) {
+    console.error("DB Insert Error:", e)
     return c.json({ error: 'DB Insert Error' }, 500)
   }
 })

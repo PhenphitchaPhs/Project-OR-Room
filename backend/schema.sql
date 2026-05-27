@@ -11,7 +11,15 @@ CREATE TABLE bookings (
   urgency TEXT,
   isNpoRisk INTEGER DEFAULT 0,
   isInfected INTEGER DEFAULT 0,
-  underlying TEXT,                -- 👈 เพิ่มช่องนี้สำหรับโรคประจำตัว
+  underlying TEXT,                
+  cxrDate TEXT,        -- 👈 เพิ่มข้อมูล CXR
+  cxrNote TEXT,
+  ecgDate TEXT,        -- 👈 เพิ่มข้อมูล ECG
+  ecgNote TEXT,
+  labDate TEXT,        -- 👈 เพิ่มข้อมูล Lab
+  labNote TEXT,
+  admDate TEXT,        -- 👈 เพิ่มข้อมูล Admission
+  admNote TEXT,
   notes TEXT,
   status TEXT DEFAULT 'Upcoming', 
   room TEXT DEFAULT 'OR-01', 
@@ -23,7 +31,7 @@ CREATE TABLE bookings (
 DROP TABLE IF EXISTS users;
 CREATE TABLE users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  license TEXT UNIQUE NOT NULL,    -- UNIQUE คือห้ามมีเลข License ซ้ำกัน
+  license TEXT UNIQUE NOT NULL,    
   doctorName TEXT NOT NULL,
   password TEXT NOT NULL,
   day TEXT,

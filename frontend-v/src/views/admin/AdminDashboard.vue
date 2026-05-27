@@ -135,7 +135,9 @@ const bookings = ref([])
 const loading = ref(true)
 const isLogoutModalOpen = ref(false)
 
-const todayStr = new Date().toISOString().split('T')[0]
+// 🐛 Fix: ปรับปรุงการดึงวันที่ปัจจุบันให้ตรงกับ Local Timezone (แก้ปัญหา UTC offset)
+const tzOffset = new Date().getTimezoneOffset() * 60000
+const todayStr = new Date(Date.now() - tzOffset).toISOString().split('T')[0]
 
 const upcomingCount = computed(() => bookings.value.filter(b => b.status === 'Upcoming' || !b.status).length)
 const succeedCount = computed(() => bookings.value.filter(b => b.status === 'Succeed').length)
@@ -155,7 +157,6 @@ onMounted(async () => {
 
         bookings.value = Array.isArray(bData) ? bData : (bData?.bookings ?? bData?.data ?? [])
 
-        // รองรับทุก shape ที่ API อาจ return
         let userArray = []
         if (Array.isArray(uData)) {
             userArray = uData
