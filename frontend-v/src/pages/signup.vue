@@ -27,7 +27,8 @@
 
         <button class="submit-btn" @click="submitForm">Sign Up</button>
 
-        <p v-if="message" :style="{ color: isSuccess ? 'green' : 'red', marginTop: '12px', textAlign: 'center', fontWeight: '500' }">
+        <p v-if="message"
+          :style="{ color: isSuccess ? 'green' : 'red', marginTop: '12px', textAlign: 'center', fontWeight: '500' }">
           {{ message }}
         </p>
       </div>
@@ -78,7 +79,7 @@ const submitForm = async () => {
         license: license.value,
         doctorName: doctorName.value,
         email: email.value, // 🟢 ส่ง Email ไป Backend
-        password: password.value, 
+        password: password.value,
         day: day.value
       })
     })
@@ -104,18 +105,114 @@ const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
 </script>
 
 <style scoped>
-* { box-sizing: border-box; }
-.page { min-height: 100vh; background: #f0f7ff; display: flex; justify-content: center; align-items: center; font-family: 'Inter', sans-serif; }
-.card { width: 400px; background: #ffffff; border-radius: 24px; padding: 30px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05); position: relative; }
-.back-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: #333; position: absolute; top: 20px; left: 20px; }
-.content-wrapper { padding-top: 30px; display: flex; flex-direction: column; align-items: center; }
-.logo-section { text-align: center; margin-bottom: 30px; }
-.main-logo { width: 80px; height: auto; margin-bottom: 10px; }
-.title { margin: 0; font-size: 22px; color: #001F5B; font-weight: 700; }
-.form-group { width: 100%; }
-.form-select { color: #333; cursor: pointer; -webkit-appearance: none; appearance: none; background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23001F5B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: right 16px center; background-size: 16px; line-height: normal; }
-.form-input, .form-select { width: 100%; height: 50px; padding: 0 16px; margin-bottom: 16px; border-radius: 12px; border: 1px solid #ddd; background: #fff; font-size: 15px; outline: none; transition: all 0.2s ease; }
-.form-input:focus, .form-select:focus { border: 1.5px solid #001F5B; box-shadow: 0 0 8px rgba(0, 31, 91, 0.1); }
-.submit-btn { width: 100%; height: 50px; margin-top: 10px; background: #001F5B; color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; }
-.submit-btn:hover { background: #1A3A7C; }
+* {
+  box-sizing: border-box;
+}
+
+.page {
+  min-height: 100vh;
+  background: #f0f7ff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: 'Inter', sans-serif;
+}
+
+.card {
+  width: 400px;
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 30px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+  position: relative;
+}
+
+.back-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #333;
+  position: absolute;
+  top: 20px;
+  left: 20px;
+}
+
+.content-wrapper {
+  padding-top: 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.logo-section {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.main-logo {
+  width: 80px;
+  height: auto;
+  margin-bottom: 10px;
+}
+
+.title {
+  margin: 0;
+  font-size: 22px;
+  color: #001F5B;
+  font-weight: 700;
+}
+
+.form-group {
+  width: 100%;
+}
+
+.form-select {
+  color: #333;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23001F5B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  background-size: 16px;
+  line-height: normal;
+}
+
+.form-input,
+.form-select {
+  width: 100%;
+  height: 50px;
+  padding: 0 16px;
+  margin-bottom: 16px;
+  border-radius: 12px;
+  border: 1px solid #ddd;
+  background: #fff;
+  font-size: 15px;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.form-input:focus,
+.form-select:focus {
+  border: 1.5px solid #001F5B;
+  box-shadow: 0 0 8px rgba(0, 31, 91, 0.1);
+}
+
+.submit-btn {
+  width: 100%;
+  height: 50px;
+  margin-top: 10px;
+  background: #001F5B;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.submit-btn:hover {
+  background: #1A3A7C;
+}
 </style>

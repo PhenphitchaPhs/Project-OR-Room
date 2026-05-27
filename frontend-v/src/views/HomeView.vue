@@ -97,10 +97,14 @@
                         <p><strong>Procedure:</strong> {{ selectedCase.procedure }}</p>
                         <p><strong>Surgery Date:</strong> {{ selectedCase.date }}</p>
                         <p><strong>Underlying:</strong> {{ selectedCase.underlying || '-' }}</p>
-                        <p><strong>CXR:</strong> {{ selectedCase.cxrDate || '-' }} | {{ selectedCase.cxrNote || '-' }}</p>
-                        <p><strong>ECG:</strong> {{ selectedCase.ecgDate || '-' }} | {{ selectedCase.ecgNote || '-' }}</p>
-                        <p><strong>Lab:</strong> {{ selectedCase.labDate || '-' }} | {{ selectedCase.labNote || '-' }}</p>
-                        <p><strong>Admission:</strong> {{ selectedCase.admDate || '-' }} | {{ selectedCase.admNote || '-' }}</p>
+                        <p><strong>CXR:</strong> {{ selectedCase.cxrDate || '-' }} | {{ selectedCase.cxrNote || '-' }}
+                        </p>
+                        <p><strong>ECG:</strong> {{ selectedCase.ecgDate || '-' }} | {{ selectedCase.ecgNote || '-' }}
+                        </p>
+                        <p><strong>Lab:</strong> {{ selectedCase.labDate || '-' }} | {{ selectedCase.labNote || '-' }}
+                        </p>
+                        <p><strong>Admission:</strong> {{ selectedCase.admDate || '-' }} | {{ selectedCase.admNote ||
+                            '-' }}</p>
                         <p><strong>Other Notes:</strong> {{ selectedCase.notes || '-' }}</p>
                     </div>
                     <button class="close-detail-btn" @click="closeDetailModal">Close</button>
@@ -125,15 +129,16 @@
             <div class="search-box">
                 <span class="material-icons search-icon">search</span>
 
-                <input type="text" v-model="searchHN" placeholder="Search HN..." @keyup.enter="searchCase" />
+                <input type="text" v-model="searchHN" placeholder="Search patient, HN, procedure..."
+                    @keyup.enter="searchCase" />
             </div>
 
-            <button class="logout-btn" @click="isLogoutModalOpen = true">
+            <!-- <button class="logout-btn" @click="isLogoutModalOpen = true">
                 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24">
                     <path fill="white"
                         d="M5 21q-.825 0-1.412-.587T3 19V5q0-.825.588-1.412T5 3h6q.425 0 .713.288T12 4t-.288.713T11 5H5v14h6q.425 0 .713.288T12 20t-.288.713T11 21zm12.175-8H10q-.425 0-.712-.288T9 12t.288-.712T10 11h7.175L15.3 9.125q-.275-.275-.275-.675t.275-.7.7-.313t.725.288L20.3 11.3q.3.3.3.7t-.3.7l-3.575 3.575q-.3.3-.712.288t-.713-.313q-.275-.3-.262-.712t.287-.688z" />
                 </svg>
-            </button>
+            </button> -->
 
         </header>
 
@@ -201,7 +206,7 @@
                     </button>
 
                     <button :class="{ active: filter === FILTERS.SUCCEED }" @click="filter = FILTERS.SUCCEED">
-                        Succeed
+                        Pass
                     </button>
                 </div>
 
@@ -224,10 +229,9 @@
                                 </button>
                             </div>
 
-                            <div v-for="(item, index) in upcomingCases" :key="item.id"
-                                :ref="el => setCaseRef(el, item.hn)" class="case-card drag-item" draggable="true"
-                                @dragstart="onDragStart(index, item.id)" @dragover.prevent @drop="onDrop(index)"
-                                @click="toggleDetail(item.id)">
+                            <div v-for="(item, index) in upcomingCases" :key="item.id" :ref="el => setCaseRef(el, item)"
+                                class="case-card drag-item" draggable="true" @dragstart="onDragStart(index, item.id)"
+                                @dragover.prevent @drop="onDrop(index)" @click="toggleDetail(item.id)">
 
                                 <div class="case-grid">
 
@@ -259,13 +263,17 @@
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                            }}</div>
+                                        }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
 
-                                        <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{ item.cxrNote || '-' }}</div>
-                                        <div class="detail-row"><strong>ECG:</strong> {{ item.ecgDate || '-' }} | {{ item.ecgNote || '-' }}</div>
-                                        <div class="detail-row"><strong>Lab:</strong> {{ item.labDate || '-' }} | {{ item.labNote || '-' }}</div>
-                                        <div class="detail-row"><strong>Admission:</strong> {{ item.admDate || '-' }} | {{ item.admNote || '-' }}</div>
+                                        <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
+                                            item.cxrNote || '-' }}</div>
+                                        <div class="detail-row"><strong>ECG:</strong> {{ item.ecgDate || '-' }} | {{
+                                            item.ecgNote || '-' }}</div>
+                                        <div class="detail-row"><strong>Lab:</strong> {{ item.labDate || '-' }} | {{
+                                            item.labNote || '-' }}</div>
+                                        <div class="detail-row"><strong>Admission:</strong> {{ item.admDate || '-' }} |
+                                            {{ item.admNote || '-' }}</div>
 
                                         <div class="detail-row"><strong>Notes:</strong> {{ item.notes || '-' }}</div>
 
@@ -291,14 +299,18 @@
                         <!-- SUB TAB -->
                         <div class="queue-filter sub-filter">
 
-                            <button :class="{ active: succeedTab === FILTERS.COMPLETE }"
-                                @click="succeedTab = FILTERS.COMPLETE">
+                            <button :class="{
+                                active: succeedTab === FILTERS.COMPLETE,
+                                'complete-active': succeedTab === FILTERS.COMPLETE
+                            }" @click="succeedTab = FILTERS.COMPLETE">
                                 Complete
                             </button>
 
-                            <button :class="{ active: succeedTab === FILTERS.NOT_COMPLETE }"
-                                @click="succeedTab = FILTERS.NOT_COMPLETE">
-                                Not Complete
+                            <button :class="{
+                                active: succeedTab === FILTERS.NOT_COMPLETE,
+                                'cancelled-active': succeedTab === FILTERS.NOT_COMPLETE
+                            }" @click="succeedTab = FILTERS.NOT_COMPLETE">
+                                {{ FILTERS.NOT_COMPLETE }}
                             </button>
 
                         </div>
@@ -319,8 +331,8 @@
                             <div v-else>
 
                                 <div v-for="item in completeCases" :key="item.id"
-                                    :ref="el => setCaseRef(el, item.hn, FILTERS.COMPLETE)"
-                                    class="case-card succeed-item" @click="toggleDetail(item.id)">
+                                    :ref="el => setCaseRef(el, item, FILTERS.COMPLETE)" class="case-card succeed-item"
+                                    @click="toggleDetail(item.id)">
 
                                     <div class="case-grid">
 
@@ -336,7 +348,7 @@
 
                                         <div class="grid-row single">
                                             <span><strong>Doctor:</strong> {{ doctorName || 'Dr. ' + userLicense
-                                                }}</span>
+                                            }}</span>
                                         </div>
 
                                     </div>
@@ -369,13 +381,37 @@
                                             </div>
 
                                             <div class="detail-row">
-                                                <strong>Procedure:</strong>
+                                                <strong>Proposed Procedure:</strong>
                                                 {{ item.procedure }}
                                             </div>
 
                                             <div class="detail-row">
                                                 <strong>Date:</strong>
                                                 {{ item.date }}
+                                            </div>
+
+                                            <div class="detail-row">
+                                                <strong>CXR:</strong>
+                                                {{ item.cxrDate || '-' }} |
+                                                {{ item.cxrNote || '-' }}
+                                            </div>
+
+                                            <div class="detail-row">
+                                                <strong>ECG:</strong>
+                                                {{ item.ecgDate || '-' }} |
+                                                {{ item.ecgNote || '-' }}
+                                            </div>
+
+                                            <div class="detail-row">
+                                                <strong>Lab:</strong>
+                                                {{ item.labDate || '-' }} |
+                                                {{ item.labNote || '-' }}
+                                            </div>
+
+                                            <div class="detail-row">
+                                                <strong>Admission:</strong>
+                                                {{ item.admDate || '-' }} |
+                                                {{ item.admNote || '-' }}
                                             </div>
 
                                             <div class="detail-row">
@@ -409,7 +445,7 @@
                             <div v-else>
 
                                 <div v-for="item in notCompleteCases" :key="item.id"
-                                    :ref="el => setCaseRef(el, item.hn, FILTERS.NOT_COMPLETE)"
+                                    :ref="el => setCaseRef(el, item, FILTERS.NOT_COMPLETE)"
                                     class="case-card not-complete-item" @click="toggleDetail(item.id)">
 
 
@@ -423,6 +459,75 @@
                                         <div class="grid-row">
                                             <span><strong>Procedure:</strong> {{ item.procedure }}</span>
                                         </div>
+                                        <!-- DETAIL -->
+                                        <transition name="expand">
+
+                                            <div v-if="expandedId === item.id" class="case-detail">
+
+                                                <div class="detail-row">
+                                                    <strong>HN:</strong> {{ item.hn }}
+                                                </div>
+
+                                                <div class="detail-row">
+                                                    <strong>Full Name:</strong> {{ item.fullName }}
+                                                </div>
+
+                                                <div class="detail-row">
+                                                    <strong>Age:</strong> {{ item.age }}
+                                                </div>
+
+                                                <div class="detail-row">
+                                                    <strong>Gender:</strong>
+                                                    {{ item.gender === 'male' ? 'ชาย' : 'หญิง' }}
+                                                </div>
+
+                                                <div class="detail-row">
+                                                    <strong>Underlying Disease(s):</strong>
+                                                    {{ item.underlying || '-' }}
+                                                </div>
+
+                                                <div class="detail-row">
+                                                    <strong>Proposed Procedure:</strong>
+                                                    {{ item.procedure }}
+                                                </div>
+
+                                                <div class="detail-row">
+                                                    <strong>Date:</strong>
+                                                    {{ item.date }}
+                                                </div>
+
+                                                <div class="detail-row">
+                                                    <strong>CXR:</strong>
+                                                    {{ item.cxrDate || '-' }} |
+                                                    {{ item.cxrNote || '-' }}
+                                                </div>
+
+                                                <div class="detail-row">
+                                                    <strong>ECG:</strong>
+                                                    {{ item.ecgDate || '-' }} |
+                                                    {{ item.ecgNote || '-' }}
+                                                </div>
+
+                                                <div class="detail-row">
+                                                    <strong>Lab:</strong>
+                                                    {{ item.labDate || '-' }} |
+                                                    {{ item.labNote || '-' }}
+                                                </div>
+
+                                                <div class="detail-row">
+                                                    <strong>Admission:</strong>
+                                                    {{ item.admDate || '-' }} |
+                                                    {{ item.admNote || '-' }}
+                                                </div>
+
+                                                <div class="detail-row">
+                                                    <strong>Notes:</strong>
+                                                    {{ item.notes || '-' }}
+                                                </div>
+
+                                            </div>
+
+                                        </transition>
 
                                     </div>
 
@@ -477,6 +582,29 @@
     <button class="floating-add-btn" @click="goAddPatient">
         + Add Queue
     </button>
+    <Transition name="fade">
+        <div v-if="isConfirmModalOpen" class="modal-overlay-center">
+            <div class="white-modal-card">
+
+                <h2 class="modal-msg-title">
+                    {{ confirmMessage }}
+                </h2>
+
+                <div class="modal-button-group">
+
+                    <button class="btn-cancel-gray" @click="isConfirmModalOpen = false">
+                        Cancel
+                    </button>
+
+                    <button class="btn-confirm-red" @click="handleConfirm">
+                        Confirm
+                    </button>
+
+                </div>
+
+            </div>
+        </div>
+    </Transition>
 </template>
 
 <script setup>
@@ -484,79 +612,141 @@
 import { ref, onMounted, computed, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 
+const isConfirmModalOpen = ref(false)
+const confirmMessage = ref('')
+const confirmAction = ref(null)
+
+const openConfirmDialog = (message, action) => {
+    confirmMessage.value = message
+    confirmAction.value = action
+    isConfirmModalOpen.value = true
+}
+
+const handleConfirm = async () => {
+
+    if (confirmAction.value) {
+        await confirmAction.value()
+    }
+
+    isConfirmModalOpen.value = false
+    confirmAction.value = null
+}
+
+const FILTERS = {
+    UPCOMING: 'Upcoming',
+    SUCCEED: 'Pass',
+    COMPLETE: 'Complete',
+    NOT_COMPLETE: 'Cancelled'
+}
+
 
 const searchHN = ref('')
 
 const caseRefs = ref({})
 
-const setCaseRef = (el, hn, tab = FILTERS.UPCOMING) => {
-    if (!el) return
+const normalizeText = (text) => {
+    return String(text || '')
+        .toLowerCase()
+        .replace(/\s+/g, '')
+}
 
-    caseRefs.value[hn] = {
+const setCaseRef = (el, item, tab = FILTERS.UPCOMING) => {
+
+    if (!el || !item?.id) return
+
+    caseRefs.value[item.id] = {
         el,
-        tab
+        tab,
+        item
     }
 }
 
 const searchCase = async () => {
 
-    const targetData = caseRefs.value[searchHN.value]
+    const keyword = normalizeText(searchHN.value)
 
-    if (!targetData) return
+    if (!keyword) return
 
-    const searchCase = async () => {
-        const hn = searchHN.value
-        if (!hn) return
+    let targetList = []
 
-        const targetData = caseRefs.value[hn]
-        if (!targetData) return
+    // CURRENT TAB ONLY
+    if (filter.value === FILTERS.UPCOMING) {
 
-        await nextTick()
+        targetList = upcomingCases.value.map(item => ({
+            item,
+            tab: FILTERS.UPCOMING
+        }))
 
-        const el = targetData.el
-        if (!el) return
+    } else if (
+        filter.value === FILTERS.SUCCEED &&
+        succeedTab.value === FILTERS.COMPLETE
+    ) {
 
-        el.scrollIntoView({
-            behavior: 'smooth',
-            block: 'center'
-        })
+        targetList = completeCases.value.map(item => ({
+            item,
+            tab: FILTERS.COMPLETE
+        }))
 
-        let highlightClass = 'highlight-case'
+    } else if (
+        filter.value === FILTERS.SUCCEED &&
+        succeedTab.value === FILTERS.NOT_COMPLETE
+    ) {
 
-        if (targetData.tab === FILTERS.NOT_COMPLETE) {
-            highlightClass = 'highlight-case-yellow'
-        }
-
-        el.classList.add(highlightClass)
-
-        setTimeout(() => {
-            el.classList.remove(highlightClass)
-        }, 2500)
+        targetList = notCompleteCases.value.map(item => ({
+            item,
+            tab: FILTERS.NOT_COMPLETE
+        }))
     }
+
+    // FIND MATCH
+    const found = targetList.find(({ item }) => {
+
+        const searchableText = normalizeText([
+            item.hn,
+            item.fullName,
+            item.procedure,
+            item.underlying,
+            item.notes,
+            item.room,
+            item.date,
+            item.gender,
+            item.doctorName,
+            item.cxrNote,
+            item.ecgNote,
+            item.labNote,
+            item.admNote
+        ].join(' '))
+
+        return searchableText.includes(keyword)
+    })
+
+    if (!found) return
+
     await nextTick()
 
-    const target = targetData.el
+    const targetRef = caseRefs.value[found.item.id]
 
-    target.scrollIntoView({
+    if (!targetRef?.el) return
+
+    const el = targetRef.el
+
+    el.scrollIntoView({
         behavior: 'smooth',
         block: 'center'
     })
 
-    target.classList.add('highlight-case')
+    let highlightClass = 'highlight-case'
+
+    if (found.tab === FILTERS.NOT_COMPLETE) {
+        highlightClass = 'highlight-case-yellow'
+    }
+
+    el.classList.add(highlightClass)
 
     setTimeout(() => {
-        target.classList.remove('highlight-case')
+        el.classList.remove(highlightClass)
     }, 2500)
 }
-
-
-const FILTERS = {
-    UPCOMING: 'Upcoming',
-    SUCCEED: 'Succeed',
-    COMPLETE: 'Complete',
-    NOT_COMPLETE: 'Not Complete'
-}
-const MAX_MINUTES = 420
 
 
 
@@ -611,46 +801,51 @@ const usedMinutes = computed(() => {
         }, 0)
 
 })
-const restoreCase = async (id) => {
+const restoreCase = (id) => {
 
-    if (!confirm('Move this case back to Upcoming?')) return
+    openConfirmDialog(
+        'Move this case back to Upcoming?',
+        async () => {
 
-    try {
+            try {
 
-        const res = await fetch(
-            `https://or-room-backend.rockzee2018.workers.dev/api/bookings/${id}/status`,
-            {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    status: FILTERS.UPCOMING
-                })
+                const res = await fetch(
+                    `https://or-room-backend.rockzee2018.workers.dev/api/bookings/${id}/status`,
+                    {
+                        method: 'PATCH',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            status: FILTERS.UPCOMING
+                        })
+                    }
+                )
+
+                if (!res.ok) throw new Error()
+
+                const target = bookings.value.find(
+                    item => item.id === id
+                )
+
+                if (target) {
+                    target.status = FILTERS.UPCOMING
+                }
+
+            } catch (e) {
+                console.error(e)
             }
-        )
 
-        if (!res.ok) throw new Error()
-
-        const target = bookings.value.find(item => item.id === id)
-
-        if (target) {
-            target.status = FILTERS.UPCOMING
         }
-
-    } catch (e) {
-
-        console.error(e)
-        alert('Failed to restore case')
-
-    }
+    )
 
 }
-
+const MAX_MINUTES = 420
 // เปอร์เซ็นต์ progress
 const usagePercent = computed(() => {
     return Math.min((usedMinutes.value / MAX_MINUTES) * 100, 100)
 })
+
 
 // เวลาคงเหลือ
 const remainingMinutes = computed(() => {
@@ -791,7 +986,44 @@ const onDrop = async (dropIndex) => {
 
 // ================= ฟังก์ชันรีเซ็ตคิว =================
 const resetQueue = async () => {
-    if (!confirm('ต้องการรีเซ็ตการเรียงคิว กลับไปใช้ระบบอัตโนมัติหรือไม่?')) return
+    const resetQueue = () => {
+
+        openConfirmDialog(
+            'Reset queue order and use automatic sorting?',
+            async () => {
+
+                const updates = upcomingCases.value.map(item => ({
+                    id: item.id,
+                    queueOrder: 999
+                }))
+
+                bookings.value.forEach(b => {
+                    if (b.status !== FILTERS.SUCCEED) {
+                        b.queueOrder = 999
+                    }
+                })
+
+                try {
+
+                    await fetch(
+                        'https://or-room-backend.rockzee2018.workers.dev/api/bookings/reorder',
+                        {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ updates })
+                        }
+                    )
+
+                } catch (e) {
+                    console.error(e)
+                }
+
+            }
+        )
+
+    }
 
     // 1. ตั้งค่า queueOrder เป็น 999 ให้หมด
     const updates = upcomingCases.value.map(item => {
@@ -917,42 +1149,43 @@ const handleDeleteAccount = async () => {
 const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.value = true }
 const closeDetailModal = () => { isDetailModalOpen.value = false }
 
-const deleteCase = async (id) => {
+const deleteCase = (id) => {
 
-    if (!confirm('Move this case to Not Complete?')) return
+    openConfirmDialog(
+        'Move this case to Not Complete?',
+        async () => {
 
-    try {
+            try {
 
-        const res = await fetch(
-            `https://or-room-backend.rockzee2018.workers.dev/api/bookings/${id}/status`,
-            {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    status: FILTERS.NOT_COMPLETE
-                })
+                const res = await fetch(
+                    `https://or-room-backend.rockzee2018.workers.dev/api/bookings/${id}/status`,
+                    {
+                        method: 'PATCH',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            status: FILTERS.NOT_COMPLETE
+                        })
+                    }
+                )
+
+                if (!res.ok) throw new Error()
+
+                const target = bookings.value.find(
+                    item => item.id === id
+                )
+
+                if (target) {
+                    target.status = FILTERS.NOT_COMPLETE
+                }
+
+            } catch (e) {
+                console.error(e)
             }
-        )
 
-        if (!res.ok) throw new Error()
-
-        // update UI
-        const target = bookings.value.find(item => item.id === id)
-
-        if (target) {
-            target.status = FILTERS.NOT_COMPLETE
         }
-
-        alert('✅ Moved to Not Complete')
-
-    } catch (e) {
-
-        console.error(e)
-        alert('❌ Failed to update case')
-
-    }
+    )
 
 }
 const markAsSucceed = async (id) => {
@@ -1073,13 +1306,9 @@ const markAsSucceed = async (id) => {
     gap: 10px;
     cursor: pointer;
     color: white;
+    margin-left: 15px;
 }
 
-.logout-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-}
 
 /* --- Main Dashboard Content (UI อัปเดตใหม่) --- */
 .dashboard-container {
@@ -1128,6 +1357,20 @@ const markAsSucceed = async (id) => {
     background: #1a3a5f;
     color: white;
     border-color: #1a3a5f;
+}
+
+/* COMPLETE TAB */
+.sub-filter button.complete-active {
+    background: #16a34a;
+    color: white;
+    border-color: #16a34a;
+}
+
+/* CANCELLED TAB */
+.sub-filter button.cancelled-active {
+    background: #790606;
+    color: white;
+    border-color: #790606;
 }
 
 .empty-state {
@@ -1485,13 +1728,17 @@ const markAsSucceed = async (id) => {
 }
 
 .grid-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: flex-start;
 }
 
 .grid-row span {
     display: block;
+    min-width: 140px;
+    flex: 1;
+    word-break: break-word;
 }
 
 .grid-row.single {
@@ -1856,8 +2103,8 @@ input[type="checkbox"] {
     align-items: center;
     gap: 6px;
 
-    background: #1e3a8a;
-    color: white;
+    background: #ffc400;
+    color: rgb(0, 0, 0);
 
     border: none;
     border-radius: 10px;
@@ -1872,11 +2119,12 @@ input[type="checkbox"] {
 }
 
 /*.เสิรชบาร์*/
+
 .top-nav {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 16px;
+    gap: 12px;
 }
 
 .search-box {
@@ -1886,26 +2134,32 @@ input[type="checkbox"] {
 
     background: white;
     border: 1px solid #d1d5db;
-    border-radius: 12px;
+    border-radius: 14px;
 
-    padding: 8px 14px;
-    width: 260px;
-    margin-left: 60%;
+    padding: 0 14px;
+
+    width: 230px;
+
+    height: 42px;
+
+    margin-left: auto;
+
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
 }
+
 
 .search-box input {
     border: none;
     outline: none;
     width: 100%;
-    font-size: 14px;
+    font-size: 15px;
     background: transparent;
 }
 
 .search-icon {
     color: #6b7280;
-    font-size: 20px;
+    font-size: 22px;
 }
-
 
 .highlight-case {
     border: 2px solid #2563eb;
@@ -1960,5 +2214,71 @@ input[type="checkbox"] {
     100% {
         transform: scale(1);
     }
+}
+
+@media (max-width: 768px) {
+
+    .top-nav {
+        gap: 10px;
+        padding: 0 12px;
+    }
+
+    .search-box {
+        flex: 1;
+        max-width: unset;
+        height: 30px;
+        padding: 0 16px;
+        margin-left: 90px;
+    }
+
+    .search-box input {
+        font-size: 16px;
+    }
+
+    .search-icon {
+        font-size: 26px;
+    }
+
+    .logout-btn svg {
+        width: 26px;
+        height: 26px;
+    }
+
+    .top-nav {
+        padding: 0 12px;
+    }
+
+    .search-box {
+        height: 40px;
+    }
+
+    .search-box input {
+        font-size: 16px;
+    }
+
+    .search-icon {
+        font-size: 26px;
+    }
+
+    .case-card {
+        padding: 14px;
+    }
+
+    .grid-row {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .grid-row span {
+        width: 100%;
+        min-width: unset;
+    }
+
+    .case-grid {
+        gap: 8px;
+        font-size: 13px;
+    }
+
+
 }
 </style>

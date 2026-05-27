@@ -30,6 +30,27 @@
       <button class="btn" @click="login">Log in</button>
     </div>
   </div>
+  <!-- Dialog -->
+  <div v-if="showDialog" class="dialog-overlay">
+    <div class="dialog-box">
+      <div class="dialog-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2" />
+          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+        </svg>
+      </div>
+
+      <p class="dialog-message">
+        {{ dialogMessage }}
+      </p>
+
+
+      <button class="dialog-btn" @click="showDialog = false">
+        OK
+      </button>
+    </div>
+  </div>
 </template>
 
 
@@ -40,18 +61,20 @@ import { useRouter } from "vue-router";
 const router = useRouter();
 const license = ref("");
 const password = ref("");
+const showDialog = ref(false);
+const dialogMessage = ref("");
 
 // ถ้า login อยู่แล้ว ให้เด้งไปหน้าที่ถูกต้องตาม Role
 onMounted(() => {
   const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
   const userRole = localStorage.getItem("userRole");
-  
+
   if (isLoggedIn) {
-      if (userRole === 'admin') {
-          router.push("/admin-home"); // ถ้าเป็นแอดมิน ให้ไปหน้าแอดมิน
-      } else {
-          router.push("/home"); // ถ้าเป็นหมอ/พยาบาล ให้ไปหน้าโฮม
-      }
+    if (userRole === 'admin') {
+      router.push("/admin-home"); // ถ้าเป็นแอดมิน ให้ไปหน้าแอดมิน
+    } else {
+      router.push("/home"); // ถ้าเป็นหมอ/พยาบาล ให้ไปหน้าโฮม
+    }
   }
 });
 
@@ -65,12 +88,14 @@ const handleLicenseInput = () => {
 // เปลี่ยนเป็น async เพื่อต่อ API
 const login = async () => {
   if (license.value.length !== 5) {
-    alert("License ต้องเป็นตัวเลข 5 หลัก");
+    dialogMessage.value = "License ต้องเป็นตัวเลข 5 หลัก";
+    showDialog.value = true;
     return;
   }
 
   if (!password.value) {
-    alert("กรุณากรอก Password");
+    dialogMessage.value = "กรุณากรอก Password";
+    showDialog.value = true;
     return;
   }
 
@@ -90,21 +115,22 @@ const login = async () => {
     if (response.ok && data.success) {
       // ✅ ถ้าฐานข้อมูลตอบกลับมาว่ารหัสถูก ค่อยเซฟสถานะลงเครื่องเพื่อให้เว็บจำได้
       localStorage.setItem("isLoggedIn", "true");
-      localStorage.setItem("userLicense", data.user.license); 
-      localStorage.setItem("doctorName", data.user.doctorName); 
+      localStorage.setItem("userLicense", data.user.license);
+      localStorage.setItem("doctorName", data.user.doctorName);
       localStorage.setItem("userRole", data.user.role || 'user');
       localStorage.setItem("selectedDay", data.user.day || 'Monday');
 
-      alert("ล็อกอินสำเร็จ ยินดีต้อนรับเข้าสู่ระบบ!");
       router.push("/home");
     } else {
-      alert("❌ " + (data.error || "ล็อกอินไม่สำเร็จ"));
+      dialogMessage.value = "❌ " + (data.error || "ล็อกอินไม่สำเร็จ");
+      showDialog.value = true;
     }
   } catch (error) {
     console.error(error);
-    alert("❌ ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบว่ารัน Backend อยู่หรือไม่");
+    dialogMessage.value = "❌ ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้";
+    showDialog.value = true;
   }
-};
+}
 </script>
 
 <style scoped>
@@ -221,5 +247,76 @@ a {
 
 .btn:hover {
   background: #1A3A7C;
+}
+
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+  padding: 20px;
+}
+
+.dialog-box {
+  width: 100%;
+  max-width: 340px;
+  background: white;
+  border-radius: 20px;
+  padding: 28px 24px;
+  text-align: center;
+  animation: popup 0.2s ease;
+}
+
+.dialog-icon {
+  width: 60px;
+  height: 60px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  background: #ffe5e5;
+  color: #e53935;
+  font-size: 28px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dialog-message {
+  font-size: 16px;
+  color: #333;
+  margin-bottom: 24px;
+  line-height: 1.5;
+  font-weight: 500;
+}
+
+.dialog-btn {
+  width: 100%;
+  height: 46px;
+  border: none;
+  border-radius: 12px;
+  background: #001F5B;
+  color: white;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.dialog-btn:hover {
+  background: #173a82;
+}
+
+@keyframes popup {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 </style>
