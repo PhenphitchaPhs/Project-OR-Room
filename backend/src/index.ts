@@ -1,9 +1,11 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 
+// ⚠️ เพิ่ม HOLIDAY_API_KEY เข้ามาใน Bindings เพื่อให้ TypeScript รู้จัก
 type Bindings = {
   DB: D1Database
   RESEND_API_KEY: string
+  HOLIDAY_API_KEY: string 
 }
 
 const app = new Hono<{ Bindings: Bindings }>()
@@ -230,6 +232,22 @@ app.get('/api/patients/:hn', async (c) => {
   } catch (e) {
     return c.json({ error: 'DB Fetch Error' }, 500)
   }
+})
+
+
+// ==========================================
+// 📅 5. HOLIDAYS (จัดการวันหยุดราชการ)
+// ==========================================
+
+// 🟢 API สำหรับดึงข้อมูลวันหยุดราชการ
+app.get('/api/holidays', async (c) => {
+  // ดึงค่า API Key จาก .dev.vars (ตอนรันในเครื่อง) หรือจาก Secret (ตอนรันบน Cloudflare)
+  const apiKey = c.env.HOLIDAY_API_KEY 
+  
+  // 📝 พื้นที่สำหรับให้เพื่อนเขียนโค้ดต่อ:
+  // โค้ดของเพื่อนที่จะเอา apiKey นี้ไปยิงหาเว็บวันหยุดราชการต่อ...
+  
+  return c.json({ message: "เส้นทาง API วันหยุดพร้อมใช้งาน!" })
 })
 
 export default app
