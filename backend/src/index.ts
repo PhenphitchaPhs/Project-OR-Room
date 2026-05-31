@@ -10,8 +10,13 @@ type Bindings = {
 
 const app = new Hono<{ Bindings: Bindings }>()
 
-// เปิด CORS ให้หน้าบ้าน (Vue) เข้ามาใช้งานได้
-app.use('/*', cors())
+// 📍 ปรับแต่ง CORS ใหม่ให้รองรับหน้าบ้าน Vercel แบบ 100%
+app.use('/*', cors({
+  origin: '*', // เปิดรับทุกโดเมน (เพื่อให้ Vercel หรือ localhost ยิงเข้ามาได้)
+  allowHeaders: ['Content-Type', 'Authorization'], // อนุญาตให้ส่งข้อมูลแบบ JSON ได้
+  allowMethods: ['POST', 'GET', 'OPTIONS', 'PUT', 'DELETE', 'PATCH'], // อนุญาตทุกคำสั่ง
+  maxAge: 600, // แคชการตั้งค่าความปลอดภัยไว้ 10 นาที เบราว์เซอร์จะได้ไม่ต้องเช็กซ้ำบ่อยๆ
+}))
 
 
 // ==========================================
