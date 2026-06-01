@@ -116,7 +116,31 @@ const form = reactive({
     admDate: '', admNote: ''
 })
 
-// ข้อมูลหัตถการแบ่งตามแผนก เพื่อความเป็นระเบียบ
+// รายชื่อวันหยุดราชการไทยประจำปี 2026 (พ.ศ. 2569) คีย์เป็น YYYY-MM-DD
+const thaiHolidays2026 = {
+    '2026-01-01': 'วันขึ้นปีใหม่',
+    '2026-03-03': 'วันมาฆบูชา',
+    '2026-04-06': 'วันพระบาทสมเด็จพระพุทธยอดฟ้าจุฬาโลกมหาราชและวันที่ระลึกมหาจักรีบรมราชวงศ์',
+    '2026-04-13': 'วันสงกรานต์',
+    '2026-04-14': 'วันสงกรานต์',
+    '2026-04-15': 'วันสงกรานต์',
+    '2026-05-01': 'วันแรงงานแห่งชาติ (หยุดบางหน่วยงาน)',
+    '2026-05-04': 'วันฉัตรมงคล',
+    '2026-05-31': 'วันวิสาขบูชา',
+    '2026-06-01': 'วันชดเชยวันวิสาขบูชา',
+    '2026-06-03': 'วันเฉลิมพระชนมพรรษาสมเด็จพระนางเจ้าฯ พระบรมราชินี',
+    '2026-07-28': 'วันเฉลิมพระชนมพรรษาพระบาทสมเด็จพระเจ้าอยู่หัว',
+    '2026-07-29': 'วันอาสาฬหบูชา',
+    '2026-07-30': 'วันเข้าพรรษา',
+    '2026-08-12': 'วันเฉลิมพระชนมพรรษาสมเด็จพระบรมราชชนนีพันปีหลวง และวันแม่แห่งชาติ',
+    '2026-10-13': 'วันคล้ายวันสวรรคตพระบาทสมเด็จพระบรมชนกาธิเบศร มหาภูมิพลอดุลยเดชมหาราช บรมนาถบพิตร',
+    '2026-10-23': 'วันปิยมหาราช',
+    '2026-12-05': 'วันคล้ายวันพระบรมราชสมภพพระบาทสมเด็จพระบรมชนกาธิเบศร มหาภูมิพลอดุลยเดชมหาราช บรมนาถบพิตร วันชาติ และวันพ่อแห่งชาติ',
+    '2026-12-07': 'วันชดเชยวันพ่อแห่งชาติ',
+    '2026-12-10': 'วันรัฐธรรมนูญ',
+    '2026-12-31': 'วันสิ้นปี'
+}
+
 const procedureGroups = ref([
     {
         label: "ศัลยกรรมทั่วไป (General Surgery)",
@@ -185,20 +209,44 @@ const lookupHN = async () => {
     } catch (e) { hnStatus.value = 'notfound' }
 }
 
-const checkValidDate = async () => {
-    if (!form.date) return
+// แตกฟังก์ชันเช็กวันหยุดเพื่อให้เรียกใช้ซ้ำได้สะดวก
+const validateHolidayAndWeekend = (dateStr) => {
+    if (!dateStr) return true
 
-    const selected = new Date(form.date)
+    // 1. ตรวจสอบปี ค.ศ. / พ.ศ. ก่อน
+    const yearPart = parseInt(dateStr.split('-')[0])
+    const currentYear = new Date().getFullYear()
+    const normalizedYear = yearPart > 2400 ? yearPart - 543 : yearPart
+    if (!normalizedYear || normalizedYear < currentYear - 1 || normalizedYear > currentYear + 5) return true
+
+    // 2. เช็กวันหยุดราชการ
+    if (thaiHolidays2026[dateStr]) {
+        alert(`❌ วันที่เลือกเป็นวันหยุดราชการ: ${thaiHolidays2026[dateStr]} ห้องผ่าตัดปิดให้บริการครับ`)
+        form.date = ''
+        return false
+    }
+
+    // 3. เช็กเสาร์-อาทิตย์
+    const selected = new Date(dateStr)
     const dow = selected.getDay()
-
-    // 1. เช็กวันหยุดเสาร์-อาทิตย์
     if (dow === 0 || dow === 6) {
         alert('❌ วันเสาร์-อาทิตย์ ห้องผ่าตัดปิดให้บริการครับ')
         form.date = ''
-        return
+        return false
     }
 
-    // 2. เช็กวันทำงานของหมอ
+    return true
+}
+
+const checkValidDate = async () => {
+    if (!form.date) return
+
+    // ตรวจสอบวันหยุด & เสาร์อาทิตย์
+    if (!validateHolidayAndWeekend(form.date)) return
+        
+    const selected = new Date(form.date)
+    const dow = selected.getDay()
+
     const license = localStorage.getItem('userLicense')
     if (license) {
         const dayMap = { 'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4, 'Friday': 5 }
@@ -215,7 +263,6 @@ const checkValidDate = async () => {
         } catch(e) { console.error('เช็กวันทำงานไม่สำเร็จ', e) }
     }
 
-    // 3. เช็กความจุห้องผ่าตัด (Max 420 นาที)
     if (!form.procedure) return 
     try {
         const res = await fetch('https://or-room-backend.rockzee2018.workers.dev/api/bookings')
@@ -240,11 +287,13 @@ const checkValidDate = async () => {
 }
 
 const submitForm = async () => {
-    // ตรวจสอบว่ากรอกข้อมูลหลักครบหรือไม่
     if (!form.hn || !form.fullName || !form.age || !form.gender || !form.disease || !form.date || !form.procedure) {
         alert('กรุณากรอกข้อมูล Patient Information และ Surgery Details ให้ครบถ้วนทุกช่องครับ')
         return
     }
+
+    // ✅ เช็กวันหยุดซ้ำก่อน submit ป้องกันหลุดโฟลว์
+    if (!validateHolidayAndWeekend(form.date)) return
     
     const payload = { 
         hn: form.hn,
@@ -290,24 +339,20 @@ const goHome = () => router.push('/home')
 </script>
 
 <style scoped>
+/* สไตล์เดิมคงเดิมไว้ทั้งหมด */
 .page-wrapper { display: flex; justify-content: center; padding: 20px; min-height: 100vh; background: linear-gradient(135deg, #0f2a47, #1e3a5f); }
 .card { background: #fff; width: 100%; max-width: 700px; padding: 30px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); position: relative; }
-
 .reminder-banner { background: #fff3cd; color: #856404; padding: 12px; border-radius: 10px; margin-bottom: 20px; border-left: 5px solid #ffc107; font-size: 14px; }
 .title { color: #0f2a47; text-align: center; font-size: 22px; margin-bottom: 25px; }
-
 .notes-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .note-item { display: flex; flex-direction: column; gap: 6px; }
 .mini-label { font-size: 11px; font-weight: 700; color: #666; margin-left: 5px; }
 .highlight-note { grid-column: span 2; background: #f0f7ff; padding: 12px; border-radius: 8px; }
-
 .date-note-row { display: flex; gap: 8px; }
 .date-input { max-width: 130px; }
-
 .input-field { width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #d6e2f1; background: #f4f8fd; font-size: 14px; box-sizing: border-box; }
 .grid-2-col { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
 .split-input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 15px; }
-
 .confirm-btn { width: 100%; padding: 15px; background: #1e3a5f; color: white; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; margin-top: 20px; }
 .back-btn { position: absolute; top: 20px; left: 20px; width: 35px; height: 35px; border-radius: 50%; border: none; background: #f0f4f8; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 
@@ -321,7 +366,6 @@ const goHome = () => router.push('/home')
 
 .section-group { margin-top: 32px; }
 .section-group:first-child { margin-top: 0; }
-
 .group-label {
     display: block;
     font-size: 16px;
@@ -331,7 +375,5 @@ const goHome = () => router.push('/home')
     border-bottom: 2px solid #f0f4f8; 
     padding-bottom: 6px;
 }
-
-/* ตกแต่งสถานะการค้น HN */
 .status-tag { position: absolute; right: 10px; top: 10px; font-size: 12px; }
 </style>
