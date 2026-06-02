@@ -116,30 +116,8 @@ const form = reactive({
     admDate: '', admNote: ''
 })
 
-// รายชื่อวันหยุดราชการไทยประจำปี 2026 (พ.ศ. 2569) คีย์เป็น YYYY-MM-DD
-const thaiHolidays2026 = {
-    '2026-01-01': 'วันขึ้นปีใหม่',
-    '2026-03-03': 'วันมาฆบูชา',
-    '2026-04-06': 'วันพระบาทสมเด็จพระพุทธยอดฟ้าจุฬาโลกมหาราชและวันที่ระลึกมหาจักรีบรมราชวงศ์',
-    '2026-04-13': 'วันสงกรานต์',
-    '2026-04-14': 'วันสงกรานต์',
-    '2026-04-15': 'วันสงกรานต์',
-    '2026-05-01': 'วันแรงงานแห่งชาติ (หยุดบางหน่วยงาน)',
-    '2026-05-04': 'วันฉัตรมงคล',
-    '2026-05-31': 'วันวิสาขบูชา',
-    '2026-06-01': 'วันชดเชยวันวิสาขบูชา',
-    '2026-06-03': 'วันเฉลิมพระชนมพรรษาสมเด็จพระนางเจ้าฯ พระบรมราชินี',
-    '2026-07-28': 'วันเฉลิมพระชนมพรรษาพระบาทสมเด็จพระเจ้าอยู่หัว',
-    '2026-07-29': 'วันอาสาฬหบูชา',
-    '2026-07-30': 'วันเข้าพรรษา',
-    '2026-08-12': 'วันเฉลิมพระชนมพรรษาสมเด็จพระบรมราชชนนีพันปีหลวง และวันแม่แห่งชาติ',
-    '2026-10-13': 'วันคล้ายวันสวรรคตพระบาทสมเด็จพระบรมชนกาธิเบศร มหาภูมิพลอดุลยเดชมหาราช บรมนาถบพิตร',
-    '2026-10-23': 'วันปิยมหาราช',
-    '2026-12-05': 'วันคล้ายวันพระบรมราชสมภพพระบาทสมเด็จพระบรมชนกาธิเบศร มหาภูมิพลอดุลยเดชมหาราช บรมนาถบพิตร วันชาติ และวันพ่อแห่งชาติ',
-    '2026-12-07': 'วันชดเชยวันพ่อแห่งชาติ',
-    '2026-12-10': 'วันรัฐธรรมนูญ',
-    '2026-12-31': 'วันสิ้นปี'
-}
+// 📍 1. สร้างตัวแปรมารอรับข้อมูลวันหยุดจาก API
+const officialHolidays = ref([])
 
 const procedureGroups = ref([
     {
@@ -194,6 +172,20 @@ onMounted(async () => {
             tomorrowCount.value = data.filter(b => b.date === tomStr).length
         }
     } catch (e) { console.error("Reminder failed", e) }
+
+    // 📍 2. ดึงข้อมูลวันหยุดจาก API หลังบ้าน
+    try {
+        const resHoliday = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/holidays`)
+        if (resHoliday.ok) {
+            const dataHoliday = await resHoliday.json()
+            if (dataHoliday.items) {
+                officialHolidays.value = dataHoliday.items.map(item => ({
+                    date: item.start.date, 
+                    name: item.summary
+                }))
+            }
+        }
+    } catch (e) { console.error('ดึงวันหยุดไม่สำเร็จ', e) }
 })
 
 const lookupHN = async () => {
@@ -209,24 +201,22 @@ const lookupHN = async () => {
     } catch (e) { hnStatus.value = 'notfound' }
 }
 
-// แตกฟังก์ชันเช็กวันหยุดเพื่อให้เรียกใช้ซ้ำได้สะดวก
 const validateHolidayAndWeekend = (dateStr) => {
     if (!dateStr) return true
 
-    // 1. ตรวจสอบปี ค.ศ. / พ.ศ. ก่อน
     const yearPart = parseInt(dateStr.split('-')[0])
     const currentYear = new Date().getFullYear()
     const normalizedYear = yearPart > 2400 ? yearPart - 543 : yearPart
     if (!normalizedYear || normalizedYear < currentYear - 1 || normalizedYear > currentYear + 5) return true
 
-    // 2. เช็กวันหยุดราชการ
-    if (thaiHolidays2026[dateStr]) {
-        alert(`❌ วันที่เลือกเป็นวันหยุดราชการ: ${thaiHolidays2026[dateStr]} ห้องผ่าตัดปิดให้บริการครับ`)
+    // 📍 3. เช็กวันหยุดราชการโดยเทียบกับข้อมูลที่ได้จาก API
+    const foundHoliday = officialHolidays.value.find(h => h.date === dateStr)
+    if (foundHoliday) {
+        alert(`❌ วันที่เลือกเป็นวันหยุดราชการ: ${foundHoliday.name} ห้องผ่าตัดปิดให้บริการครับ`)
         form.date = ''
         return false
     }
 
-    // 3. เช็กเสาร์-อาทิตย์
     const selected = new Date(dateStr)
     const dow = selected.getDay()
     if (dow === 0 || dow === 6) {
@@ -241,7 +231,6 @@ const validateHolidayAndWeekend = (dateStr) => {
 const checkValidDate = async () => {
     if (!form.date) return
 
-    // ตรวจสอบวันหยุด & เสาร์อาทิตย์
     if (!validateHolidayAndWeekend(form.date)) return
         
     const selected = new Date(form.date)
@@ -292,7 +281,6 @@ const submitForm = async () => {
         return
     }
 
-    // ✅ เช็กวันหยุดซ้ำก่อน submit ป้องกันหลุดโฟลว์
     if (!validateHolidayAndWeekend(form.date)) return
     
     const payload = { 
