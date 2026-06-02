@@ -239,20 +239,25 @@ app.get('/api/patients/:hn', async (c) => {
   }
 })
 
-
 // ==========================================
-// 📅 5. HOLIDAYS (จัดการวันหยุดราชการ)
+// 📅 5. HOLIDAYS (จัดการวันหยุดราชการของไทยผ่าน Google Calendar)
 // ==========================================
 
-// 🟢 API สำหรับดึงข้อมูลวันหยุดราชการ
 app.get('/api/holidays', async (c) => {
-  // ดึงค่า API Key จาก .dev.vars (ตอนรันในเครื่อง) หรือจาก Secret (ตอนรันบน Cloudflare)
   const apiKey = c.env.HOLIDAY_API_KEY 
   
-  // 📝 พื้นที่สำหรับให้เพื่อนเขียนโค้ดต่อ:
-  // โค้ดของเพื่อนที่จะเอา apiKey นี้ไปยิงหาเว็บวันหยุดราชการต่อ...
-  
-  return c.json({ message: "เส้นทาง API วันหยุดพร้อมใช้งาน!" })
+  try {
+    // 📍 นี่คือ URL ของจริงสำหรับดึงปฏิทินวันหยุดไทยจาก Google ครับ
+    const calendarId = encodeURIComponent('th.thai#holiday@group.v.calendar.google.com')
+    const url = `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events?key=${apiKey}`
+    
+    const response = await fetch(url)
+    const holidayData = await response.json()
+    
+    return c.json(holidayData)
+  } catch (error) {
+    return c.json({ error: 'ไม่สามารถดึงข้อมูลวันหยุดได้' }, 500)
+  }
 })
 
 export default app

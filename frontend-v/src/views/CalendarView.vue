@@ -1,7 +1,6 @@
 <template>
     <div class="calendar-page">
 
-        <!-- NAVBAR -->
         <header class="calendar-navbar">
             <div class="nav-left"></div>
             <div class="nav-center">
@@ -14,13 +13,11 @@
             </div>
         </header>
 
-        <!-- WEEKDAY HEADERS -->
         <div class="weekday-row">
             <div v-for="d in ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']" :key="d" class="weekday-cell"
                 :class="{ 'weekend-label': d === 'Sun' || d === 'Sat' }">{{ d }}</div>
         </div>
 
-        <!-- CALENDAR GRID -->
         <div class="calendar-grid">
             <div
                 v-for="(date, i) in calendarDays"
@@ -49,7 +46,6 @@
             </div>
         </div>
 
-        <!-- DETAIL POPUP -->
         <Transition name="fade">
             <div v-if="isDetailPopupOpen" class="overlay-modal" @click.self="isDetailPopupOpen = false">
                 <div class="card-modal">
@@ -71,7 +67,6 @@
             </div>
         </Transition>
 
-        <!-- FAB -->
         <button class="fab-btn" @click="goToBooking">
             <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24">
                 <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6z"/>
@@ -96,11 +91,14 @@ const selectedFullDate = ref(todayStr.value)
 const isDetailPopupOpen = ref(false)
 const selectedDateBookings = ref([])
 
-// ดึงคิวจาก Cloudflare แทน localStorage
 const bookings = ref([])
+// 📍 1. เปลี่ยนจากพิมพ์มือ เป็นตัวแปรว่างๆ ไว้รอรับข้อมูลจาก API
+const officialHolidays = ref([])
 
 onMounted(async () => {
     const license = localStorage.getItem('userLicense')
+    
+    // 📍 2. ดึงข้อมูลคิวจอง
     try {
         const res = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/bookings?license=${license}`)
         const data = await res.json()
@@ -108,33 +106,30 @@ onMounted(async () => {
     } catch (e) {
         console.error('ดึงคิวไม่สำเร็จ', e)
     }
+
+    // 📍 3. ดึงข้อมูลวันหยุดจาก API หลังบ้านของเรา
+    try {
+        const resHoliday = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/holidays`)
+        const dataHoliday = await resHoliday.json()
+        
+        // แปลงข้อมูลจาก Google Calendar ให้อยู่ในรูปแบบที่หน้าเว็บใช้ได้
+        if (dataHoliday.items) {
+            officialHolidays.value = dataHoliday.items.map(item => ({
+                date: item.start.date, 
+                name: item.summary
+            }))
+        }
+    } catch (e) {
+        console.error('ดึงวันหยุดไม่สำเร็จ', e)
+    }
 })
 
 const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
 const weekDaysFull = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
-const officialHolidays = [
-    { date: "2026-01-01", name: "วันขึ้นปีใหม่" },
-    { date: "2026-03-03", name: "วันมาฆบูชา" },
-    { date: "2026-04-06", name: "วันจักรี" },
-    { date: "2026-04-13", name: "วันสงกรานต์" },
-    { date: "2026-04-14", name: "วันสงกรานต์" },
-    { date: "2026-04-15", name: "วันสงกรานต์" },
-    { date: "2026-05-01", name: "วันแรงงาน" },
-    { date: "2026-05-04", name: "วันฉัตรมงคล" },
-    { date: "2026-05-31", name: "วันวิสาขบูชา" },
-    { date: "2026-06-03", name: "วันเฉลิมฯ พระราชินี" },
-    { date: "2026-07-28", name: "วันเฉลิมฯ ร.10" },
-    { date: "2026-08-12", name: "วันแม่แห่งชาติ" },
-    { date: "2026-10-13", name: "วันนวมินทรมหาราช" },
-    { date: "2026-10-23", name: "วันปิยมหาราช" },
-    { date: "2026-12-05", name: "วันพ่อแห่งชาติ" },
-    { date: "2026-12-10", name: "วันรัฐธรรมนูญ" },
-    { date: "2026-12-31", name: "วันสิ้นปี" }
-]
-
-const isOfficialHoliday = (d) => officialHolidays.some(h => h.date === d)
-const getHolidayName = (d) => officialHolidays.find(h => h.date === d)?.name || 'Holiday'
+// 📍 4. อัปเดตฟังก์ชันให้ใช้ตัวแปร .value (เพราะเป็นตัวแปรแบบ ref)
+const isOfficialHoliday = (d) => officialHolidays.value.some(h => h.date === d)
+const getHolidayName = (d) => officialHolidays.value.find(h => h.date === d)?.name || 'Holiday'
 
 // ดึงคิวของวันนั้นๆ
 const getBookingsForDate = (d) => bookings.value.filter(b => b.date === d && b.status !== 'Succeed')
@@ -185,6 +180,7 @@ const formatDateThai = (d) => {
 </script>
 
 <style scoped>
+/* สไตล์ยังคงเหมือนเดิมเป๊ะๆ ครับ */
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 .calendar-page {

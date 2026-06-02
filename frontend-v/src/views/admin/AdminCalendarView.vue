@@ -1,7 +1,6 @@
 <template>
     <div class="calendar-page">
 
-        <!-- ========== NAVBAR ========== -->
         <header class="calendar-navbar">
             <button class="back-btn" @click="router.push('/admin-home')">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
@@ -12,7 +11,6 @@
             <div class="nav-badge">All Doctors</div>
         </header>
 
-        <!-- ========== CALENDAR HEADER ========== -->
         <div class="cal-controls">
             <button class="ctrl-btn" @click="changeMonth(-1)">‹</button>
             <div class="month-label">{{ monthNames[currentMonth] }} {{ currentYear }}</div>
@@ -20,12 +18,10 @@
             <button class="today-btn" @click="goToToday">Today</button>
         </div>
 
-        <!-- ========== WEEKDAY HEADERS ========== -->
         <div class="weekday-row">
             <div v-for="d in ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']" :key="d" class="weekday-cell">{{ d }}</div>
         </div>
 
-        <!-- ========== CALENDAR GRID ========== -->
         <div class="calendar-grid">
             <div
                 v-for="(date, i) in calendarDays"
@@ -50,20 +46,17 @@
                     ></span>
                     <span v-if="getBookingsForDate(date.fullDate).length > 3" class="more-count">+{{ getBookingsForDate(date.fullDate).length - 3 }}</span>
                 </div>
-                <!-- แสดงเวลาใช้ไปของวันนั้น -->
                 <div v-if="date.isCurrentMonth && getUsedMinutes(date.fullDate) > 0" class="time-bar-wrap">
                     <div class="time-bar" :style="{ width: Math.min(getUsedMinutes(date.fullDate) / 420 * 100, 100) + '%', background: getUsedMinutes(date.fullDate) >= 420 ? '#e53935' : '#43a047' }"></div>
                 </div>
             </div>
         </div>
 
-        <!-- ========== DETAIL POPUP ========== -->
         <Transition name="fade">
             <div v-if="isDetailPopupOpen" class="overlay-modal" @click.self="isDetailPopupOpen = false">
                 <div class="card-modal">
                     <h3 class="modal-title">📅 {{ formatDateThai(selectedFullDate) }}</h3>
 
-                    <!-- สรุปเวลารวม -->
                     <div class="time-summary">
                         <span>⏱ Total used: <strong>{{ getUsedMinutes(selectedFullDate) }} / 420 min</strong></span>
                         <span class="time-remain" :class="{ 'full': getUsedMinutes(selectedFullDate) >= 420 }">
@@ -88,7 +81,6 @@
             </div>
         </Transition>
 
-        <!-- ========== FAB ========== -->
         <button class="fab-btn" @click="goAddPatient">
             <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24">
                 <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6z"/>
@@ -114,6 +106,9 @@ const selectedDateBookings = ref([])
 const bookings = ref([])
 const doctorMap = ref({})
 
+// 📍 1. สร้างตัวแปรว่างๆ ไว้รอรับข้อมูลวันหยุดจาก API
+const officialHolidays = ref([])
+
 onMounted(async () => {
     try {
         // admin ดึงคิวทั้งหมด ไม่กรอง license
@@ -123,6 +118,7 @@ onMounted(async () => {
     } catch (e) {
         console.error('ดึงคิวไม่สำเร็จ', e)
     }
+    
     try {
         // ดึงชื่อหมอ map license -> doctorName
         const res2 = await fetch('https://or-room-backend.rockzee2018.workers.dev/api/users')
@@ -133,32 +129,28 @@ onMounted(async () => {
     } catch (e) {
         console.error('ดึงรายชื่อหมอไม่สำเร็จ', e)
     }
+
+    // 📍 2. ดึงข้อมูลวันหยุดจาก API หลังบ้าน
+    try {
+        const resHoliday = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/holidays`)
+        const dataHoliday = await resHoliday.json()
+        
+        if (dataHoliday.items) {
+            officialHolidays.value = dataHoliday.items.map(item => ({
+                date: item.start.date, 
+                name: item.summary
+            }))
+        }
+    } catch (e) {
+        console.error('ดึงวันหยุดไม่สำเร็จ', e)
+    }
 })
 
 const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"]
 
-const officialHolidays = [
-    { date: "2026-01-01", name: "วันขึ้นปีใหม่" },
-    { date: "2026-03-03", name: "วันมาฆบูชา" },
-    { date: "2026-04-06", name: "วันจักรี" },
-    { date: "2026-04-13", name: "วันสงกรานต์" },
-    { date: "2026-04-14", name: "วันสงกรานต์" },
-    { date: "2026-04-15", name: "วันสงกรานต์" },
-    { date: "2026-05-01", name: "วันแรงงาน" },
-    { date: "2026-05-04", name: "วันฉัตรมงคล" },
-    { date: "2026-05-31", name: "วันวิสาขบูชา" },
-    { date: "2026-06-03", name: "วันเฉลิมฯ พระราชินี" },
-    { date: "2026-07-28", name: "วันเฉลิมฯ ร.10" },
-    { date: "2026-08-12", name: "วันแม่แห่งชาติ" },
-    { date: "2026-10-13", name: "วันนวมินทรมหาราช" },
-    { date: "2026-10-23", name: "วันปิยมหาราช" },
-    { date: "2026-12-05", name: "วันพ่อแห่งชาติ" },
-    { date: "2026-12-10", name: "วันรัฐธรรมนูญ" },
-    { date: "2026-12-31", name: "วันสิ้นปี" }
-]
-
-const isOfficialHoliday = (d) => officialHolidays.some(h => h.date === d)
-const getHolidayName = (d) => officialHolidays.find(h => h.date === d)?.name || 'Holiday'
+// 📍 3. อัปเดตฟังก์ชันให้เช็กวันหยุดจากตัวแปร officialHolidays.value แทน
+const isOfficialHoliday = (d) => officialHolidays.value.some(h => h.date === d)
+const getHolidayName = (d) => officialHolidays.value.find(h => h.date === d)?.name || 'Holiday'
 
 const getBookingsForDate = (d) => bookings.value.filter(b => b.date === d && b.status !== 'Succeed')
 const hasBooking = (d) => getBookingsForDate(d).length > 0
