@@ -247,8 +247,8 @@ app.get('/api/holidays', async (c) => {
   const apiKey = c.env.HOLIDAY_API_KEY 
   
   try {
-    // 📍 นี่คือ URL ของจริงสำหรับดึงปฏิทินวันหยุดไทยจาก Google ครับ
-    const calendarId = encodeURIComponent('th.thai#holiday@group.v.calendar.google.com')
+    // 📍 แก้ไขตัวสะกด Calendar ID เป็น th.th ตรงนี้ครับ
+    const calendarId = encodeURIComponent('th.th#holiday@group.v.calendar.google.com')
     const url = `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events?key=${apiKey}`
     
     const response = await fetch(url)
