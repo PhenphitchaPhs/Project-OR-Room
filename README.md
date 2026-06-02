@@ -46,5 +46,3 @@ npm run dev
 | Admin | `admin01` | `24680@` |
 
 > **Signup Secret Key:** `OR-UP01`
-
-.
