@@ -6,9 +6,9 @@
   "engines": {
     "node": "^20.19.0 || >=22.12.0"
   },
- "scripts": {
+  "scripts": {
     "dev": "vite",
-    "build": "vite build", 
+    "build": "vite build",
     "preview": "vite preview",
     "test:e2e": "playwright test",
     "build-only": "vite build",
@@ -18,10 +18,12 @@
   },
   "dependencies": {
     "@iconify/vue": "^5.0.0",
+    "@vuepic/vue-datepicker": "^11.0.3",
     "axios": "^1.13.2",
     "pinia": "^3.0.4",
     "vue": "^3.5.26",
-    "vue-router": "^4.6.4"
+    "vue-router": "^4.6.4",
+    "vue3-datepicker": "^0.4.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.57.0",

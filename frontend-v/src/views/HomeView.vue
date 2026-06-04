@@ -263,7 +263,7 @@
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                        }}</div>
+                                            }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
 
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
@@ -348,7 +348,7 @@
 
                                         <div class="grid-row single">
                                             <span><strong>Doctor:</strong> {{ doctorName || 'Dr. ' + userLicense
-                                            }}</span>
+                                                }}</span>
                                         </div>
 
                                     </div>
@@ -930,14 +930,50 @@ const sortCases = (arr) => {
 }
 
 // ================= Computed Properties =================
-const upcomingCases = computed(() => sortCases(bookings.value.filter(item => item.status === FILTERS.UPCOMING || !item.status)))
-const completeCases = computed(() =>
-    sortCases(
-        bookings.value.filter(
-            item => item.status === FILTERS.COMPLETE
-        )
+const upcomingCases = computed(() => {
+
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    return sortCases(
+        bookings.value.filter(item => {
+
+            const surgeryDate = new Date(item.date)
+            surgeryDate.setHours(0, 0, 0, 0)
+
+            const isPast = surgeryDate < today
+
+            return (
+                (item.status === FILTERS.UPCOMING || !item.status)
+                && !isPast
+            )
+        })
     )
-)
+
+})
+const completeCases = computed(() => {
+
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    return sortCases(
+        bookings.value.filter(item => {
+
+            const surgeryDate = new Date(item.date)
+            surgeryDate.setHours(0, 0, 0, 0)
+
+            const autoComplete =
+                surgeryDate < today &&
+                (item.status === FILTERS.UPCOMING || !item.status)
+
+            return (
+                item.status === FILTERS.COMPLETE ||
+                autoComplete
+            )
+        })
+    )
+
+})
 
 const notCompleteCases = computed(() =>
     sortCases(
