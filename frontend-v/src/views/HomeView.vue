@@ -263,7 +263,7 @@
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                            }}</div>
+                                        }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
 
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
@@ -348,7 +348,7 @@
 
                                         <div class="grid-row single">
                                             <span><strong>Doctor:</strong> {{ doctorName || 'Dr. ' + userLicense
-                                                }}</span>
+                                            }}</span>
                                         </div>
 
                                     </div>
@@ -621,7 +621,42 @@
 
             </div>
         </div>
+
     </Transition>
+
+    <Transition name="fade">
+        <div v-if="isRestoreModalOpen" class="modal-overlay-center">
+            <div class="white-modal-card">
+
+                <h2 class="modal-msg-title">
+                    Move Back to Upcoming
+                </h2>
+
+                <div style="margin: 20px 0; text-align: left;">
+
+                    <label>Surgery Date</label>
+
+                    <VueDatePicker v-model="restoreData.date" :enable-time-picker="false" auto-apply text-input
+                        model-type="yyyy-MM-dd" format="yyyy-MM-dd" />
+
+                </div>
+
+                <div class="modal-button-group">
+
+                    <button class="btn-cancel-gray" @click="isRestoreModalOpen = false">
+                        Cancel
+                    </button>
+
+                    <button class="btn-confirm-green" @click="confirmRestoreCase">
+                        Confirm
+                    </button>
+
+                </div>
+
+            </div>
+        </div>
+    </Transition>
+
 
 </template>
 
@@ -629,7 +664,72 @@
 
 import { ref, onMounted, computed, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
+import VueDatePicker from '@vuepic/vue-datepicker'
+import '@vuepic/vue-datepicker/dist/main.css'
 
+const getRestoredCases = () => {
+    return JSON.parse(
+        localStorage.getItem('restoredCases') || '[]'
+    )
+}
+
+const saveRestoredCase = (id) => {
+
+    const restoredCases = getRestoredCases()
+
+    if (!restoredCases.includes(id)) {
+
+        restoredCases.push(id)
+
+        localStorage.setItem(
+            'restoredCases',
+            JSON.stringify(restoredCases)
+        )
+    }
+}
+
+const thaiHolidays = {
+    '2026-01-01': 'วันขึ้นปีใหม่',
+    '2026-01-02': 'วันหยุดพิเศษช่วงปีใหม่',
+
+    '2026-03-03': 'วันมาฆบูชา',
+
+    '2026-04-06': 'วันจักรี',
+
+    '2026-04-13': 'วันสงกรานต์',
+    '2026-04-14': 'วันสงกรานต์',
+    '2026-04-15': 'วันสงกรานต์',
+
+    '2026-05-01': 'วันแรงงานแห่งชาติ',
+    '2026-05-04': 'วันฉัตรมงคล',
+    '2026-05-13': 'วันพืชมงคล',
+
+    '2026-06-01': 'ชดเชยวันวิสาขบูชา',
+    '2026-06-03': 'วันเฉลิมพระชนมพรรษาสมเด็จพระราชินี',
+
+    '2026-07-28': 'วันเฉลิมพระชนมพรรษาพระบาทสมเด็จพระเจ้าอยู่หัว',
+    '2026-07-29': 'วันอาสาฬหบูชา',
+
+    '2026-08-12': 'วันแม่แห่งชาติ',
+
+    '2026-10-13': 'วันนวมินทรมหาราช',
+    '2026-10-23': 'วันปิยมหาราช',
+
+    '2026-12-05': 'วันพ่อแห่งชาติ',
+    '2026-12-07': 'ชดเชยวันพ่อแห่งชาติ',
+
+    '2026-12-10': 'วันรัฐธรรมนูญ',
+    '2026-12-31': 'วันสิ้นปี'
+}
+
+const disabledDates = (date) => {
+    console.log(date)
+
+    const formatted =
+        `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+
+    return formatted in thaiHolidays
+}
 const isConfirmModalOpen = ref(false)
 const confirmMessage = ref('')
 const confirmAction = ref(null)
@@ -642,6 +742,7 @@ const openConfirmDialog = (message, action) => {
 
 const isMessageModalOpen = ref(false)
 const messageTitle = ref('')
+
 
 const showMessageDialog = (message) => {
     messageTitle.value = message
@@ -828,43 +929,69 @@ const usedMinutes = computed(() => {
 })
 const restoreCase = (id) => {
 
-    openConfirmDialog(
-        'Move this case back to Upcoming?',
-        async () => {
-
-            try {
-
-                const res = await fetch(
-                    `https://or-room-backend.rockzee2018.workers.dev/api/bookings/${id}/status`,
-                    {
-                        method: 'PATCH',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            status: FILTERS.UPCOMING
-                        })
-                    }
-                )
-
-                if (!res.ok) throw new Error()
-
-                const target = bookings.value.find(
-                    item => item.id === id
-                )
-
-                if (target) {
-                    target.status = FILTERS.UPCOMING
-                }
-
-            } catch (e) {
-                console.error(e)
-            }
-
-        }
+    const target = bookings.value.find(
+        item => item.id === id
     )
 
+    if (!target) return
+
+    restoreData.value = {
+        id,
+        date: target.date || '',
+        time: target.time || ''
+    }
+    isRestoreModalOpen.value = true
+
 }
+
+
+const confirmRestoreCase = async () => {
+
+    try {
+
+        const res = await fetch(
+            `https://or-room-backend.rockzee2018.workers.dev/api/bookings/${restoreData.value.id}/status`,
+            {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    status: FILTERS.UPCOMING
+                })
+            }
+        )
+
+        if (!res.ok) throw new Error()
+
+        const target = bookings.value.find(
+            item => item.id === restoreData.value.id
+        )
+
+        if (target) {
+
+            target.status = FILTERS.UPCOMING
+
+            target.date = restoreData.value.date
+
+            target.time = restoreData.value.time
+
+        }
+
+        saveRestoredCase(
+            restoreData.value.id
+        )
+
+        isRestoreModalOpen.value = false
+
+    } catch (e) {
+
+        console.error(e)
+
+    }
+
+}
+
 const MAX_MINUTES = 420
 // เปอร์เซ็นต์ progress
 const usagePercent = computed(() => {
@@ -981,15 +1108,23 @@ const completeCases = computed(() => {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
+    const restoredCases =
+        getRestoredCases()
+
     return sortCases(
         bookings.value.filter(item => {
 
-            const surgeryDate = new Date(item.date)
-            surgeryDate.setHours(0, 0, 0, 0)
+            const surgeryDate =
+                new Date(item.date)
+
+            surgeryDate.setHours(
+                0, 0, 0, 0
+            )
 
             const autoComplete =
                 surgeryDate < today &&
-                (item.status === FILTERS.UPCOMING || !item.status)
+                (item.status === FILTERS.UPCOMING || !item.status) &&
+                !restoredCases.includes(item.id)
 
             return (
                 item.status === FILTERS.COMPLETE ||
@@ -997,7 +1132,6 @@ const completeCases = computed(() => {
             )
         })
     )
-
 })
 
 const notCompleteCases = computed(() =>
@@ -1174,6 +1308,13 @@ const isLogoutModalOpen = ref(false)
 const isDeleteAccModalOpen = ref(false)
 const isDetailModalOpen = ref(false)
 const selectedCase = ref(null)
+const isRestoreModalOpen = ref(false)
+
+const restoreData = ref({
+    id: null,
+    date: '',
+    time: ''
+})
 
 const openDayModal = () => { isDrawerOpen.value = false; tempSelectedDay.value = selectedDay.value; isDayModalOpen.value = true }
 const closeAllOverlays = () => { isDrawerOpen.value = isDayModalOpen.value = isLogoutModalOpen.value = isDeleteAccModalOpen.value = isDetailModalOpen.value = false }
@@ -1265,6 +1406,23 @@ const markAsSucceed = async (id) => {
         showMessageDialog('❌ อัปเดต status ไม่สำเร็จ')
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 </script>
 
 <style scoped>
@@ -2341,5 +2499,14 @@ input[type="checkbox"] {
     }
 
 
+}
+
+.dp__theme_light {
+    --dp-border-radius: 16px;
+    --dp-font-family: inherit;
+}
+
+.dp__menu {
+    border-radius: 20px;
 }
 </style>
