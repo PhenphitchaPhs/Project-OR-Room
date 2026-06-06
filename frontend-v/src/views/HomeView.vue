@@ -605,6 +605,24 @@
             </div>
         </div>
     </Transition>
+    <Transition name="fade">
+        <div v-if="isMessageModalOpen" class="modal-overlay-center">
+            <div class="white-modal-card">
+
+                <h2 class="modal-msg-title">
+                    {{ messageTitle }}
+                </h2>
+
+                <div class="modal-button-group">
+                    <button class="btn-confirm-green" @click="isMessageModalOpen = false">
+                        OK
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </Transition>
+
 </template>
 
 <script setup>
@@ -622,6 +640,13 @@ const openConfirmDialog = (message, action) => {
     isConfirmModalOpen.value = true
 }
 
+const isMessageModalOpen = ref(false)
+const messageTitle = ref('')
+
+const showMessageDialog = (message) => {
+    messageTitle.value = message
+    isMessageModalOpen.value = true
+}
 const handleConfirm = async () => {
 
     if (confirmAction.value) {
@@ -1078,7 +1103,7 @@ const resetQueue = async () => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ updates })
         })
-        alert('✅ รีเซ็ตการจัดคิวเรียบร้อย!')
+        showMessageDialog('✅ รีเซ็ตการจัดคิวเรียบร้อย')
     } catch (e) {
         console.error("❌ รีเซ็ตคิวไม่สำเร็จ", e)
     }
@@ -1133,11 +1158,11 @@ const confirmDayChange = async () => {
 
         selectedDay.value = tempSelectedDay.value
         isDayModalOpen.value = false
-        alert("✅ อัปเดตข้อมูลสำเร็จ!")
+        showMessageDialog('✅ อัปเดตข้อมูลสำเร็จ')
 
     } catch (error) {
         console.error("❌ PUT Error:", error)
-        alert("❌ ล้มเหลว!")
+        showMessageDialog("❌ ล้มเหลว!")
     }
 }
 
@@ -1169,16 +1194,16 @@ const handleDeleteAccount = async () => {
         const data = await response.json()
 
         if (response.ok) {
-            alert('✅ ' + data.message)
+            showMessageDialog('✅ ' + data.message)
             isDeleteAccModalOpen.value = false // ปิด Modal
             localStorage.clear() // ล้างข้อมูลในเครื่อง
             router.push('/login') // เด้งกลับหน้าล็อกอิน
         } else {
-            alert('❌ ' + (data.error || 'ลบไม่สำเร็จ'))
+            showMessageDialog('❌ ' + (data.error || 'ลบไม่สำเร็จ'))
             isDeleteAccModalOpen.value = false
         }
     } catch (error) {
-        alert('❌ ระบบขัดข้อง ไม่สามารถติดต่อเซิร์ฟเวอร์ได้')
+        showMessageDialog('❌ ระบบขัดข้อง ไม่สามารถติดต่อเซิร์ฟเวอร์ได้')
         isDeleteAccModalOpen.value = false
     }
 }
@@ -1237,7 +1262,7 @@ const markAsSucceed = async (id) => {
         const target = bookings.value.find(item => item.id === id)
         if (target) { target.status = FILTERS.SUCCEED; filter.value = FILTERS.SUCCEED; }
     } catch (e) {
-        alert('❌ อัปเดต status ไม่สำเร็จ')
+        showMessageDialog('❌ อัปเดต status ไม่สำเร็จ')
     }
 }
 </script>
