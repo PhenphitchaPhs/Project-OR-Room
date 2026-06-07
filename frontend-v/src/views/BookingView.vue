@@ -189,37 +189,37 @@ const procedureGroups = ref([
     {
         label: "ศัลยกรรมทั่วไป (General Surgery)",
         options: [
-            { name: "Appendectomy (ผ่าตัดไส้ติ่ง) - 60 min" },
-            { name: "Laparoscopic Cholecystectomy / LC (ผ่าตัดนิ่วในถุงน้ำดี) - 120 min" },
-            { name: "Herniorrhaphy (ผ่าตัดไส้เลื่อน) - 90 min" },
-            { name: "Thyroidectomy (ผ่าตัดต่อมไทรอยด์) - 120 min" },
-            { name: "Modified Radical Mastectomy / MRM (ผ่าตัดมะเร็งเต้านม) - 120 min" },
-            { name: "Hemorrhoidectomy (ผ่าตัดริดสีดวง) - 45 min" },
-            { name: "Exploratory Laparotomy (ผ่าตัดเปิดช่องท้อง) - 180 min" }
+            { name: "Appendectomy (ผ่าตัดไส้ติ่ง) - 60 mins" },
+            { name: "Laparoscopic Cholecystectomy / LC (ผ่าตัดนิ่วในถุงน้ำดี) - 120 mins" },
+            { name: "Herniorrhaphy (ผ่าตัดไส้เลื่อน) - 90 mins" },
+            { name: "Thyroidectomy (ผ่าตัดต่อมไทรอยด์) - 120 mins" },
+            { name: "Modified Radical Mastectomy / MRM (ผ่าตัดมะเร็งเต้านม) - 120 mins" },
+            { name: "Hemorrhoidectomy (ผ่าตัดริดสีดวง) - 45 mins" },
+            { name: "Exploratory Laparotomy (ผ่าตัดเปิดช่องท้อง) - 180 mins" }
         ]
     },
     {
         label: "สูตินรีเวช (OB/GYN)",
         options: [
-            { name: "Cesarean Section / C-Section (ผ่าคลอด) - 60 min" },
-            { name: "Total Abdominal Hysterectomy / TAH (ผ่าตัดมดลูก) - 120 min" },
-            { name: "Tubal Resection / TR (ทำหมันหญิง) - 30 min" }
+            { name: "Cesarean Section / C-Section (ผ่าคลอด) - 60 mins" },
+            { name: "Total Abdominal Hysterectomy / TAH (ผ่าตัดมดลูก) - 120 mins" },
+            { name: "Tubal Resection / TR (ทำหมันหญิง) - 30 mins" }
         ]
     },
     {
         label: "กระดูกและข้อ (Orthopedics)",
         options: [
-            { name: "Total Knee Arthroplasty / TKA (ผ่าตัดเปลี่ยนผิวข้อเข่า) - 180 min" },
-            { name: "Total Hip Arthroplasty / THA (ผ่าตัดเปลี่ยนข้อสะโพก) - 180 min" },
-            { name: "ORIF (ผ่าตัดใส่เหล็กดามกระดูกหัก) - 120 min" }
+            { name: "Total Knee Arthroplasty / TKA (ผ่าตัดเปลี่ยนผิวข้อเข่า) - 180 mins" },
+            { name: "Total Hip Arthroplasty / THA (ผ่าตัดเปลี่ยนข้อสะโพก) - 180 mins" },
+            { name: "ORIF (ผ่าตัดใส่เหล็กดามกระดูกหัก) - 120 mins" }
         ]
     },
     {
         label: "เฉพาะทางอื่นๆ (Others)",
         options: [
-            { name: "Cataract Surgery (ผ่าตัดต้อกระจก) - 30 min" },
-            { name: "TURP (ผ่าตัดส่องกล้องต่อมลูกหมาก) - 90 min" },
-            { name: "Tonsillectomy (ผ่าตัดทอนซิล) - 45 min" }
+            { name: "Cataract Surgery (ผ่าตัดต้อกระจก) - 30 mins" },
+            { name: "TURP (ผ่าตัดส่องกล้องต่อมลูกหมาก) - 90 mins" },
+            { name: "Tonsillectomy (ผ่าตัดทอนซิล) - 45 mins" }
         ]
     }
 ])
