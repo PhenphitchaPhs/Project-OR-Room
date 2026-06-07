@@ -637,7 +637,8 @@
                     <label>Surgery Date</label>
 
                     <VueDatePicker v-model="restoreData.date" :enable-time-picker="false" auto-apply text-input
-                        model-type="yyyy-MM-dd" format="yyyy-MM-dd" />
+                        model-type="yyyy-MM-dd" format="yyyy-MM-dd" :year-range="[1900, 2700]" teleport="body"
+                        :disabled-dates="disabledDates" :day-class="highlightHolidays" />
 
                 </div>
 
@@ -721,8 +722,19 @@ const thaiHolidays = {
     '2026-12-10': 'วันรัฐธรรมนูญ',
     '2026-12-31': 'วันสิ้นปี'
 }
+const highlightHolidays = (date) => {
+    const formatted = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+    if (formatted in thaiHolidays) {
+        return 'is-thai-holiday'
+    }
+    return ''
+}
 
 const disabledDates = (date) => {
+    const dayOfWeek = date.getDay()
+    if (dayOfWeek === 0 || dayOfWeek === 6) {
+        return true
+    }
     console.log(date)
 
     const formatted =
@@ -2508,5 +2520,12 @@ input[type="checkbox"] {
 
 .dp__menu {
     border-radius: 20px;
+}
+</style>
+<style>
+/* CSS สำหรับปฏิทินที่ Teleport ไปที่ body */
+.is-thai-holiday {
+    color: #dc2626 !important;
+    font-weight: bold !important;
 }
 </style>
