@@ -154,7 +154,7 @@
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                        }}</div>
+                                            }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
                                             item.cxrNote || '-' }}</div>
@@ -230,7 +230,7 @@
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                        }}</div>
+                                            }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
                                             item.cxrNote || '-' }}</div>
@@ -330,7 +330,7 @@
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                        }}</div>
+                                            }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
                                             item.cxrNote || '-' }}</div>
@@ -422,9 +422,11 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 
+
 const doctorMap = ref({})
 const doctorList = ref([])
 const expandedId = ref(null)
+const isMessageModalOpen = ref(false)
 
 const toggleDetail = (id) => { expandedId.value = expandedId.value === id ? null : id }
 
@@ -742,7 +744,7 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0 20px;
+    padding: 0 10px;
 }
 
 .avatar-circle {
@@ -773,6 +775,7 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
     background: none;
     border: none;
     cursor: pointer;
+    margin-left: -5px;
 }
 
 .nav-calendar-btn {
@@ -784,7 +787,7 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
     color: white;
     padding: 7px 14px;
     border-radius: 20px;
-    font-size: 13px;
+    font-size: 11px;
     font-weight: 600;
     cursor: pointer;
     margin-left: auto;
