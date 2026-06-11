@@ -201,16 +201,142 @@
 
             <div class="queue-card">
                 <div class="queue-filter">
+                    <button :class="{ active: filter === FILTERS.TODAY }" @click="filter = FILTERS.TODAY">
+                        Today
+                    </button>
+
                     <button :class="{ active: filter === FILTERS.UPCOMING }" @click="filter = FILTERS.UPCOMING">
                         Upcoming
                     </button>
 
+
                     <button :class="{ active: filter === FILTERS.SUCCEED }" @click="filter = FILTERS.SUCCEED">
-                        Pass
+                        Passed
                     </button>
+
                 </div>
 
                 <div class="tab-content-wrapper">
+                    <div v-if="filter === FILTERS.TODAY">
+
+                        <div v-if="todayCases.length === 0" class="empty-state">
+
+                            <div class="icon-wrap">
+                                <span class="material-icons">today</span>
+                            </div>
+
+                            <h3>No surgeries scheduled today</h3>
+
+                            <p class="sub-text">
+                                Cases for future surgery dates will appear in Upcoming.
+                            </p>
+
+                        </div>
+
+                        <div v-else>
+
+                            <div v-for="item in todayCases" :key="item.id" class="case-card"
+                                @click="toggleDetail(item.id)">
+
+                                <div class="case-grid">
+
+                                    <div class="grid-row">
+                                        <span><strong>Surgery Date:</strong> {{ item.date }}</span>
+                                    </div>
+
+                                    <div class="grid-row">
+                                        <span><strong>HN:</strong> {{ item.hn }}</span>
+                                        <span><strong>Age:</strong> {{ item.age }} ปี</span>
+                                    </div>
+
+                                    <div class="grid-row">
+                                        <span><strong>Patient:</strong> {{ item.fullName }}</span>
+                                    </div>
+
+                                    <div class="grid-row single">
+                                        <span><strong>Procedure:</strong> {{ item.procedure }}</span>
+                                    </div>
+
+                                </div>
+
+                                <transition name="expand">
+
+                                    <div v-if="expandedId === item.id" class="case-detail">
+
+                                        <div class="detail-row">
+                                            <strong>HN:</strong> {{ item.hn }}
+                                        </div>
+
+                                        <div class="detail-row">
+                                            <strong>Full Name:</strong> {{ item.fullName }}
+                                        </div>
+
+                                        <div class="detail-row">
+                                            <strong>Age:</strong> {{ item.age }}
+                                        </div>
+
+                                        <div class="detail-row">
+                                            <strong>Gender:</strong>
+                                            {{ item.gender === 'male' ? 'ชาย' : 'หญิง' }}
+                                        </div>
+
+                                        <div class="detail-row">
+                                            <strong>Underlying Disease(s):</strong>
+                                            {{ item.underlying || '-' }}
+                                        </div>
+
+                                        <div class="detail-row">
+                                            <strong>Proposed Procedure:</strong>
+                                            {{ item.procedure }}
+                                        </div>
+
+                                        <div class="detail-row">
+                                            <strong>Date:</strong>
+                                            {{ item.date }}
+                                        </div>
+
+                                        <div class="detail-row">
+                                            <strong>CXR:</strong>
+                                            {{ item.cxrDate || '-' }} |
+                                            {{ item.cxrNote || '-' }}
+                                        </div>
+
+                                        <div class="detail-row">
+                                            <strong>ECG:</strong>
+                                            {{ item.ecgDate || '-' }} |
+                                            {{ item.ecgNote || '-' }}
+                                        </div>
+
+                                        <div class="detail-row">
+                                            <strong>Lab:</strong>
+                                            {{ item.labDate || '-' }} |
+                                            {{ item.labNote || '-' }}
+                                        </div>
+
+                                        <div class="detail-row">
+                                            <strong>Admission:</strong>
+                                            {{ item.admDate || '-' }} |
+                                            {{ item.admNote || '-' }}
+                                        </div>
+
+                                        <div class="detail-row">
+                                            <strong>Notes:</strong>
+                                            {{ item.notes || '-' }}
+                                        </div>
+
+                                    </div>
+
+                                </transition>
+
+
+                            </div>
+
+
+
+                        </div>
+
+                    </div>
+
 
                     <div v-if="filter === FILTERS.UPCOMING">
 
@@ -307,7 +433,7 @@
                                 active: succeedTab === FILTERS.COMPLETE,
                                 'complete-active': succeedTab === FILTERS.COMPLETE
                             }" @click="succeedTab = FILTERS.COMPLETE">
-                                Complete
+                                Completed
                             </button>
 
                             <button :class="{
@@ -779,6 +905,7 @@ const handleConfirm = async () => {
 
 const FILTERS = {
     UPCOMING: 'Upcoming',
+    TODAY: 'Today',
     SUCCEED: 'Pass',
     COMPLETE: 'Complete',
     NOT_COMPLETE: 'Cancelled'
@@ -815,7 +942,15 @@ const searchCase = async () => {
     let targetList = []
 
     // CURRENT TAB ONLY
-    if (filter.value === FILTERS.UPCOMING) {
+    if (filter.value === FILTERS.TODAY) {
+
+        targetList = todayCases.value.map(item => ({
+            item,
+            tab: FILTERS.TODAY
+        }))
+
+    }
+    else if (filter.value === FILTERS.UPCOMING) {
 
         targetList = upcomingCases.value.map(item => ({
             item,
@@ -1101,6 +1236,26 @@ const sortCases = (arr) => {
 }
 
 // ================= Computed Properties =================
+const todayCases = computed(() => {
+
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    return sortCases(
+        bookings.value.filter(item => {
+
+            const surgeryDate = new Date(item.date)
+            surgeryDate.setHours(0, 0, 0, 0)
+
+            return (
+                (item.status === FILTERS.UPCOMING || !item.status) &&
+                surgeryDate.getTime() === today.getTime()
+            )
+        })
+    )
+
+})
+
 const upcomingCases = computed(() => {
 
     const today = new Date()
@@ -1112,11 +1267,11 @@ const upcomingCases = computed(() => {
             const surgeryDate = new Date(item.date)
             surgeryDate.setHours(0, 0, 0, 0)
 
-            const isPast = surgeryDate < today
+            const isFuture = surgeryDate > today
 
             return (
                 (item.status === FILTERS.UPCOMING || !item.status)
-                && !isPast
+                && isFuture
             )
         })
     )
@@ -1139,6 +1294,7 @@ const completeCases = computed(() => {
             surgeryDate.setHours(
                 0, 0, 0, 0
             )
+
 
             const autoComplete =
                 surgeryDate < today &&
