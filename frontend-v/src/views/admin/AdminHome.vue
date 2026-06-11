@@ -81,6 +81,9 @@
 
             <div class="queue-card">
                 <div class="queue-filter">
+                    <button :class="{ active: filter === FILTERS.TODAY }" @click="filter = FILTERS.TODAY">
+                        Today
+                    </button>
                     <button :class="{ active: filter === FILTERS.UPCOMING }" @click="filter = FILTERS.UPCOMING">
                         Upcoming
                     </button>
@@ -100,6 +103,83 @@
                 </div>
 
                 <div class="tab-content-wrapper">
+                    <div v-if="filter === FILTERS.TODAY">
+
+                        <div v-if="todayCases.length === 0" class="empty-state">
+                            <div class="icon-wrap">
+                                <span class="material-icons">today</span>
+                            </div>
+
+                            <h3>No surgery cases today</h3>
+                        </div>
+
+                        <div v-else>
+
+
+                            <div v-for="(item, index) in todayCases" :key="item.id" class="case-card drag-item"
+                                draggable="true" @dragstart="onDragStart(index, item.id)" @dragover.prevent
+                                @drop="onDrop(index)" @click="toggleDetail(item.id)">
+                                <div class="case-grid">
+                                    <div class="grid-row">
+                                        <span><strong>HN:</strong> {{ item.hn }}</span>
+                                        <span><strong>Date:</strong> {{ item.date }}</span>
+
+                                    </div>
+
+                                    <div class="grid-row">
+                                        <span><strong>Patient:</strong> {{ item.fullName }}</span>
+                                        <span><strong>Age:</strong> {{ item.age }}</span>
+
+                                    </div>
+
+                                    <div class="grid-row single">
+                                        <span><strong>Procedure:</strong> {{ item.procedure }}</span>
+                                    </div>
+                                    <div class="grid-row single">
+                                        <span>
+                                            <strong>Doctor:</strong>
+                                            {{ doctorMap[item.doctorLicense] || item.doctorLicense || '-' }}
+                                        </span>
+                                    </div>
+
+
+                                </div>
+                                <transition name="expand">
+                                    <div v-if="expandedId === item.id" class="case-detail">
+                                        <div class="detail-row"><strong>HN:</strong> {{ item.hn }}</div>
+                                        <div class="detail-row"><strong>Full Name:</strong> {{ item.fullName }}</div>
+                                        <div class="detail-row"><strong>Age:</strong> {{ item.age }}</div>
+                                        <div><strong>Gender:</strong> {{ item.gender === 'male' ? 'ชาย' : 'หญิง' }}
+                                        </div>
+                                        <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
+                                            item.underlying || '-' }}</div>
+                                        <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
+                                        }}</div>
+                                        <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
+                                        <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
+                                            item.cxrNote || '-' }}</div>
+                                        <div class="detail-row"><strong>ECG:</strong> {{ item.ecgDate || '-' }} | {{
+                                            item.ecgNote || '-' }}</div>
+                                        <div class="detail-row"><strong>Lab:</strong> {{ item.labDate || '-' }} | {{
+                                            item.labNote || '-' }}</div>
+                                        <div class="detail-row"><strong>Admission:</strong> {{ item.admDate || '-' }} |
+                                            {{ item.admNote || '-' }}</div>
+                                        <div class="detail-row"><strong>Notes:</strong> {{ item.notes || '-' }}</div>
+                                    </div>
+                                </transition>
+                                <div class="case-actions">
+                                    <button class="btn-success" @click.stop="openSucceedModal(item.id)">
+                                        Succeed
+                                    </button>
+                                    <button class="btn-delete" @click.stop="openCancelModal(item.id)">
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+
+                        </div>
+
+                    </div>
                     <div v-if="filter === FILTERS.UPCOMING">
                         <div v-if="upcomingCases.length === 0" class="empty-state">
                             <div class="icon-wrap"><span class="material-icons">assignment</span></div>
@@ -117,17 +197,28 @@
                                 @drop="onDrop(index)" @click="toggleDetail(item.id)">
                                 <div class="case-grid">
                                     <div class="grid-row">
-                                        <span><strong>Surgery Date:</strong> {{ item.date }}</span>
-                                        <span><strong>Room:</strong> {{ item.room }}</span>
+                                        <span><strong>HN:</strong> {{ item.hn }}</span>
+                                        <span><strong>Date:</strong> {{ item.date }}</span>
+
                                     </div>
+
                                     <div class="grid-row">
                                         <span><strong>Patient:</strong> {{ item.fullName }}</span>
+                                        <span><strong>Age:</strong> {{ item.age }}</span>
+
+                                    </div>
+
+                                    <div class="grid-row single">
                                         <span><strong>Procedure:</strong> {{ item.procedure }}</span>
                                     </div>
                                     <div class="grid-row single">
-                                        <span><strong>Doctor:</strong> {{ doctorMap[item.doctorLicense] ||
-                                            item.doctorLicense || '-' }}</span>
+                                        <span>
+                                            <strong>Doctor:</strong>
+                                            {{ doctorMap[item.doctorLicense] || item.doctorLicense || '-' }}
+                                        </span>
                                     </div>
+
+
                                 </div>
                                 <transition name="expand">
                                     <div v-if="expandedId === item.id" class="case-detail">
@@ -171,7 +262,7 @@
                         </div>
                         <div v-else>
                             <div v-for="item in completedCases" :key="item.id" class="case-card succeed-item"
-                                @click="openCaseDetail(item)">
+                                @click="toggleDetail(item.id)">
                                 <div class="case-grid">
                                     <div class="grid-row">
                                         <span><strong>Surgery Date:</strong> {{ item.date }}</span>
@@ -186,6 +277,7 @@
                                         <span><strong>Procedure:</strong> {{ item.procedure }}</span>
                                     </div>
                                 </div>
+
                             </div>
                         </div>
                     </div>
@@ -199,40 +291,70 @@
                         </div>
 
                         <div v-else>
-                            <div v-for="item in cancelledCases" :key="item.id" class="case-card cancelled-item"
-                                @click="openCaseDetail(item)">
+
+                            <div v-for="(item, index) in cancelledCases" :key="item.id" class="case-card cancelled-item"
+                                draggable="true" @dragstart="onDragStart(index, item.id)" @dragover.prevent
+                                @drop="onDrop(index)" @click="toggleDetail(item.id)">
                                 <div class="case-grid">
                                     <div class="grid-row">
-                                        <span><strong>Surgery Date:</strong> {{ item.date }}</span>
-                                        <span><strong>Room:</strong> {{ item.room }}</span>
+                                        <span><strong>HN:</strong> {{ item.hn }}</span>
+                                        <span><strong>Date:</strong> {{ item.date }}</span>
+
                                     </div>
 
-
                                     <div class="grid-row">
-                                        <span>
-                                            <strong>Patient:</strong>
-                                            {{ item.fullName }} ({{ item.hn }})
-                                        </span>
+                                        <span><strong>Patient:</strong> {{ item.fullName }}</span>
+                                        <span><strong>Age:</strong> {{ item.age }}</span>
 
+                                    </div>
+
+                                    <div class="grid-row single">
+                                        <span><strong>Procedure:</strong> {{ item.procedure }}</span>
+                                    </div>
+                                    <div class="grid-row single">
                                         <span>
                                             <strong>Doctor:</strong>
                                             {{ doctorMap[item.doctorLicense] || item.doctorLicense || '-' }}
                                         </span>
                                     </div>
 
-                                    <div class="grid-row single">
-                                        <span>
-                                            <strong>Procedure:</strong>
-                                            {{ item.procedure }}
-                                        </span>
-                                    </div>
+
                                 </div>
+                                <transition name="expand">
+                                    <div v-if="expandedId === item.id" class="case-detail">
+                                        <div class="detail-row"><strong>HN:</strong> {{ item.hn }}</div>
+                                        <div class="detail-row"><strong>Full Name:</strong> {{ item.fullName }}</div>
+                                        <div class="detail-row"><strong>Age:</strong> {{ item.age }}</div>
+                                        <div><strong>Gender:</strong> {{ item.gender === 'male' ? 'ชาย' : 'หญิง' }}
+                                        </div>
+                                        <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
+                                            item.underlying || '-' }}</div>
+                                        <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
+                                        }}</div>
+                                        <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
+                                        <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
+                                            item.cxrNote || '-' }}</div>
+                                        <div class="detail-row"><strong>ECG:</strong> {{ item.ecgDate || '-' }} | {{
+                                            item.ecgNote || '-' }}</div>
+                                        <div class="detail-row"><strong>Lab:</strong> {{ item.labDate || '-' }} | {{
+                                            item.labNote || '-' }}</div>
+                                        <div class="detail-row"><strong>Admission:</strong> {{ item.admDate || '-' }} |
+                                            {{ item.admNote || '-' }}</div>
+                                        <div class="detail-row"><strong>Notes:</strong> {{ item.notes || '-' }}</div>
+                                    </div>
+                                </transition>
                                 <div class="case-actions">
+                                    <button class="btn-success" @click.stop="openSucceedModal(item.id)">
+                                        Succeed
+                                    </button>
+
                                     <button class="btn-back" @click.stop="moveBackToUpcoming(item.id)">
                                         Back to Upcoming
                                     </button>
+
                                 </div>
                             </div>
+
                         </div>
                     </div>
 
@@ -275,27 +397,25 @@
                     </button>
                 </div>
             </div>
+
         </div>
     </Transition>
     <Transition name="fade">
-        <div v-if="isCancelModalOpen" class="modal-overlay-center">
+        <div v-if="isMessageModalOpen" class="modal-overlay-center">
             <div class="white-modal-card">
-                <h2 class="modal-msg-title red-text">
-                    Are you sure you want to cancel this case?
+                <h2 class="modal-msg-title" :class="{ 'red-text': messageType === 'error' }">
+                    {{ messageTitle }}
                 </h2>
 
                 <div class="modal-button-group">
-                    <button class="btn-cancel-blue" @click="isCancelModalOpen = false">
-                        No
-                    </button>
-
-                    <button class="btn-confirm-red" @click="confirmCancelCase">
-                        Confirm
+                    <button class="btn-confirm-green" @click="isMessageModalOpen = false">
+                        OK
                     </button>
                 </div>
             </div>
         </div>
     </Transition>
+
 </template>
 
 <script setup>
@@ -312,10 +432,11 @@ const router = useRouter()
 const userLicense = ref('Admin')
 
 const FILTERS = {
+    TODAY: 'Today',
     UPCOMING: 'Upcoming',
     PASS: 'Pass'
 }
-const filter = ref(FILTERS.UPCOMING)
+const filter = ref(FILTERS.TODAY)
 const passFilter = ref('Completed')
 const bookings = ref([])
 
@@ -456,13 +577,23 @@ const sortCases = (arr) => {
         return 0
     })
 }
+const todayStr = new Date().toISOString().split('T')[0]
 
+const todayCases = computed(() =>
+    sortCases(
+        bookings.value.filter(
+            item =>
+                item.date === todayStr &&
+                (item.status === FILTERS.UPCOMING || !item.status)
+        )
+    )
+)
 const upcomingCases = computed(() =>
     sortCases(
         bookings.value.filter(
             item =>
-                item.status === FILTERS.UPCOMING ||
-                !item.status
+                item.date > todayStr &&
+                (item.status === FILTERS.UPCOMING || !item.status)
         )
     )
 )
@@ -483,8 +614,6 @@ const cancelledCases = computed(() =>
     )
 )
 
-const todayStr = new Date().toISOString().split('T')[0]
-const todayQueues = computed(() => bookings.value.filter(b => b.date === todayStr && b.status !== 'Succeed'))
 
 const deleteDoctor = async (license, name) => {
     if (!confirm(`ลบบัญชี "${name}" ออกจากระบบ?\n(ข้อมูลคิวผ่าตัดของหมอยังคงอยู่)`)) return
@@ -493,11 +622,11 @@ const deleteDoctor = async (license, name) => {
         const data = await res.json()
         if (res.ok) {
             doctorList.value = doctorList.value.filter(d => d.license !== license)
-            alert('✅ ลบบัญชีสำเร็จ')
+            showMessage('✅ ลบบัญชีสำเร็จ')
         } else {
-            alert('❌ ' + (data.error || 'ลบไม่สำเร็จ'))
+            showMessage('❌ ' + (data.error || 'ลบไม่สำเร็จ'))
         }
-    } catch (e) { alert('❌ เกิดข้อผิดพลาด') }
+    } catch (e) { showMessage('❌ เกิดข้อผิดพลาด') }
 }
 
 
@@ -538,46 +667,46 @@ const onDrop = async (dropIndex) => {
 
 
 // API Functions
-const markAsSucceed = async (id) => {
-    try {
-        await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/bookings/${id}/status`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: 'Completed' })
-        })
-        const target = bookings.value.find(item => item.id === id)
-        if (target) {
-            target.status = 'Completed'; filter.value = FILTERS.PASS
-            passFilter.value = 'Completed'
-        }
-    } catch (e) { alert('❌ อัปเดต status ไม่สำเร็จ') }
-}
+// const markAsSucceed = async (id) => {
+//     try {
+//         await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/bookings/${id}/status`, {
+//             method: 'PATCH',
+//             headers: { 'Content-Type': 'application/json' },
+//             body: JSON.stringify({ status: 'Completed' })
+//         })
+//         const target = bookings.value.find(item => item.id === id)
+//         if (target) {
+//             target.status = 'Completed'; filter.value = FILTERS.PASS
+//             passFilter.value = 'Completed'
+//         }
+//     } catch (e) { showMessage('❌ อัปเดต status ไม่สำเร็จ') }
+// }
 
-const deleteCase = async (id) => {
-    if (!confirm('ยืนยันการยกเลิกเคสนี้?')) return
+// const deleteCase = async (id) => {
+//     if (!confirm('ยืนยันการยกเลิกเคสนี้?')) return
 
-    try {
-        await fetch(
-            `https://or-room-backend.rockzee2018.workers.dev/api/bookings/${id}/status`,
-            {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status: 'Cancelled' })
-            }
-        )
+//     try {
+//         await fetch(
+//             `https://or-room-backend.rockzee2018.workers.dev/api/bookings/${id}/status`,
+//             {
+//                 method: 'PATCH',
+//                 headers: { 'Content-Type': 'application/json' },
+//                 body: JSON.stringify({ status: 'Cancelled' })
+//             }
+//         )
 
-        const target = bookings.value.find(item => item.id === id)
+//         const target = bookings.value.find(item => item.id === id)
 
-        if (target) {
-            target.status = 'Cancelled'
-            filter.value = FILTERS.PASS
-            passFilter.value = 'Cancelled'
-        }
+//         if (target) {
+//             target.status = 'Cancelled'
+//             filter.value = FILTERS.PASS
+//             passFilter.value = 'Cancelled'
+//         }
 
-    } catch (e) {
-        alert('❌ ยกเลิกเคสไม่สำเร็จ')
-    }
-}
+//     } catch (e) {
+//         showMessage('❌ ยกเลิกเคสไม่สำเร็จ')
+//     }
+// }
 
 // Modal logic
 const isDayModalOpen = ref(false)
@@ -1202,8 +1331,8 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
 }
 
 .btn-back {
-    background: #1a3a5f;
-    color: white;
+    background: #fcd823;
+    color: rgb(0, 0, 0);
     border: none;
     padding: 6px 14px;
     border-radius: 8px;
