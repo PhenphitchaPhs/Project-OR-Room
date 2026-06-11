@@ -232,23 +232,26 @@
                             <div v-for="(item, index) in upcomingCases" :key="item.id" :ref="el => setCaseRef(el, item)"
                                 class="case-card drag-item" draggable="true" @dragstart="onDragStart(index, item.id)"
                                 @dragover.prevent @drop="onDrop(index)" @click="toggleDetail(item.id)">
+                                <!-- เคสการ์ด -->
 
                                 <div class="case-grid">
-
                                     <div class="grid-row">
                                         <span><strong>Surgery Date:</strong> {{ item.date }}</span>
-                                        <span><strong>Room:</strong> {{ item.room }}</span>
+
+                                    </div>
+
+                                    <div class="grid-row">
+                                        <span><strong>HN:</strong> {{ item.hn }}</span>
+                                        <span><strong>Age:</strong> {{ item.age }} ปี</span>
                                     </div>
 
                                     <div class="grid-row">
                                         <span><strong>Patient:</strong> {{ item.fullName }}</span>
-                                        <span><strong>Procedure:</strong> {{ item.procedure }}</span>
                                     </div>
 
                                     <div class="grid-row single">
-                                        <span><strong>Doctor:</strong> {{ doctorName || 'Dr. ' + userLicense }}</span>
+                                        <span><strong>Procedure:</strong> {{ item.procedure }}</span>
                                     </div>
-
                                 </div>
 
                                 <transition name="expand">
@@ -263,7 +266,7 @@
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                        }}</div>
+                                            }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
 
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
@@ -274,6 +277,7 @@
                                             item.labNote || '-' }}</div>
                                         <div class="detail-row"><strong>Admission:</strong> {{ item.admDate || '-' }} |
                                             {{ item.admNote || '-' }}</div>
+
 
                                         <div class="detail-row"><strong>Notes:</strong> {{ item.notes || '-' }}</div>
 
@@ -335,22 +339,23 @@
                                     @click="toggleDetail(item.id)">
 
                                     <div class="case-grid">
-
                                         <div class="grid-row">
                                             <span><strong>Surgery Date:</strong> {{ item.date }}</span>
-                                            <span><strong>Room:</strong> {{ item.room }}</span>
+
+                                        </div>
+
+                                        <div class="grid-row">
+                                            <span><strong>HN:</strong> {{ item.hn }}</span>
+                                            <span><strong>Age:</strong> {{ item.age }} ปี</span>
                                         </div>
 
                                         <div class="grid-row">
                                             <span><strong>Patient:</strong> {{ item.fullName }}</span>
-                                            <span><strong>Procedure:</strong> {{ item.procedure }}</span>
                                         </div>
 
                                         <div class="grid-row single">
-                                            <span><strong>Doctor:</strong> {{ doctorName || 'Dr. ' + userLicense
-                                            }}</span>
+                                            <span><strong>Procedure:</strong> {{ item.procedure }}</span>
                                         </div>
-
                                     </div>
 
                                     <!-- DETAIL -->
@@ -453,7 +458,9 @@
 
                                         <div class="grid-row">
                                             <span><strong>Date:</strong> {{ item.date }}</span>
+                                            <span><strong>HN:</strong> {{ item.hn }}</span>
                                             <span><strong>Patient:</strong> {{ item.fullName }}</span>
+                                            <span><strong>Age:</strong> {{ item.age }} ปี</span>
                                         </div>
 
                                         <div class="grid-row">
