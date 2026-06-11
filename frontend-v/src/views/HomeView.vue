@@ -153,7 +153,7 @@
                         <span>OR Usage Today</span>
                     </div>
 
-                    <span>{{ usedMinutes }}/420 mins</span>
+                    <span>{{ usedMinutes }}/6 hrs.</span>
                 </div>
 
                 <!-- Progress Bar -->
@@ -189,7 +189,7 @@
                             {{
                                 usagePercent >= 90
                                     ? 'OR almost full'
-                                    : 'Next surgery can fit'
+                                    : 'Next remaining times'
                             }}
                         </span>
 
@@ -1030,55 +1030,21 @@ const searchCase = async () => {
 
 
 
-// หา "วันผ่าที่ใกล้ที่สุด"
-const nearestSurgeryDate = computed(() => {
 
-    const upcomingBookings = bookings.value.filter(item =>
-        (item.status === FILTERS.UPCOMING || !item.status)
-        && item.date
-    )
-
-    if (upcomingBookings.length === 0) {
-        return null
-    }
-
-    // เรียงวันที่ใกล้ที่สุด
-    const sorted = [...upcomingBookings].sort(
-        (a, b) => new Date(a.date) - new Date(b.date)
-    )
-
-    return sorted[0].date
-
-})
-
-// รวมเวลาเฉพาะ "วันใกล้ที่สุด"
+// รวมเวลาเฉพาะ "today"
 const usedMinutes = computed(() => {
 
-    return bookings.value
+    return todayCases.value.reduce((sum, booking) => {
 
-        .filter(item => {
+        const match =
+            booking.procedure?.match(/(\d+)\s*mins?/i)
 
-            const isUpcoming =
-                item.status === FILTERS.UPCOMING || !item.status
+        const minutes =
+            match ? parseInt(match[1]) : 0
 
-            const sameNearestDate =
-                item.date === nearestSurgeryDate.value
+        return sum + minutes
 
-            return isUpcoming && sameNearestDate
-
-        })
-
-        .reduce((sum, booking) => {
-
-            const match =
-                booking.procedure?.match(/(\d+)\s*mins?/i)
-
-            const minutes =
-                match ? parseInt(match[1]) : 0
-
-            return sum + minutes
-
-        }, 0)
+    }, 0)
 
 })
 const restoreCase = (id) => {
@@ -1146,7 +1112,7 @@ const confirmRestoreCase = async () => {
 
 }
 
-const MAX_MINUTES = 420
+const MAX_MINUTES = 360
 // เปอร์เซ็นต์ progress
 const usagePercent = computed(() => {
     return Math.min((usedMinutes.value / MAX_MINUTES) * 100, 100)
