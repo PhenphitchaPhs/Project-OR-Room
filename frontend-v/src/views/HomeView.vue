@@ -2367,9 +2367,9 @@ input[type="checkbox"] {
     margin: 0 auto 20px auto;
 
     background: #ffffff;
-    border-radius: 16px;
+    border-radius: 15px;
 
-    padding: 14px 16px;
+    padding: 14px 5px;
 
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 
