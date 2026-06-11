@@ -7,15 +7,12 @@
             </svg>
         </button>
 
-
         <div class="card">
             <div v-if="tomorrowCount > 0" class="reminder-banner">
                 📢 Reminder: พรุ่งนี้มีนัดผ่าตัดทั้งหมด <strong>{{ tomorrowCount }}</strong> เคส
             </div>
 
-
             <h1 class="title">Scheduling a surgery</h1>
-
 
             <form @submit.prevent="submitForm">
                 <div class="section-group">
@@ -44,7 +41,6 @@
                     </div>
                 </div>
 
-
                 <div class="section-group">
                     <label class="group-label">Surgery Details</label>
                     <div class="grid-2-col">
@@ -57,11 +53,16 @@
                                 </option>
                             </optgroup>
                         </select>
-                        <input type="date" v-model="form.date" :min="minDate" @change="checkValidDate"
-                            class="input-field green-theme" required />
+                        
+                        <div style="display: flex; flex-direction: column;">
+                            <input type="date" v-model="form.date" :min="minDate" @change="checkValidDate"
+                                class="input-field green-theme" required />
+                            <span v-if="remainingTimeMsg" style="color: #0288d1; font-size: 0.85rem; margin-top: 6px; font-weight: 500;">
+                                ⏳ {{ remainingTimeMsg }}
+                            </span>
+                        </div>
                     </div>
                 </div>
-
 
                 <div class="section-group">
                     <label class="group-label">Pre-operative & Admission Notes</label>
@@ -101,13 +102,11 @@
                     </div>
                 </div>
 
-
                 <div class="section-group">
                     <label class="group-label">Other Remarks</label>
                     <textarea v-model="form.notes" placeholder="Additional details..."
                         class="input-field blue-theme note-box" rows="2"></textarea>
                 </div>
-
 
                 <div class="btn-area">
                     <button type="submit" class="confirm-btn">Confirm Booking</button>
@@ -119,11 +118,9 @@
         <div v-if="showAlertModal" class="modal-overlay" @click="showAlertModal = false">
             <div class="alert-modal" @click.stop>
                 <div class="alert-icon">✔️</div>
-
                 <div class="alert-message">
                     {{ alertMessage }}
                 </div>
-
                 <button class="alert-btn" @click="showAlertModal = false">
                     ตกลง
                 </button>
@@ -132,22 +129,23 @@
     </Transition>
 </template>
 
-
 <script setup>
 import { reactive, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-
 
 const router = useRouter()
 const tomorrowCount = ref(0)
 const hnStatus = ref('')
 const showAlertModal = ref(false)
 const alertMessage = ref('')
+
+// 🌟 ตัวแปรเก็บข้อความโชว์เวลาที่เหลือ
+const remainingTimeMsg = ref('')
+
 const showAlert = (message) => {
     alertMessage.value = message
     showAlertModal.value = true
 }
-
 
 const form = reactive({
     hn: '', fullName: '', age: '', gender: '', disease: '',
@@ -158,8 +156,6 @@ const form = reactive({
     admDate: '', admNote: ''
 })
 
-
-// รายชื่อวันหยุดราชการไทยประจำปี 2026 (พ.ศ. 2569) คีย์เป็น YYYY-MM-DD
 const thaiHolidays2026 = {
     '2026-01-01': 'วันขึ้นปีใหม่',
     '2026-03-03': 'วันมาฆบูชา',
@@ -183,7 +179,6 @@ const thaiHolidays2026 = {
     '2026-12-10': 'วันรัฐธรรมนูญ',
     '2026-12-31': 'วันสิ้นปี'
 }
-
 
 const procedureGroups = ref([
     {
@@ -224,10 +219,14 @@ const procedureGroups = ref([
     }
 ])
 
-
-const todayStr = new Date().toISOString().split('T')[0]
+// 🌟 ตั้งคาวันที่เริ่มจอง (วันนี้) และ วันที่จองล่วงหน้าสูงสุด (90 วัน)
+const today = new Date()
+const todayStr = today.toISOString().split('T')[0]
 const minDate = ref(todayStr)
 
+const max = new Date()
+max.setDate(max.getDate() + 90)
+const maxDate = ref(max.toISOString().split('T')[0])
 
 onMounted(async () => {
     try {
@@ -242,7 +241,6 @@ onMounted(async () => {
     } catch (e) { console.error("Reminder failed", e) }
 })
 
-
 const lookupHN = async () => {
     if (form.hn.length < 3) return
     hnStatus.value = 'loading'
@@ -256,30 +254,20 @@ const lookupHN = async () => {
     } catch (e) { hnStatus.value = 'notfound' }
 }
 
-
-// แตกฟังก์ชันเช็กวันหยุดเพื่อให้เรียกใช้ซ้ำได้สะดวก
 const validateHolidayAndWeekend = (dateStr) => {
     if (!dateStr) return true
 
-
-    // 1. ตรวจสอบปี ค.ศ. / พ.ศ. ก่อน
     const yearPart = parseInt(dateStr.split('-')[0])
     const currentYear = new Date().getFullYear()
     const normalizedYear = yearPart > 2400 ? yearPart - 543 : yearPart
     if (!normalizedYear || normalizedYear < currentYear - 1 || normalizedYear > currentYear + 5) return true
 
-
-    // 2. เช็กวันหยุดราชการ
     if (thaiHolidays2026[dateStr]) {
-        showAlert(
-            `วันที่เลือกเป็นวันหยุดราชการ : ${thaiHolidays2026[dateStr]} ห้องผ่าตัดปิดให้บริการครับ`
-        )
+        showAlert(`วันที่เลือกเป็นวันหยุดราชการ : ${thaiHolidays2026[dateStr]} ห้องผ่าตัดปิดให้บริการครับ`)
         form.date = ''
         return false
     }
 
-
-    // 3. เช็กเสาร์-อาทิตย์
     const selected = new Date(dateStr)
     const dow = selected.getDay()
     if (dow === 0 || dow === 6) {
@@ -288,21 +276,18 @@ const validateHolidayAndWeekend = (dateStr) => {
         return false
     }
 
-
     return true
 }
 
-
+// 🌟 ฟังก์ชันคำนวณเวลาว่าง 6 ชม. (360 นาที)
 const checkValidDate = async () => {
+    remainingTimeMsg.value = '' // ล้างข้อความเวลาเดิมเสมอเมื่อมีการอัปเดตใหม่
     if (!form.date) return
 
-
-    // ตรวจสอบวันหยุด & เสาร์อาทิตย์
     if (!validateHolidayAndWeekend(form.date)) return
 
     const selected = new Date(form.date)
     const dow = selected.getDay()
-
 
     const license = localStorage.getItem('userLicense')
     if (license) {
@@ -312,56 +297,59 @@ const checkValidDate = async () => {
             const userData = await res.json()
             const workingDay = userData.day
 
-
             if (workingDay && dayMap[workingDay] !== dow) {
-                showAlert(
-                    `คุณสามารถจองคิวได้เฉพาะวัน ${workingDay} ซึ่งเป็นวันทำงานของคุณเท่านั้นครับ`
-                )
+                showAlert(`คุณสามารถจองคิวได้เฉพาะวัน ${workingDay} ซึ่งเป็นวันทำงานของคุณเท่านั้นครับ`)
                 form.date = ''
                 return
             }
         } catch (e) { console.error('เช็กวันทำงานไม่สำเร็จ', e) }
     }
 
-
-    if (!form.procedure) return
     try {
         const res = await fetch('https://or-room-backend.rockzee2018.workers.dev/api/bookings')
         const allBookings = await res.json()
 
-        const sameDayBookings = allBookings.filter(b => b.date === form.date && b.status !== 'Succeed')
+        // กรองเอาเฉพาะเคสวันนั้นที่ยังไม่ถูกยกเลิกหรือเสร็จสิ้น
+        const sameDayBookings = allBookings.filter(b => b.date === form.date && b.status !== 'Succeed' && b.status !== 'Cancelled')
 
         const usedMinutes = sameDayBookings.reduce((sum, b) => {
             const match = b.procedure?.match(/(\d+)\s*min/)
             return sum + (match ? parseInt(match[1]) : 0)
         }, 0)
 
+        // ตั้งโควต้าไว้ที่ 6 ชั่วโมง (360 นาที)
+        const MAX_MINUTES = 360 
+        const remainingMinutes = MAX_MINUTES - usedMinutes
 
-        const matchProc = form.procedure?.match(/(\d+)\s*min/)
-        const newProcMin = matchProc ? parseInt(matchProc[1]) : 0
+        // คำนวณเป็น ชั่วโมง/นาที และแสดงผลทันที
+        if (remainingMinutes <= 0) {
+            remainingTimeMsg.value = 'คิวเต็มแล้วครับ (0 ชม.)'
+        } else {
+            const hrs = Math.floor(remainingMinutes / 60)
+            const mins = remainingMinutes % 60
+            remainingTimeMsg.value = `เหลือเวลาว่างอีก ${hrs} ชม. ${mins > 0 ? mins + ' นาที' : ''}`
+        }
 
+        // ถ้ามีการเลือก Procedure ด้วย ให้ตรวจเช็กว่าเวลาเหลือพอไหม
+        if (form.procedure) {
+            const matchProc = form.procedure.match(/(\d+)\s*min/)
+            const newProcMin = matchProc ? parseInt(matchProc[1]) : 0
 
-        if (usedMinutes + newProcMin > 420) {
-            const remaining = 420 - usedMinutes
-            showAlert(
-                `วันที่ ${form.date} คิวเต็มแล้วครับ\nเหลือเวลา ${remaining} นาที แต่หัตถการนี้ใช้ ${newProcMin} นาที\nกรุณาเลือกวันอื่นครับ`
-            )
-            form.date = ''
+            if (usedMinutes + newProcMin > MAX_MINUTES) {
+                showAlert(`วันที่ ${form.date} คิวเต็มแล้วครับ\nเหลือเวลา ${remainingMinutes} นาที แต่หัตถการนี้ใช้ ${newProcMin} นาที\nกรุณาเลือกวันอื่นครับ`)
+                form.date = ''
+                remainingTimeMsg.value = ''
+            }
         }
     } catch (e) { console.error('เช็กความจุห้องผ่าตัดไม่สำเร็จ', e) }
 }
 
-
 const submitForm = async () => {
     if (!form.hn || !form.fullName || !form.age || !form.gender || !form.disease || !form.date || !form.procedure) {
-        showAlert(
-            'กรุณากรอกข้อมูล Patient Information และ Surgery Details ให้ครบถ้วนทุกช่องครับ'
-        )
+        showAlert('กรุณากรอกข้อมูล Patient Information และ Surgery Details ให้ครบถ้วนทุกช่องครับ')
         return
     }
 
-
-    // ✅ เช็กวันหยุดซ้ำก่อน submit ป้องกันหลุดโฟลว์
     if (!validateHolidayAndWeekend(form.date)) return
 
     const payload = {
@@ -393,22 +381,18 @@ const submitForm = async () => {
 
         if (res.ok) {
             showAlert('จองคิวสำเร็จ!')
-
             setTimeout(() => {
                 router.push('/home')
             }, 1500)
         } else {
             const errData = await res.json().catch(() => ({}))
-            showAlert(
-                `บันทึกไม่สำเร็จ: ${errData.error || 'เซิร์ฟเวอร์ปฏิเสธการรับข้อมูล'}`
-            )
+            showAlert(`บันทึกไม่สำเร็จ: ${errData.error || 'เซิร์ฟเวอร์ปฏิเสธการรับข้อมูล'}`)
         }
     } catch (e) {
         console.error(e)
         showAlert('ระบบขัดข้อง ไม่สามารถติดต่อเซิร์ฟเวอร์ได้')
     }
 }
-
 
 const goHome = () => router.push('/home')
 </script>
