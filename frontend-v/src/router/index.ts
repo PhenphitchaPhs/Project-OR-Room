@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
 // ===== User Pages =====
 import HomeView from '../views/HomeView.vue'
@@ -46,20 +47,27 @@ const router = createRouter({
 })
 
 /* 🔐 Navigation Guard */
-router.beforeEach((to, from, next) => {
-  const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true'
-  const userRole = localStorage.getItem('userRole') 
-
-  const publicAuthPages = ['/login', '/signup', '/admin-login', '/newpassword']
-  if (publicAuthPages.includes(to.path) && isLoggedIn) {
-    return next(userRole === 'admin' ? '/admin-home' : '/home')
+// Security Fix: Replaced insecure localStorage checks with a secure auth store 
+// that fetches session state from the backend to prevent client-side manipulation 
+// and authentication/authorization bypass.
+router.beforeEach(async (to, from, next) => {
+  const authStore = useAuthStore()
+  
+  // Fetch real session state from backend if not initialized
+  if (!authStore.isInitialized) {
+    await authStore.fetchSession()
   }
 
-  if (to.meta.requiresAuth && !isLoggedIn) {
+  const publicAuthPages = ['/login', '/signup', '/admin-login', '/newpassword']
+  if (publicAuthPages.includes(to.path) && authStore.isLoggedIn) {
+    return next(authStore.userRole === 'admin' ? '/admin-home' : '/home')
+  }
+
+  if (to.meta.requiresAuth && !authStore.isLoggedIn) {
     return next('/login')
   } 
   
-  if (to.meta.role === 'admin' && userRole !== 'admin') {
+  if (to.meta.role === 'admin' && authStore.userRole !== 'admin') {
     alert('❌ คุณไม่มีสิทธิ์เข้าถึงหน้า Admin!')
     return next('/home')
   } 
