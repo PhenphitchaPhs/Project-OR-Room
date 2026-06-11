@@ -55,7 +55,7 @@
                         </select>
                         
                         <div style="display: flex; flex-direction: column;">
-                            <input type="date" v-model="form.date" :min="minDate" @change="checkValidDate"
+                            <input type="date" v-model="form.date" :min="minDate" :max="maxDate" @change="checkValidDate"
                                 class="input-field green-theme" required />
                             <span v-if="remainingTimeMsg" style="color: #0288d1; font-size: 0.85rem; margin-top: 6px; font-weight: 500;">
                                 ⏳ {{ remainingTimeMsg }}
@@ -138,9 +138,10 @@ const tomorrowCount = ref(0)
 const hnStatus = ref('')
 const showAlertModal = ref(false)
 const alertMessage = ref('')
-
-// 🌟 ตัวแปรเก็บข้อความโชว์เวลาที่เหลือ
 const remainingTimeMsg = ref('')
+
+// 🌟 ตัวแปรเก็บวันหยุดที่ดึงมาจาก API (แทนของเดิมที่พิมพ์เอง)
+const apiHolidays = ref({})
 
 const showAlert = (message) => {
     alertMessage.value = message
@@ -155,30 +156,6 @@ const form = reactive({
     labDate: '', labNote: '',
     admDate: '', admNote: ''
 })
-
-const thaiHolidays2026 = {
-    '2026-01-01': 'วันขึ้นปีใหม่',
-    '2026-03-03': 'วันมาฆบูชา',
-    '2026-04-06': 'วันพระบาทสมเด็จพระพุทธยอดฟ้าจุฬาโลกมหาราชและวันที่ระลึกมหาจักรีบรมราชวงศ์',
-    '2026-04-13': 'วันสงกรานต์',
-    '2026-04-14': 'วันสงกรานต์',
-    '2026-04-15': 'วันสงกรานต์',
-    '2026-05-01': 'วันแรงงานแห่งชาติ (หยุดบางหน่วยงาน)',
-    '2026-05-04': 'วันฉัตรมงคล',
-    '2026-05-31': 'วันวิสาขบูชา',
-    '2026-06-01': 'วันชดเชยวันวิสาขบูชา',
-    '2026-06-03': 'วันเฉลิมพระชนมพรรษาสมเด็จพระนางเจ้าฯ พระบรมราชินี',
-    '2026-07-28': 'วันเฉลิมพระชนมพรรษาพระบาทสมเด็จพระเจ้าอยู่หัว',
-    '2026-07-29': 'วันอาสาฬหบูชา',
-    '2026-07-30': 'วันเข้าพรรษา',
-    '2026-08-12': 'วันเฉลิมพระชนมพรรษาสมเด็จพระบรมราชชนนีพันปีหลวง และวันแม่แห่งชาติ',
-    '2026-10-13': 'วันคล้ายวันสวรรคตพระบาทสมเด็จพระบรมชนกาธิเบศร มหาภูมิพลอดุลยเดชมหาราช บรมนาถบพิตร',
-    '2026-10-23': 'วันปิยมหาราช',
-    '2026-12-05': 'วันคล้ายวันพระบรมราชสมภพพระบาทสมเด็จพระบรมชนกาธิเบศร มหาภูมิพลอดุลยเดชมหาราช บรมนาถบพิตร วันชาติ และวันพ่อแห่งชาติ',
-    '2026-12-07': 'วันชดเชยวันพ่อแห่งชาติ',
-    '2026-12-10': 'วันรัฐธรรมนูญ',
-    '2026-12-31': 'วันสิ้นปี'
-}
 
 const procedureGroups = ref([
     {
@@ -219,7 +196,6 @@ const procedureGroups = ref([
     }
 ])
 
-// 🌟 ตั้งคาวันที่เริ่มจอง (วันนี้) และ วันที่จองล่วงหน้าสูงสุด (90 วัน)
 const today = new Date()
 const todayStr = today.toISOString().split('T')[0]
 const minDate = ref(todayStr)
@@ -229,6 +205,7 @@ max.setDate(max.getDate() + 90)
 const maxDate = ref(max.toISOString().split('T')[0])
 
 onMounted(async () => {
+    // 1. ดึงคิวพรุ่งนี้
     try {
         const tomorrow = new Date()
         tomorrow.setDate(tomorrow.getDate() + 1)
@@ -239,6 +216,22 @@ onMounted(async () => {
             tomorrowCount.value = data.filter(b => b.date === tomStr).length
         }
     } catch (e) { console.error("Reminder failed", e) }
+
+    // 2. 🌟 ดึงวันหยุดจาก API หลังบ้าน
+    try {
+        const holidayRes = await fetch('https://or-room-backend.rockzee2018.workers.dev/api/holidays')
+        if (holidayRes.ok) {
+            const holidayData = await holidayRes.json()
+            // แปลงข้อมูลจาก Google Calendar ให้กลายเป็น Object แบบ { '2026-04-13': 'วันสงกรานต์' }
+            if (holidayData.items) {
+                holidayData.items.forEach(item => {
+                    if (item.start && item.start.date) {
+                        apiHolidays.value[item.start.date] = item.summary
+                    }
+                })
+            }
+        }
+    } catch (e) { console.error("ดึงวันหยุดล้มเหลว", e) }
 })
 
 const lookupHN = async () => {
@@ -262,8 +255,9 @@ const validateHolidayAndWeekend = (dateStr) => {
     const normalizedYear = yearPart > 2400 ? yearPart - 543 : yearPart
     if (!normalizedYear || normalizedYear < currentYear - 1 || normalizedYear > currentYear + 5) return true
 
-    if (thaiHolidays2026[dateStr]) {
-        showAlert(`วันที่เลือกเป็นวันหยุดราชการ : ${thaiHolidays2026[dateStr]} ห้องผ่าตัดปิดให้บริการครับ`)
+    // 🌟 เปลี่ยนมาเช็กวันหยุดจากตัวแปร apiHolidays แทนของเก่า
+    if (apiHolidays.value[dateStr]) {
+        showAlert(`วันที่เลือกเป็นวันหยุดราชการ : ${apiHolidays.value[dateStr]} ห้องผ่าตัดปิดให้บริการครับ`)
         form.date = ''
         return false
     }
@@ -276,12 +270,20 @@ const validateHolidayAndWeekend = (dateStr) => {
         return false
     }
 
+    // 🌟 ดักเผื่อผู้ใช้พิมพ์วันที่ทะลุ 90 วันเข้ามาตรงๆ
+    const selectedDateObj = new Date(dateStr)
+    const maxDateObj = new Date(maxDate.value)
+    if (selectedDateObj > maxDateObj) {
+        showAlert(`ไม่สามารถจองคิวล่วงหน้าเกิน 90 วันได้ครับ (จองได้ถึง ${maxDate.value})`)
+        form.date = ''
+        return false
+    }
+
     return true
 }
 
-// 🌟 ฟังก์ชันคำนวณเวลาว่าง 6 ชม. (360 นาที)
 const checkValidDate = async () => {
-    remainingTimeMsg.value = '' // ล้างข้อความเวลาเดิมเสมอเมื่อมีการอัปเดตใหม่
+    remainingTimeMsg.value = ''
     if (!form.date) return
 
     if (!validateHolidayAndWeekend(form.date)) return
@@ -309,7 +311,6 @@ const checkValidDate = async () => {
         const res = await fetch('https://or-room-backend.rockzee2018.workers.dev/api/bookings')
         const allBookings = await res.json()
 
-        // กรองเอาเฉพาะเคสวันนั้นที่ยังไม่ถูกยกเลิกหรือเสร็จสิ้น
         const sameDayBookings = allBookings.filter(b => b.date === form.date && b.status !== 'Succeed' && b.status !== 'Cancelled')
 
         const usedMinutes = sameDayBookings.reduce((sum, b) => {
@@ -317,11 +318,9 @@ const checkValidDate = async () => {
             return sum + (match ? parseInt(match[1]) : 0)
         }, 0)
 
-        // ตั้งโควต้าไว้ที่ 6 ชั่วโมง (360 นาที)
         const MAX_MINUTES = 360 
         const remainingMinutes = MAX_MINUTES - usedMinutes
 
-        // คำนวณเป็น ชั่วโมง/นาที และแสดงผลทันที
         if (remainingMinutes <= 0) {
             remainingTimeMsg.value = 'คิวเต็มแล้วครับ (0 ชม.)'
         } else {
@@ -330,7 +329,6 @@ const checkValidDate = async () => {
             remainingTimeMsg.value = `เหลือเวลาว่างอีก ${hrs} ชม. ${mins > 0 ? mins + ' นาที' : ''}`
         }
 
-        // ถ้ามีการเลือก Procedure ด้วย ให้ตรวจเช็กว่าเวลาเหลือพอไหม
         if (form.procedure) {
             const matchProc = form.procedure.match(/(\d+)\s*min/)
             const newProcMin = matchProc ? parseInt(matchProc[1]) : 0
