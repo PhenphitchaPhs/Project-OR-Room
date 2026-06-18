@@ -233,7 +233,6 @@
 
                         </div>
 
-
                         <div v-else>
                             <div class="reset-wrapper">
                                 <button class="btn-reset" @click="resetQueue">
@@ -398,7 +397,7 @@
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                            }}</div>
+                                        }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
 
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
