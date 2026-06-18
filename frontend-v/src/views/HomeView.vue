@@ -263,6 +263,14 @@
                                     </div>
 
                                 </div>
+                                <div class="see-more-toggle">
+                                    <span class="see-more-text">
+                                        {{ expandedId === item.id ? 'See less' : 'See more' }}
+                                    </span>
+                                    <span class="material-icons see-more-icon">
+                                        {{ expandedId === item.id ? 'expand_less' : 'expand_more' }}
+                                    </span>
+                                </div>
 
                                 <transition name="expand">
 
@@ -388,6 +396,14 @@
                                     <div class="grid-row single">
                                         <span><strong>Procedure:</strong> {{ item.procedure }}</span>
                                     </div>
+                                </div>
+                                <div class="see-more-toggle">
+                                    <span class="see-more-text">
+                                        {{ expandedId === item.id ? 'See less' : 'See more' }}
+                                    </span>
+                                    <span class="material-icons see-more-icon">
+                                        {{ expandedId === item.id ? 'expand_less' : 'expand_more' }}
+                                    </span>
                                 </div>
 
                                 <transition name="expand">
@@ -2666,5 +2682,35 @@ input[type="checkbox"] {
 .is-thai-holiday {
     color: #dc2626 !important;
     font-weight: bold !important;
+}
+
+/* ---------- See More Toggle ---------- */
+/* ---------- See More Toggle ---------- */
+.see-more-toggle {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-top: 12px;
+    margin-bottom: -50px;
+    /* 🟢 ใช้ค่าติดลบเพื่อดึงให้ชิดขอบล่างสุดของการ์ด */
+    color: #94a3b8;
+    transition: all 0.25s ease;
+}
+
+/* ตอนเอาเมาส์ชี้ให้สีเข้มขึ้นนิดนึง */
+.case-card:hover .see-more-toggle {
+    color: #475569;
+}
+
+.see-more-text {
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.see-more-icon {
+    font-size: 24px;
+    margin-top: -6px;
+    /* ดึงลูกศรให้ชิดตัวหนังสือมากขึ้น */
 }
 </style>
