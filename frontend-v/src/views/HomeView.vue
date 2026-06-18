@@ -189,7 +189,7 @@
                             {{
                                 usagePercent >= 90
                                     ? 'OR almost full'
-                                    : 'Next remaining times'
+                                    : 'Next remaining time'
                             }}
                         </span>
 
@@ -233,7 +233,13 @@
 
                         </div>
 
+
                         <div v-else>
+                            <div class="reset-wrapper">
+                                <button class="btn-reset" @click="resetQueue">
+                                    <span class="material-icons">refresh</span> รีเซ็ตลำดับคิว
+                                </button>
+                            </div>
 
                             <div v-for="item in todayCases" :key="item.id" class="case-card"
                                 @click="toggleDetail(item.id)">
@@ -1153,7 +1159,7 @@ const API_URL = 'https://or-room-backend.rockzee2018.workers.dev/api/bookings'
 const bookings = ref([])
 const userLicense = ref('')
 const doctorName = ref('')
-const filter = ref('Upcoming')
+const filter = ref('Today')
 const succeedTab = ref(FILTERS.COMPLETE)
 const expandedId = ref(null)
 const isLoading = ref(false)
