@@ -228,7 +228,7 @@
                             <h3>No surgeries scheduled today</h3>
 
                             <p class="sub-text">
-                                Cases for future surgery dates will appear in Upcoming.
+                                Cases for surgery dates will appear in today.
                             </p>
 
                         </div>
@@ -332,6 +332,11 @@
                                     </div>
 
                                 </transition>
+                                <div class="case-actions">
+                                    <button class="btn-delete" @click.stop="deleteCase(item.id)">
+                                        Cancel
+                                    </button>
+                                </div>
 
 
                             </div>
