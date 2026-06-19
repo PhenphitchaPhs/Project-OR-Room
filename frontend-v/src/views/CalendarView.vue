@@ -35,7 +35,7 @@
                 <span class="day-number" :class="{ 'today-circle': date.fullDate === todayStr }">{{ date.dayNumber }}</span>
                 <span v-if="date.isCurrentMonth && isOfficialHoliday(date.fullDate)" class="holiday-tag">{{ getHolidayName(date.fullDate) }}</span>
                 <span
-                    v-if="date.isCurrentMonth"
+                    v-if="date.isCurrentMonth && !isClosedDay(date.fullDate)"
                     class="capacity-badge"
                     :class="{ 'badge-full': isDayFull(date.fullDate), 'badge-available': !isDayFull(date.fullDate) }"
                 >{{ remainingLabel(date.fullDate) }}</span>
@@ -55,8 +55,11 @@
             <div v-if="isDetailPopupOpen" class="overlay-modal" @click.self="isDetailPopupOpen = false">
                 <div class="card-modal">
                     <h3 class="modal-title">📅 {{ formatDateThai(selectedFullDate) }}</h3>
-                    <p class="capacity-line" :class="{ 'capacity-full-text': isDayFull(selectedFullDate) }">
+                    <p v-if="!isClosedDay(selectedFullDate)" class="capacity-line" :class="{ 'capacity-full-text': isDayFull(selectedFullDate) }">
                         {{ isDayFull(selectedFullDate) ? '🔴 คิวเต็มแล้ว' : `🟢 ${remainingLabel(selectedFullDate)}` }}
+                    </p>
+                    <p v-else class="capacity-line capacity-closed-text">
+                        🔒 ห้องผ่าตัดปิดทำการ
                     </p>
 
                     <div v-if="selectedDateBookings.length === 0" class="empty-state">
@@ -64,7 +67,6 @@
                     </div>
 
                     <div v-for="b in selectedDateBookings" :key="b.id" class="booking-item">
-                        <div class="booking-badge" :style="{ background: urgencyColor(b.urgency) }">{{ b.urgency }}</div>
                         <p><strong>Patient:</strong> {{ b.fullName }}</p>
                         <p><strong>HN:</strong> {{ b.hn }}</p>
                         <p><strong>Age / Gender:</strong> {{ b.age || '-' }} ปี · {{ b.gender === 'female' ? 'หญิง' : 'ชาย' }}</p>
@@ -156,6 +158,12 @@ const weekDaysFull = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'F
 // 📍 4. อัปเดตฟังก์ชันให้ใช้ตัวแปร .value (เพราะเป็นตัวแปรแบบ ref)
 const isOfficialHoliday = (d) => officialHolidays.value.some(h => h.date === d)
 const getHolidayName = (d) => officialHolidays.value.find(h => h.date === d)?.name || 'Holiday'
+// 📍 ห้องผ่าตัดปิดทำการวันเสาร์-อาทิตย์ และวันหยุดราชการ จึงไม่ต้องโชว์เวลาว่าง/เต็มในวันเหล่านี้
+const isWeekend = (d) => {
+    const dow = new Date(d + 'T00:00:00').getDay()
+    return dow === 0 || dow === 6
+}
+const isClosedDay = (d) => isWeekend(d) || isOfficialHoliday(d)
 
 // ดึงคิวของวันนั้นๆ พร้อมเรียงลำดับ: 1) อายุมากสุดขึ้นก่อน 2) อายุเท่ากันให้ผู้หญิงขึ้นก่อน
 const sortByAgeThenFemaleFirst = (arr) => {
@@ -417,6 +425,7 @@ const formatDateThai = (d) => {
     margin-bottom: 14px;
 }
 .capacity-full-text { color: #c62828; }
+.capacity-closed-text { color: #757575; }
 .empty-state {
     text-align: center;
     color: #888;
@@ -425,15 +434,6 @@ const formatDateThai = (d) => {
 }
 .booking-item { margin-bottom: 10px; }
 .booking-item p { font-size: 13px; color: #333; margin: 3px 0; }
-.booking-badge {
-    display: inline-block;
-    color: white;
-    font-size: 11px;
-    padding: 3px 10px;
-    border-radius: 20px;
-    font-weight: 600;
-    margin-bottom: 6px;
-}
 .actions {
     display: flex;
     gap: 10px;
