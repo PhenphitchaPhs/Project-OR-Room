@@ -56,7 +56,10 @@
                         
                         <div style="display: flex; flex-direction: column;">
                             <input type="date" v-model="form.date" :min="minDate" :max="maxDate" @change="checkValidDate"
-                                class="input-field green-theme" required />
+                                class="input-field green-theme" :readonly="isDateLocked && !!form.date" :class="{ 'locked-field': isDateLocked && form.date }" required />
+                            <span v-if="isDateLocked && form.date" style="color: #1a3a5f; font-size: 0.8rem; margin-top: 4px; font-weight: 600;">
+                                🔒 ล็อควันที่จากปฏิทินแล้ว
+                            </span>
                             <span v-if="remainingTimeMsg" style="color: #0288d1; font-size: 0.85rem; margin-top: 6px; font-weight: 500;">
                                 ⏳ {{ remainingTimeMsg }}
                             </span>
@@ -131,14 +134,16 @@
 
 <script setup>
 import { reactive, ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 
 const router = useRouter()
+const route = useRoute()
 const tomorrowCount = ref(0)
 const hnStatus = ref('')
 const showAlertModal = ref(false)
 const alertMessage = ref('')
 const remainingTimeMsg = ref('')
+const isDateLocked = ref(false)
 
 const apiHolidays = ref({})
 
@@ -204,6 +209,12 @@ max.setDate(max.getDate() + 90)
 const maxDate = ref(max.toISOString().split('T')[0])
 
 onMounted(async () => {
+    // 📍 ถ้ามาจากการกดวันที่ในหน้าปฏิทิน ให้ล็อควันที่นั้นไว้ ห้ามแก้
+    if (route.query.date) {
+        form.date = route.query.date
+        isDateLocked.value = true
+    }
+
     try {
         const tomorrow = new Date()
         tomorrow.setDate(tomorrow.getDate() + 1)
@@ -228,6 +239,11 @@ onMounted(async () => {
             }
         }
     } catch (e) { console.error("ดึงวันหยุดล้มเหลว", e) }
+
+    // 📍 เช็คความจุห้องผ่าตัด/แสดงเวลาที่เหลือของวันที่ถูกล็อคมาจากปฏิทิน
+    if (isDateLocked.value) {
+        await checkValidDate()
+    }
 })
 
 const lookupHN = async () => {
@@ -470,6 +486,14 @@ const goHome = () => router.push('/home')
     background: #f4f8fd;
     font-size: 14px;
     box-sizing: border-box;
+}
+
+.locked-field {
+    background: #e8f0fe;
+    border-color: #1a3a5f;
+    color: #1a3a5f;
+    font-weight: 600;
+    cursor: not-allowed;
 }
 
 .grid-2-col {
