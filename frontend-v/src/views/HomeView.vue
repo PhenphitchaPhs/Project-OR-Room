@@ -1818,6 +1818,10 @@ const markAsSucceed = async (id) => {
     border-color: #16a34a;
 }
 
+.case-card.succeed-item {
+    padding-bottom: 55px !important;
+}
+
 /* CANCELLED TAB */
 .sub-filter button.cancelled-active {
     background: #790606;
