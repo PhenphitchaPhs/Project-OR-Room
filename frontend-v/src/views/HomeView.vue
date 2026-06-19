@@ -129,8 +129,8 @@
             <div class="search-box">
                 <span class="material-icons search-icon">search</span>
 
-                <input type="text" v-model="searchHN" placeholder="Search patient, HN, procedure..."
-                    @keyup.enter="searchCase" />
+                <input type="text" v-model="searchHN" placeholder="Search patient, HN, procedure" />
+
             </div>
 
             <!-- <button class="logout-btn" @click="isLogoutModalOpen = true">
@@ -238,7 +238,7 @@
                                 </button>
                             </div>
 
-                            <div v-for="item in todayCases" :key="item.id" class="case-card"
+                            <div v-for="item in filterBySearch(todayCases)" :key="item.id" class="case-card"
                                 @click="toggleDetail(item.id)">
 
                                 <div class="case-grid">
@@ -371,9 +371,10 @@
                                 </button>
                             </div>
 
-                            <div v-for="(item, index) in upcomingCases" :key="item.id" :ref="el => setCaseRef(el, item)"
-                                class="case-card drag-item" draggable="true" @dragstart="onDragStart(index, item.id)"
-                                @dragover.prevent="handleDragOver" @drop="onDrop(index)" @click="toggleDetail(item.id)">
+                            <div v-for="(item, index) in filterBySearch(upcomingCases)" :key="item.id"
+                                :ref="el => setCaseRef(el, item)" class="case-card drag-item" draggable="true"
+                                @dragstart="onDragStart(index, item.id)" @dragover.prevent="handleDragOver"
+                                @drop="onDrop(index)" @click="toggleDetail(item.id)">
                                 <!-- เคสการ์ด -->
 
                                 <div class="case-grid">
@@ -416,7 +417,7 @@
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                            }}</div>
+                                        }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
 
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
@@ -484,7 +485,7 @@
 
                             <div v-else>
 
-                                <div v-for="item in completeCases" :key="item.id"
+                                <div v-for="item in filterBySearch(completeCases)" :key="item.id"
                                     :ref="el => setCaseRef(el, item, FILTERS.COMPLETE)" class="case-card succeed-item"
                                     @click="toggleDetail(item.id)">
 
@@ -607,7 +608,7 @@
 
                             <div v-else>
 
-                                <div v-for="item in notCompleteCases" :key="item.id"
+                                <div v-for="item in filterBySearch(notCompleteCases)" :key="item.id"
                                     :ref="el => setCaseRef(el, item, FILTERS.NOT_COMPLETE)"
                                     class="case-card not-complete-item" @click="toggleDetail(item.id)">
 
@@ -954,6 +955,35 @@ const normalizeText = (text) => {
         .replace(/\s+/g, '')
 }
 
+// computed สำหรับกรองข้อมูล
+const filterBySearch = (list) => {
+
+    const keyword = normalizeText(searchHN.value)
+
+    if (!keyword) return list
+
+    return list.filter(item => {
+
+        const searchableText = normalizeText([
+            item.hn,
+            item.fullName,
+            item.procedure,
+            item.underlying,
+            item.notes,
+            item.room,
+            item.date,
+            item.gender,
+            item.doctorName,
+            item.cxrNote,
+            item.ecgNote,
+            item.labNote,
+            item.admNote
+        ].join(' '))
+
+        return searchableText.includes(keyword)
+    })
+}
+
 const setCaseRef = (el, item, tab = FILTERS.UPCOMING) => {
 
     if (!el || !item?.id) return
@@ -1034,30 +1064,7 @@ const searchCase = async () => {
 
     if (!found) return
 
-    await nextTick()
 
-    const targetRef = caseRefs.value[found.item.id]
-
-    if (!targetRef?.el) return
-
-    const el = targetRef.el
-
-    el.scrollIntoView({
-        behavior: 'smooth',
-        block: 'center'
-    })
-
-    let highlightClass = 'highlight-case'
-
-    if (found.tab === FILTERS.NOT_COMPLETE) {
-        highlightClass = 'highlight-case-yellow'
-    }
-
-    el.classList.add(highlightClass)
-
-    setTimeout(() => {
-        el.classList.remove(highlightClass)
-    }, 2500)
 }
 
 
