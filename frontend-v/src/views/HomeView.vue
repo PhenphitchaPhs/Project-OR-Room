@@ -153,10 +153,9 @@
                         <span>OR Usage Today</span>
                     </div>
 
-                    <span>{{ usedMinutes }}/6 hrs.</span>
+                    <span>{{ parseFloat((usedMinutes / 60).toFixed(1)) }}/6 hrs.</span>
                 </div>
 
-                <!-- Progress Bar -->
                 <div class="capacity-bar">
                     <div class="capacity-fill" :style="{
                         width: usagePercent + '%',
@@ -164,7 +163,6 @@
                     }"></div>
                 </div>
 
-                <!-- Detail -->
                 <div class="capacity-detail">
 
                     <div class="remaining-time">
@@ -375,7 +373,7 @@
 
                             <div v-for="(item, index) in upcomingCases" :key="item.id" :ref="el => setCaseRef(el, item)"
                                 class="case-card drag-item" draggable="true" @dragstart="onDragStart(index, item.id)"
-                                @dragover.prevent @drop="onDrop(index)" @click="toggleDetail(item.id)">
+                                @dragover.prevent="handleDragOver" @drop="onDrop(index)" @click="toggleDetail(item.id)">
                                 <!-- เคสการ์ด -->
 
                                 <div class="case-grid">
@@ -418,7 +416,7 @@
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                        }}</div>
+                                            }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
 
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
@@ -508,6 +506,14 @@
                                         <div class="grid-row single">
                                             <span><strong>Procedure:</strong> {{ item.procedure }}</span>
                                         </div>
+                                    </div>
+                                    <div class="see-more-toggle">
+                                        <span class="see-more-text">
+                                            {{ expandedId === item.id ? 'See less' : 'See more' }}
+                                        </span>
+                                        <span class="material-icons see-more-icon">
+                                            {{ expandedId === item.id ? 'expand_less' : 'expand_more' }}
+                                        </span>
                                     </div>
 
                                     <!-- DETAIL -->
@@ -1315,6 +1321,27 @@ const draggedIndex = ref(null)
 const onDragStart = (index, id) => {
     draggedIndex.value = index
 }
+const handleDragOver = (e) => {
+    console.log('dragging')
+
+    const threshold = 120
+    const scrollSpeed = 50
+
+    if (e.clientY > window.innerHeight - threshold) {
+
+        window.scrollBy({
+            top: scrollSpeed,
+            behavior: 'auto'
+        })
+
+    } else if (e.clientY < threshold) {
+
+        window.scrollBy({
+            top: -scrollSpeed,
+            behavior: 'auto'
+        })
+    }
+}
 
 const onDrop = async (dropIndex) => {
     if (draggedIndex.value === null || draggedIndex.value === dropIndex) return
@@ -1769,7 +1796,7 @@ const markAsSucceed = async (id) => {
     padding: 16px;
     border-radius: 12px;
     margin-bottom: 12px;
-    margin-block: 10px;
+    margin-block: 20px;
     margin-left: 10px;
     margin-right: 10px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
@@ -2684,7 +2711,7 @@ input[type="checkbox"] {
     font-weight: bold !important;
 }
 
-/* ---------- See More Toggle ---------- */
+
 /* ---------- See More Toggle ---------- */
 .see-more-toggle {
     display: flex;
