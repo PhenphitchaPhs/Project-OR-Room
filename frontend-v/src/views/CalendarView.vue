@@ -28,7 +28,8 @@
                     'today-cell': date.fullDate === todayStr,
                     'weekend-cell': date.isCurrentMonth && (date.dayOfWeek === 0 || date.dayOfWeek === 6),
                     'holiday-cell': date.isCurrentMonth && isOfficialHoliday(date.fullDate),
-                    'has-booking': date.isCurrentMonth && hasBooking(date.fullDate)
+                    'has-booking': date.isCurrentMonth && hasBooking(date.fullDate),
+                    'not-working-day': date.isCurrentMonth && !isClosedDay(date.fullDate) && !isMyWorkingDay(date.fullDate)
                 }"
                 @click="date.isCurrentMonth && handleDateClick(date)"
             >
@@ -61,6 +62,9 @@
                     <p v-else class="capacity-line capacity-closed-text">
                         🔒 ห้องผ่าตัดปิดทำการ
                     </p>
+                    <p v-if="!isClosedDay(selectedFullDate) && !isMyWorkingDay(selectedFullDate)" class="capacity-line capacity-closed-text">
+                        📌 วันนี้ไม่ใช่วันทำงานของคุณ{{ myWorkingDay ? ` (วันทำงาน: ${dayNameThai[myWorkingDay] || myWorkingDay})` : '' }}
+                    </p>
 
                     <div v-if="selectedDateBookings.length === 0" class="empty-state">
                         ยังไม่มีคิวที่จองในวันนี้
@@ -76,7 +80,7 @@
                         <hr style="border-color:#eee; margin: 8px 0" />
                     </div>
                     <div class="actions">
-                        <button @click="goToBooking(selectedFullDate)" class="btn-fill">+ Add Queue</button>
+                        <button v-if="canBookOnDate(selectedFullDate)" @click="goToBooking(selectedFullDate)" class="btn-fill">+ Add Queue</button>
                         <button @click="isDetailPopupOpen = false" class="btn-clear">Close</button>
                     </div>
                 </div>
@@ -113,6 +117,8 @@ const officialHolidays = ref([])
 // 📍 ความจุห้องผ่าตัดต้องนับรวมทุกคน (ไม่กรองตาม license) เพื่อเช็คว่าวันไหนเต็ม/ว่าง
 const capacityBookings = ref([])
 const MAX_MINUTES = 360
+// 📍 วันทำงานของแพทย์คนนี้ (เช่น 'Monday') ใช้เช็คว่ากดจองคิวในวันนั้นได้จริงไหม
+const myWorkingDay = ref('')
 
 onMounted(async () => {
     const license = localStorage.getItem('userLicense')
@@ -133,6 +139,17 @@ onMounted(async () => {
         capacityBookings.value = Array.isArray(dataAll) ? dataAll : []
     } catch (e) {
         console.error('ดึงข้อมูลความจุห้องผ่าตัดไม่สำเร็จ', e)
+    }
+
+    // 📍 2.2 ดึงวันทำงานของแพทย์คนนี้ ใช้เช็คว่าวันที่กดจองตรงกับวันทำงานหรือไม่
+    try {
+        const resUser = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/users/${license}`)
+        if (resUser.ok) {
+            const userData = await resUser.json()
+            myWorkingDay.value = userData.day || ''
+        }
+    } catch (e) {
+        console.error('ดึงวันทำงานของแพทย์ไม่สำเร็จ', e)
     }
 
     // 📍 3. ดึงข้อมูลวันหยุดจาก API หลังบ้านของเรา
@@ -164,6 +181,17 @@ const isWeekend = (d) => {
     return dow === 0 || dow === 6
 }
 const isClosedDay = (d) => isWeekend(d) || isOfficialHoliday(d)
+
+// 📍 เช็คว่าวันนั้นตรงกับวันทำงานของแพทย์คนนี้หรือไม่ (ถ้ายังไม่รู้วันทำงาน ไม่บล็อก)
+const dayMap = { 'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4, 'Friday': 5 }
+const dayNameThai = { 'Monday': 'วันจันทร์', 'Tuesday': 'วันอังคาร', 'Wednesday': 'วันพุธ', 'Thursday': 'วันพฤหัสบดี', 'Friday': 'วันศุกร์' }
+const isMyWorkingDay = (d) => {
+    if (!myWorkingDay.value) return true
+    const dow = new Date(d + 'T00:00:00').getDay()
+    return dayMap[myWorkingDay.value] === dow
+}
+// 📍 จะกดจองคิวในวันนี้ได้จริง ต้องไม่ใช่วันที่ห้องผ่าตัดปิด และต้องเป็นวันทำงานของแพทย์คนนี้ด้วย
+const canBookOnDate = (d) => !isClosedDay(d) && isMyWorkingDay(d)
 
 // ดึงคิวของวันนั้นๆ พร้อมเรียงลำดับ: 1) อายุมากสุดขึ้นก่อน 2) อายุเท่ากันให้ผู้หญิงขึ้นก่อน
 const sortByAgeThenFemaleFirst = (arr) => {
@@ -338,6 +366,7 @@ const formatDateThai = (d) => {
 .weekend-cell { background: #fdf8f0; }
 .holiday-cell { background: #fff3e0; }
 .has-booking { border-top: 3px solid #4a6fa5; }
+.not-working-day { opacity: 0.55; }
 
 .day-number {
     font-size: 13px;
