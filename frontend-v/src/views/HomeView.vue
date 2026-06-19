@@ -964,6 +964,28 @@ const filterBySearch = (list) => {
 
     return list.filter(item => {
 
+        // รองรับเพศ
+        const genderText =
+            item.gender === 'female'
+                ? 'female หญิง เพศหญิง woman'
+                : 'male ชาย เพศชาย man'
+
+        // รองรับวันที่หลายรูปแบบ
+        const dateObj = new Date(item.date)
+
+        const day = String(dateObj.getDate()).padStart(2, '0')
+        const month = String(dateObj.getMonth() + 1).padStart(2, '0')
+        const year = dateObj.getFullYear()
+
+        const dateFormats = [
+            item.date,                    // 2026-06-19
+            `${day}/${month}/${year}`,    // 19/06/2026
+            `${day}-${month}-${year}`,    // 19-06-2026
+            `${day}${month}${year}`,      // 19062026
+            `${year}/${month}/${day}`,    // 2026/06/19
+            `${year}${month}${day}`       // 20260619
+        ].join(' ')
+
         const searchableText = normalizeText([
             item.hn,
             item.fullName,
@@ -971,13 +993,13 @@ const filterBySearch = (list) => {
             item.underlying,
             item.notes,
             item.room,
-            item.date,
-            item.gender,
             item.doctorName,
             item.cxrNote,
             item.ecgNote,
             item.labNote,
-            item.admNote
+            item.admNote,
+            genderText,
+            dateFormats
         ].join(' '))
 
         return searchableText.includes(keyword)
