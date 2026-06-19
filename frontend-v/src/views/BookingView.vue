@@ -37,7 +37,7 @@
                             </select>
                         </div>
                         <textarea v-model="form.disease" placeholder="Underlying Disease(s)"
-                            class="input-field green-theme" rows="1" required></textarea>
+                            class="input-field green-theme" rows="1"></textarea>
                     </div>
                 </div>
 
@@ -140,7 +140,6 @@ const showAlertModal = ref(false)
 const alertMessage = ref('')
 const remainingTimeMsg = ref('')
 
-// 🌟 ตัวแปรเก็บวันหยุดที่ดึงมาจาก API (แทนของเดิมที่พิมพ์เอง)
 const apiHolidays = ref({})
 
 const showAlert = (message) => {
@@ -205,7 +204,6 @@ max.setDate(max.getDate() + 90)
 const maxDate = ref(max.toISOString().split('T')[0])
 
 onMounted(async () => {
-    // 1. ดึงคิวพรุ่งนี้
     try {
         const tomorrow = new Date()
         tomorrow.setDate(tomorrow.getDate() + 1)
@@ -217,12 +215,10 @@ onMounted(async () => {
         }
     } catch (e) { console.error("Reminder failed", e) }
 
-    // 2. 🌟 ดึงวันหยุดจาก API หลังบ้าน
     try {
         const holidayRes = await fetch('https://or-room-backend.rockzee2018.workers.dev/api/holidays')
         if (holidayRes.ok) {
             const holidayData = await holidayRes.json()
-            // แปลงข้อมูลจาก Google Calendar ให้กลายเป็น Object แบบ { '2026-04-13': 'วันสงกรานต์' }
             if (holidayData.items) {
                 holidayData.items.forEach(item => {
                     if (item.start && item.start.date) {
@@ -255,7 +251,6 @@ const validateHolidayAndWeekend = (dateStr) => {
     const normalizedYear = yearPart > 2400 ? yearPart - 543 : yearPart
     if (!normalizedYear || normalizedYear < currentYear - 1 || normalizedYear > currentYear + 5) return true
 
-    // 🌟 เปลี่ยนมาเช็กวันหยุดจากตัวแปร apiHolidays แทนของเก่า
     if (apiHolidays.value[dateStr]) {
         showAlert(`วันที่เลือกเป็นวันหยุดราชการ : ${apiHolidays.value[dateStr]} ห้องผ่าตัดปิดให้บริการครับ`)
         form.date = ''
@@ -270,7 +265,6 @@ const validateHolidayAndWeekend = (dateStr) => {
         return false
     }
 
-    // 🌟 ดักเผื่อผู้ใช้พิมพ์วันที่ทะลุ 90 วันเข้ามาตรงๆ
     const selectedDateObj = new Date(dateStr)
     const maxDateObj = new Date(maxDate.value)
     if (selectedDateObj > maxDateObj) {
@@ -343,7 +337,8 @@ const checkValidDate = async () => {
 }
 
 const submitForm = async () => {
-    if (!form.hn || !form.fullName || !form.age || !form.gender || !form.disease || !form.date || !form.procedure) {
+    // 🛠️ เอา !form.disease ออกจากเงื่อนไขเพื่อให้ข้ามการตรวจความว่างไปได้
+    if (!form.hn || !form.fullName || !form.age || !form.gender || !form.date || !form.procedure) {
         showAlert('กรุณากรอกข้อมูล Patient Information และ Surgery Details ให้ครบถ้วนทุกช่องครับ')
         return
     }
@@ -357,7 +352,7 @@ const submitForm = async () => {
         gender: form.gender || '',
         procedure: form.procedure,
         date: form.date,
-        underlying: form.disease,
+        underlying: form.disease || '', // ส่งเป็น String ว่างถ้าไม่ได้กรอก
         notes: form.notes,
         cxrDate: form.cxrDate, cxrNote: form.cxrNote,
         ecgDate: form.ecgDate, ecgNote: form.ecgNote,
@@ -395,9 +390,8 @@ const submitForm = async () => {
 const goHome = () => router.push('/home')
 </script>
 
-
 <style scoped>
-/* สไตล์เดิมคงเดิมไว้ทั้งหมด */
+/* ส่วนของ CSS สไตล์คงเดิมเหมือนต้นฉบับทั้งหมด */
 .page-wrapper {
     display: flex;
     justify-content: center;
@@ -518,7 +512,6 @@ const goHome = () => router.push('/home')
     justify-content: center;
 }
 
-
 @media (max-width: 600px) {
     .notes-grid {
         grid-template-columns: 1fr;
@@ -540,7 +533,6 @@ const goHome = () => router.push('/home')
         max-width: 100%;
     }
 }
-
 
 .section-group {
     margin-top: 32px;
@@ -616,7 +608,6 @@ const goHome = () => router.push('/home')
         transform: scale(.9);
         opacity: 0;
     }
-
     to {
         transform: scale(1);
         opacity: 1;
