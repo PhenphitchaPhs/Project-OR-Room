@@ -238,115 +238,126 @@
                                 </button>
                             </div>
 
-                            <draggable v-model="draggableUpcoming" item-key="id" ghost-class="sortable-ghost"
-                                chosen-class="sortable-chosen" drag-class="sortable-drag" handle=".drag-handle"
-                                :animation="300" :force-fallback="true" @end="saveOrder">
+                            <draggable :model-value="filterBySearch(draggableToday)"
+                                @update:modelValue="val => draggableToday = val" item-key="id"
+                                ghost-class="sortable-ghost" chosen-class="sortable-chosen" drag-class="sortable-drag"
+                                handle=".drag-handle" :animation="300" :force-fallback="true"
+                                fallback-class="sortable-drag" @end="saveOrder">
 
-                                <div class="case-grid">
-                                    <div class="drag-handle">
-                                        <span class="material-icons">more_horiz</span>
+                                <template #item="{ element: item }">
+                                    <div class="case-card drag-item" @click="toggleDetail(item.id)">
+
+                                        <div class="drag-handle">
+                                            <span class="material-icons">more_horiz</span>
+                                        </div>
+
+                                        <div class="case-grid">
+                                            <div class="drag-handle">
+                                                <span class="material-icons">more_horiz</span>
+                                            </div>
+
+                                            <div class="grid-row">
+                                                <span><strong>Surgery Date:</strong> {{ item.date }}</span>
+                                            </div>
+
+                                            <div class="grid-row">
+                                                <span><strong>HN:</strong> {{ item.hn }}</span>
+                                                <span><strong>Age:</strong> {{ item.age }} ปี</span>
+                                            </div>
+
+                                            <div class="grid-row">
+                                                <span><strong>Patient:</strong> {{ item.fullName }}</span>
+                                            </div>
+
+                                            <div class="grid-row single">
+                                                <span><strong>Procedure:</strong> {{ item.procedure }}</span>
+                                            </div>
+
+                                        </div>
+                                        <div class="see-more-toggle">
+                                            <span class="see-more-text">
+                                                {{ expandedId === item.id ? 'See less' : 'See more' }}
+                                            </span>
+                                            <span class="material-icons see-more-icon">
+                                                {{ expandedId === item.id ? 'expand_less' : 'expand_more' }}
+                                            </span>
+                                        </div>
+
+                                        <transition name="expand">
+
+                                            <div v-if="expandedId === item.id" class="case-detail">
+
+                                                <div class="detail-row">
+                                                    <strong>HN:</strong> {{ item.hn }}
+                                                </div>
+
+                                                <div class="detail-row">
+                                                    <strong>Full Name:</strong> {{ item.fullName }}
+                                                </div>
+
+                                                <div class="detail-row">
+                                                    <strong>Age:</strong> {{ item.age }}
+                                                </div>
+
+                                                <div class="detail-row">
+                                                    <strong>Gender:</strong>
+                                                    {{ item.gender === 'male' ? 'ชาย' : 'หญิง' }}
+                                                </div>
+
+                                                <div class="detail-row">
+                                                    <strong>Underlying Disease(s):</strong>
+                                                    {{ item.underlying || '-' }}
+                                                </div>
+
+                                                <div class="detail-row">
+                                                    <strong>Proposed Procedure:</strong>
+                                                    {{ item.procedure }}
+                                                </div>
+
+                                                <div class="detail-row">
+                                                    <strong>Date:</strong>
+                                                    {{ item.date }}
+                                                </div>
+
+                                                <div class="detail-row">
+                                                    <strong>CXR:</strong>
+                                                    {{ item.cxrDate || '-' }} |
+                                                    {{ item.cxrNote || '-' }}
+                                                </div>
+
+                                                <div class="detail-row">
+                                                    <strong>ECG:</strong>
+                                                    {{ item.ecgDate || '-' }} |
+                                                    {{ item.ecgNote || '-' }}
+                                                </div>
+
+                                                <div class="detail-row">
+                                                    <strong>Lab:</strong>
+                                                    {{ item.labDate || '-' }} |
+                                                    {{ item.labNote || '-' }}
+                                                </div>
+
+                                                <div class="detail-row">
+                                                    <strong>Admission:</strong>
+                                                    {{ item.admDate || '-' }} |
+                                                    {{ item.admNote || '-' }}
+                                                </div>
+
+                                                <div class="detail-row">
+                                                    <strong>Notes:</strong>
+                                                    {{ item.notes || '-' }}
+                                                </div>
+
+                                            </div>
+
+                                        </transition>
+                                        <div class="case-actions">
+                                            <button class="btn-delete" @click.stop="deleteCase(item.id)">
+                                                Cancel
+                                            </button>
+                                        </div>
                                     </div>
-
-                                    <div class="grid-row">
-                                        <span><strong>Surgery Date:</strong> {{ item.date }}</span>
-                                    </div>
-
-                                    <div class="grid-row">
-                                        <span><strong>HN:</strong> {{ item.hn }}</span>
-                                        <span><strong>Age:</strong> {{ item.age }} ปี</span>
-                                    </div>
-
-                                    <div class="grid-row">
-                                        <span><strong>Patient:</strong> {{ item.fullName }}</span>
-                                    </div>
-
-                                    <div class="grid-row single">
-                                        <span><strong>Procedure:</strong> {{ item.procedure }}</span>
-                                    </div>
-
-                                </div>
-                                <div class="see-more-toggle">
-                                    <span class="see-more-text">
-                                        {{ expandedId === item.id ? 'See less' : 'See more' }}
-                                    </span>
-                                    <span class="material-icons see-more-icon">
-                                        {{ expandedId === item.id ? 'expand_less' : 'expand_more' }}
-                                    </span>
-                                </div>
-
-                                <transition name="expand">
-
-                                    <div v-if="expandedId === item.id" class="case-detail">
-
-                                        <div class="detail-row">
-                                            <strong>HN:</strong> {{ item.hn }}
-                                        </div>
-
-                                        <div class="detail-row">
-                                            <strong>Full Name:</strong> {{ item.fullName }}
-                                        </div>
-
-                                        <div class="detail-row">
-                                            <strong>Age:</strong> {{ item.age }}
-                                        </div>
-
-                                        <div class="detail-row">
-                                            <strong>Gender:</strong>
-                                            {{ item.gender === 'male' ? 'ชาย' : 'หญิง' }}
-                                        </div>
-
-                                        <div class="detail-row">
-                                            <strong>Underlying Disease(s):</strong>
-                                            {{ item.underlying || '-' }}
-                                        </div>
-
-                                        <div class="detail-row">
-                                            <strong>Proposed Procedure:</strong>
-                                            {{ item.procedure }}
-                                        </div>
-
-                                        <div class="detail-row">
-                                            <strong>Date:</strong>
-                                            {{ item.date }}
-                                        </div>
-
-                                        <div class="detail-row">
-                                            <strong>CXR:</strong>
-                                            {{ item.cxrDate || '-' }} |
-                                            {{ item.cxrNote || '-' }}
-                                        </div>
-
-                                        <div class="detail-row">
-                                            <strong>ECG:</strong>
-                                            {{ item.ecgDate || '-' }} |
-                                            {{ item.ecgNote || '-' }}
-                                        </div>
-
-                                        <div class="detail-row">
-                                            <strong>Lab:</strong>
-                                            {{ item.labDate || '-' }} |
-                                            {{ item.labNote || '-' }}
-                                        </div>
-
-                                        <div class="detail-row">
-                                            <strong>Admission:</strong>
-                                            {{ item.admDate || '-' }} |
-                                            {{ item.admNote || '-' }}
-                                        </div>
-
-                                        <div class="detail-row">
-                                            <strong>Notes:</strong>
-                                            {{ item.notes || '-' }}
-                                        </div>
-
-                                    </div>
-
-                                </transition>
-                                <div class="case-actions">
-                                    <button class="btn-delete" @click.stop="deleteCase(item.id)">
-                                        Cancel
-                                    </button>
-                                </div>
+                                </template>
 
 
                             </draggable>
@@ -377,9 +388,11 @@
 
                             <!-- อันนี้ที่เลื่อนก้าดของอัพคัมมิ่ง -->
 
-                            <draggable v-model="draggableUpcoming" item-key="id" ghost-class="sortable-ghost"
-                                chosen-class="sortable-chosen" drag-class="sortable-drag" handle=".drag-handle"
-                                :animation="300" :force-fallback="true" @end="saveOrder">
+                            <draggable :model-value="filterBySearch(draggableUpcoming)"
+                                @update:modelValue="val => draggableUpcoming = val" item-key="id"
+                                ghost-class="sortable-ghost" chosen-class="sortable-chosen" drag-class="sortable-drag"
+                                handle=".drag-handle" :animation="300" :force-fallback="true"
+                                fallback-class="sortable-drag" @end="saveOrder">
 
                                 <template #item="{ element: item }">
 
@@ -1329,6 +1342,16 @@ const upcomingCases = computed(() => {
     )
 
 })
+const draggableToday = ref([])
+
+// คอยดักส่องและอัปเดตข้อมูลลิสต์ให้กับแท็บ Today
+watch(
+    todayCases,
+    (newCases) => {
+        draggableToday.value = [...newCases]
+    },
+    { immediate: true }
+)
 const draggableUpcoming = ref([])
 watch(
     upcomingCases,
@@ -1338,11 +1361,13 @@ watch(
     { immediate: true }
 )
 const saveOrder = async (event) => {
+    // ดึงอาเรย์ชุดข้อมูลตามหน้าแท็บที่ทำงานอยู่ปัจจุบัน
+    const activeList = filter.value === FILTERS.TODAY
+        ? draggableToday.value
+        : draggableUpcoming.value
 
-    const updates = draggableUpcoming.value.map((item, index) => {
-
+    const updates = activeList.map((item, index) => {
         item.queueOrder = index + 1
-
         return {
             id: item.id,
             queueOrder: item.queueOrder
@@ -1350,7 +1375,6 @@ const saveOrder = async (event) => {
     })
 
     try {
-
         await fetch(
             'https://or-room-backend.rockzee2018.workers.dev/api/bookings/reorder',
             {
@@ -1361,11 +1385,8 @@ const saveOrder = async (event) => {
                 body: JSON.stringify({ updates })
             }
         )
-
     } catch (e) {
-
         console.error('อัปเดตคิวไม่สำเร็จ', e)
-
     }
 }
 
