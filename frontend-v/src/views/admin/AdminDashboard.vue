@@ -105,6 +105,13 @@
                         <div class="stat-label">Today's Queues</div>
                     </div>
                 </div>
+                <div class="stat-card red">
+                    <div class="stat-icon">❌</div>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ cancelledCount }}</div>
+                        <div class="stat-label">Cancelled</div>
+                    </div>
+                </div>
             </div>
 
             <!-- Doctor Management Table -->
@@ -169,8 +176,18 @@ const tzOffset = new Date().getTimezoneOffset() * 60000
 const todayStr = new Date(Date.now() - tzOffset).toISOString().split('T')[0]
 
 const upcomingCount = computed(() => bookings.value.filter(b => b.status === 'Upcoming' || !b.status).length)
-const succeedCount = computed(() => bookings.value.filter(b => b.status === 'Succeed').length)
-const todayCount = computed(() => bookings.value.filter(b => b.date === todayStr && b.status !== 'Succeed').length)
+const succeedCount = computed(() => bookings.value.filter(b => b.status === 'Completed').length)
+const todayCount = computed(() =>
+    bookings.value.filter(
+        b => b.date === todayStr &&
+            b.status !== 'Completed'
+    ).length
+)
+const cancelledCount = computed(() =>
+    bookings.value.filter(
+        b => b.status === 'Cancelled'
+    ).length
+)
 
 onMounted(async () => {
     const savedLicense = localStorage.getItem('userLicense')
@@ -364,9 +381,9 @@ const handleLogout = () => { localStorage.clear(); router.push('/login') }
     margin-bottom: 28px;
 }
 
-@media (min-width: 600px) {
+@media (min-width: 900px) {
     .stats-row {
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(5, 1fr);
     }
 }
 
@@ -395,6 +412,11 @@ const handleLogout = () => { localStorage.clear(); router.push('/login') }
 
 .stat-card.orange {
     border-left-color: #f0a500;
+
+}
+
+.stat-card.red {
+    border-left-color: #dc3545;
 }
 
 .stat-icon {
