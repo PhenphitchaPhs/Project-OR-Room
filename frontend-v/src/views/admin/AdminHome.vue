@@ -44,6 +44,20 @@
                 </div>
             </div>
         </Transition>
+        <Transition name="fade">
+            <div v-if="isCancelModalOpen" class="modal-overlay-center">
+                <div class="white-modal-card">
+                    <div class="warning-icon">⚠️</div>
+                    <h2 class="modal-msg-title red-text">Cancel Case?</h2>
+                    <p class="modal-desc">Are you sure you want to cancel this surgery case?</p>
+                    <div class="modal-button-group">
+                        <button class="btn-cancel-gray" @click="isCancelModalOpen = false">No</button>
+                        <button class="btn-confirm-red" @click="confirmCancelCase">Yes</button>
+                    </div>
+                </div>
+            </div>
+        </Transition>
+
 
         <header class="top-nav">
             <div class="user-group">
@@ -77,6 +91,13 @@
         </header>
 
         <div class="dashboard-container">
+            <div class="top-toolbar">
+                <div class="search-box">
+                    <span class="material-icons">search</span>
+                    <input v-model="searchQuery" type="text" placeholder="Search HN, Patient, Doctor..." />
+                </div>
+            </div>
+
             <h1 class="main-title">Surgery Queue Management</h1>
 
             <div class="queue-card">
@@ -154,7 +175,7 @@
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                            }}</div>
+                                        }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
                                             item.cxrNote || '-' }}</div>
@@ -230,7 +251,7 @@
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                            }}</div>
+                                        }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
                                             item.cxrNote || '-' }}</div>
@@ -330,7 +351,7 @@
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                            }}</div>
+                                        }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
                                             item.cxrNote || '-' }}</div>
@@ -427,6 +448,17 @@ const doctorMap = ref({})
 const doctorList = ref([])
 const expandedId = ref(null)
 const isMessageModalOpen = ref(false)
+// --- เพิ่มตัวแปรคุมข้อความและประเภทของ Dialog ---
+const messageTitle = ref('')
+const messageType = ref('info') // เอาไว้เช็คว่าเป็น error หรือ info (เพื่อเปลี่ยนสีข้อความ)
+
+// ฟังก์ชันสำหรับเรียกเปิด Dialog แทน alert()
+const showMessage = (msg, type = 'info') => {
+    messageTitle.value = msg
+    messageType.value = type
+    isMessageModalOpen.value = true
+}
+const searchQuery = ref('')
 
 const toggleDetail = (id) => { expandedId.value = expandedId.value === id ? null : id }
 
@@ -441,6 +473,47 @@ const FILTERS = {
 const filter = ref(FILTERS.TODAY)
 const passFilter = ref('Completed')
 const bookings = ref([])
+const matchSearch = (item) => {
+    if (!searchQuery.value.trim()) return true
+
+    const q = searchQuery.value.toLowerCase().trim()
+
+    const doctorName =
+        doctorMap.value[item.doctorLicense] || ''
+
+    const dateFormats = []
+
+    if (item.date) {
+        const d = new Date(item.date)
+
+        const yyyy = d.getFullYear()
+        const mm = String(d.getMonth() + 1).padStart(2, '0')
+        const dd = String(d.getDate()).padStart(2, '0')
+
+        dateFormats.push(
+            `${yyyy}-${mm}-${dd}`,
+            `${dd}/${mm}/${yyyy}`,
+            `${dd}-${mm}-${yyyy}`
+        )
+    }
+
+    const searchableText = [
+        item.hn,
+        item.fullName,
+        item.procedure,
+        item.age,
+        item.gender === 'male'
+            ? 'male ชาย เพศชาย'
+            : 'female หญิง เพศหญิง',
+        doctorName,
+        item.doctorLicense,
+        ...dateFormats
+    ]
+        .join(' ')
+        .toLowerCase()
+
+    return searchableText.includes(q)
+}
 
 const moveBackToUpcoming = async (id) => {
     try {
@@ -459,7 +532,7 @@ const moveBackToUpcoming = async (id) => {
         filter.value = FILTERS.UPCOMING
 
     } catch (e) {
-        alert('❌ ย้ายกลับไม่สำเร็จ')
+        showMessage('❌ ย้ายกลับไม่สำเร็จ', 'error')
     }
 }
 const isSucceedModalOpen = ref(false)
@@ -496,7 +569,7 @@ const confirmSucceed = async () => {
         selectedSucceedId.value = null
 
     } catch (e) {
-        alert('❌ อัปเดต status ไม่สำเร็จ')
+        showMessage('❌ อัปเดต status ไม่สำเร็จ')
     }
 }
 const isCancelModalOpen = ref(false)
@@ -533,7 +606,7 @@ const confirmCancelCase = async () => {
         selectedCancelId.value = null
 
     } catch (e) {
-        alert('❌ Cancel ไม่สำเร็จ')
+        showMessage('❌ Cancel ไม่สำเร็จ')
     }
 }
 
@@ -586,7 +659,8 @@ const todayCases = computed(() =>
         bookings.value.filter(
             item =>
                 item.date === todayStr &&
-                (item.status === FILTERS.UPCOMING || !item.status)
+                (item.status === FILTERS.UPCOMING || !item.status) &&
+                matchSearch(item)
         )
     )
 )
@@ -595,7 +669,8 @@ const upcomingCases = computed(() =>
         bookings.value.filter(
             item =>
                 item.date > todayStr &&
-                (item.status === FILTERS.UPCOMING || !item.status)
+                (item.status === FILTERS.UPCOMING || !item.status) &&
+                matchSearch(item)
         )
     )
 )
@@ -603,7 +678,9 @@ const upcomingCases = computed(() =>
 const completedCases = computed(() =>
     sortCases(
         bookings.value.filter(
-            item => item.status === 'Completed'
+            item =>
+                item.status === 'Completed' &&
+                matchSearch(item)
         )
     )
 )
@@ -611,7 +688,9 @@ const completedCases = computed(() =>
 const cancelledCases = computed(() =>
     sortCases(
         bookings.value.filter(
-            item => item.status === 'Cancelled'
+            item =>
+                item.status === 'Cancelled' &&
+                matchSearch(item)
         )
     )
 )
@@ -937,6 +1016,8 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
     font-size: 13px;
     cursor: pointer;
 }
+
+
 
 .btn-delete {
     background: #b71c1c;
@@ -1357,11 +1438,66 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
     cursor: pointer;
 }
 
+.btn-cancel-gray {
+    background: #eef2f7;
+    color: #4a5e75;
+    border: none;
+    border: none;
+    padding: 10px 25px;
+    border-radius: 12px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
 .red-text {
     color: #c62828;
 }
 
 .tab-content-wrapper {
     padding: 16px;
+}
+
+.top-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 12px;
+}
+
+.search-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: white;
+    border: 1px solid #dbe3ec;
+    border-radius: 12px;
+    padding: 0 12px;
+    width: 350px;
+    height: 46px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .05);
+}
+
+.search-box .material-icons {
+    color: #90a4ae;
+}
+
+.search-box input {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 14px;
+}
+
+.search-box:focus-within {
+    border-color: #1a3a5f;
+    box-shadow: 0 0 0 3px rgba(26, 58, 95, .12);
+}
+
+.main-title {
+    text-align: center;
+    color: #1a3a5f;
+    font-size: 1.6rem;
+    font-weight: bold;
+    margin: 0 0 30px;
 }
 </style>
