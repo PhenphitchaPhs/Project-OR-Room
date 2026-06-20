@@ -62,7 +62,7 @@
             </div>
             <button class="nav-back-btn" @click="router.push('/admin-home')">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24">
-                    <path fill="white" d="M20 11H7.83l5.59-5.59L12 4l-8 8l8 8l1.41-1.41L7.83 13H20z"/>
+                    <path fill="white" d="M20 11H7.83l5.59-5.59L12 4l-8 8l8 8l1.41-1.41L7.83 13H20z" />
                 </svg>
                 <span>Back</span>
             </button>
@@ -96,7 +96,8 @@
                         style="position:absolute;right:10px;top:14px;font-size:11px;color:#888">👤 ใหม่</span>
                 </div>
 
-                <input type="number" placeholder="Age" v-model="form.age" readonly class="age-read-only" :title="form.dob ? 'คำนวณจากวันเกิด' : 'กรอก DOB ก่อน'" />
+                <input type="number" placeholder="Age" v-model="form.age" readonly class="age-read-only"
+                    :title="form.dob ? 'คำนวณจากวันเกิด' : 'กรอก DOB ก่อน'" />
                 <input type="date" v-model="form.dob" :max="todayStr" placeholder="Date of Birth" @change="updateAge" />
 
                 <select v-model="form.gender">
@@ -116,36 +117,36 @@
             <textarea rows="4" placeholder="Additional Notes" v-model="form.notes"></textarea>
 
             <h3 class="section-title">Pre-operative & Admission Notes</h3>
-<div class="grid-2">
-    <div>
-        <label class="note-label">CXR (Date & Note)</label>
-        <div class="date-note-row">
-            <input type="date" v-model="form.cxrDate" class="date-input" />
-            <input type="text" v-model="form.cxrNote" placeholder="CXR result / finding" />
-        </div>
-    </div>
-    <div>
-        <label class="note-label">ECG (Date & Note)</label>
-        <div class="date-note-row">
-            <input type="date" v-model="form.ecgDate" class="date-input" />
-            <input type="text" v-model="form.ecgNote" placeholder="ECG result / rhythm" />
-        </div>
-    </div>
-    <div>
-        <label class="note-label">Lab (Date & Note)</label>
-        <div class="date-note-row">
-            <input type="date" v-model="form.labDate" class="date-input" />
-            <input type="text" v-model="form.labNote" placeholder="Lab results" />
-        </div>
-    </div>
-    <div>
-        <label class="note-label">Admission (Date & Note)</label>
-        <div class="date-note-row">
-            <input type="date" v-model="form.admDate" class="date-input" />
-            <input type="text" v-model="form.admNote" placeholder="Admission plan / ward" />
-        </div>
-    </div>
-</div>
+            <div class="grid-2">
+                <div>
+                    <label class="note-label">CXR (Date & Note)</label>
+                    <div class="date-note-row">
+                        <input type="date" v-model="form.cxrDate" class="date-input" />
+                        <input type="text" v-model="form.cxrNote" placeholder="CXR result / finding" />
+                    </div>
+                </div>
+                <div>
+                    <label class="note-label">ECG (Date & Note)</label>
+                    <div class="date-note-row">
+                        <input type="date" v-model="form.ecgDate" class="date-input" />
+                        <input type="text" v-model="form.ecgNote" placeholder="ECG result / rhythm" />
+                    </div>
+                </div>
+                <div>
+                    <label class="note-label">Lab (Date & Note)</label>
+                    <div class="date-note-row">
+                        <input type="date" v-model="form.labDate" class="date-input" />
+                        <input type="text" v-model="form.labNote" placeholder="Lab results" />
+                    </div>
+                </div>
+                <div>
+                    <label class="note-label">Admission (Date & Note)</label>
+                    <div class="date-note-row">
+                        <input type="date" v-model="form.admDate" class="date-input" />
+                        <input type="text" v-model="form.admNote" placeholder="Admission plan / ward" />
+                    </div>
+                </div>
+            </div>
 
             <!-- Surgery Detail -->
             <h3 class="section-title">Surgery Detail</h3>
@@ -175,16 +176,34 @@
                 <select class="input-field" v-model="form.procedure" @change="checkValidDate">
                     <option value="">Select Proposed Procedure</option>
                     <option value="Appendectomy (ผ่าตัดไส้ติ่ง) - 60 min">Appendectomy (ผ่าตัดไส้ติ่ง) - 60 min</option>
-                    <option value="Laparoscopic Cholecystectomy / LC - 120 min">Laparoscopic Cholecystectomy / LC - 120 min</option>
+                    <option value="Laparoscopic Cholecystectomy / LC - 120 min">Laparoscopic Cholecystectomy / LC - 120
+                        min</option>
                     <option value="Cesarean Section / C-Section - 60 min">Cesarean Section / C-Section - 60 min</option>
-                    <option value="Herniorrhaphy (ผ่าตัดไส้เลื่อน) - 90 min">Herniorrhaphy (ผ่าตัดไส้เลื่อน) - 90 min</option>
-                    <option value="Total Knee Arthroplasty / TKA - 180 min">Total Knee Arthroplasty / TKA - 180 min</option>
-                    <option value="Thyroidectomy (ผ่าตัดต่อมไทรอยด์) - 120 min">Thyroidectomy (ผ่าตัดต่อมไทรอยด์) - 120 min</option>
-                    <option value="Modified Radical Mastectomy / MRM - 120 min">Modified Radical Mastectomy / MRM - 120 min</option>
-                    <option value="Cataract Surgery (ผ่าตัดต้อกระจก) - 30 min">Cataract Surgery (ผ่าตัดต้อกระจก) - 30 min</option>
-                    <option value="Hemorrhoidectomy (ผ่าตัดริดสีดวง) - 45 min">Hemorrhoidectomy (ผ่าตัดริดสีดวง) - 45 min</option>
-                    <option value="Exploratory Laparotomy (เปิดช่องท้อง) - 180 min">Exploratory Laparotomy (เปิดช่องท้อง) - 180 min</option>
+                    <option value="Herniorrhaphy (ผ่าตัดไส้เลื่อน) - 90 min">Herniorrhaphy (ผ่าตัดไส้เลื่อน) - 90 min
+                    </option>
+                    <option value="Total Knee Arthroplasty / TKA - 180 min">Total Knee Arthroplasty / TKA - 180 min
+                    </option>
+                    <option value="Thyroidectomy (ผ่าตัดต่อมไทรอยด์) - 120 min">Thyroidectomy (ผ่าตัดต่อมไทรอยด์) - 120
+                        min</option>
+                    <option value="Modified Radical Mastectomy / MRM - 120 min">Modified Radical Mastectomy / MRM - 120
+                        min</option>
+                    <option value="Cataract Surgery (ผ่าตัดต้อกระจก) - 30 min">Cataract Surgery (ผ่าตัดต้อกระจก) - 30
+                        min</option>
+                    <option value="Hemorrhoidectomy (ผ่าตัดริดสีดวง) - 45 min">Hemorrhoidectomy (ผ่าตัดริดสีดวง) - 45
+                        min</option>
+                    <option value="Exploratory Laparotomy (เปิดช่องท้อง) - 180 min">Exploratory Laparotomy
+                        (เปิดช่องท้อง) - 180 min</option>
+                    <option value="OTHER_PROCEDURE">
+                        Other Procedure (ระบุเอง)
+                    </option>
+
+
                 </select>
+                <div v-if="form.procedure === 'OTHER_PROCEDURE'" class="custom-procedure-row">
+                    <input type="text" v-model="form.customProcedure" placeholder="Procedure Name" />
+
+                    <input type="number" min="1" v-model="form.customProcedureMinutes" placeholder="Minutes" />
+                </div>
             </div>
 
             <div class="btn-container">
@@ -207,6 +226,7 @@ const isLogoutModalOpen = ref(false)
 const userLicense = ref('Admin')
 const doctors = ref([])
 const hnStatus = ref('') // '', 'loading', 'found', 'notfound'
+
 
 // ดึงรายชื่อหมอจาก Cloudflare
 onMounted(async () => {
@@ -233,8 +253,11 @@ const form = reactive({
     isNpoRisk: false, isInfected: false,
     // 👇 เพิ่มบรรทัดด้านล่างนี้เข้าไป 👇
     cxrDate: '', cxrNote: '', ecgDate: '', ecgNote: '',
-    labDate: '', labNote: '', admDate: '', admNote: ''
+    labDate: '', labNote: '', admDate: '', admNote: '',
+    customProcedure: '',
+    customProcedureMinutes: ''
 })
+
 
 const updateAge = () => {
     if (!form.dob) return
@@ -282,7 +305,7 @@ const checkValidDate = async () => {
 
     // เช็ควันทำงานของหมอที่เลือก
     if (form.doctorLicense) {
-        const dayMap = { 'Monday':1, 'Tuesday':2, 'Wednesday':3, 'Thursday':4, 'Friday':5 }
+        const dayMap = { 'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4, 'Friday': 5 }
         try {
             const res = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/users/${form.doctorLicense}`)
             const userData = await res.json()
@@ -291,7 +314,7 @@ const checkValidDate = async () => {
                 alert(`❌ หมอคนนี้ทำงานเฉพาะวัน ${workingDay} เท่านั้น`)
                 form.date = ''; return
             }
-        } catch(e) { console.error('ดึงวันทำงานหมอไม่สำเร็จ', e) }
+        } catch (e) { console.error('ดึงวันทำงานหมอไม่สำเร็จ', e) }
     }
 
     if (!form.procedure) return
@@ -303,21 +326,41 @@ const checkValidDate = async () => {
             const match = b.procedure?.match(/(\d+)\s*min/)
             return sum + (match ? parseInt(match[1]) : 0)
         }, 0)
-        const match = form.procedure?.match(/(\d+)\s*min/)
-        const newProcMin = match ? parseInt(match[1]) : 0
+        let newProcMin = 0
+
+        if (form.procedure === 'OTHER_PROCEDURE') {
+            newProcMin = parseInt(form.customProcedureMinutes || 0)
+        } else {
+            const match = form.procedure?.match(/(\d+)\s*min/)
+            newProcMin = match ? parseInt(match[1]) : 0
+        }
         if (usedMinutes + newProcMin > 420) {
             const remaining = 420 - usedMinutes
             alert(`❌ วันที่ ${form.date} มีเวลาเหลือแค่ ${remaining} นาที\nแต่ procedure นี้ใช้ ${newProcMin} นาที\nกรุณาเลือกวันอื่น`)
             form.date = ''
         }
-    } catch(e) {
+    } catch (e) {
         console.error('เช็คความจุไม่สำเร็จ', e)
     }
 }
 
 const handleSubmit = async () => {
-    if (!form.fullName || !form.hn || !form.doctorLicense || !form.date || !form.procedure) {
-        alert('กรุณากรอกข้อมูลให้ครบ (ชื่อ, HN, หมอ, วันที่, และหัตถการ)')
+    if (
+        !form.fullName ||
+        !form.hn ||
+        !form.doctorLicense ||
+        !form.date ||
+        !form.procedure
+    ) {
+        alert('กรุณากรอกข้อมูลให้ครบ')
+        return
+    }
+
+    if (
+        form.procedure === 'OTHER_PROCEDURE' &&
+        (!form.customProcedure || !form.customProcedureMinutes)
+    ) {
+        alert('กรุณาระบุชื่อการผ่าตัดและเวลา')
         return
     }
     try {
@@ -330,7 +373,10 @@ const handleSubmit = async () => {
                 dob: form.dob,
                 age: form.age,
                 gender: form.gender,
-                procedure: form.procedure,
+                procedure:
+                    form.procedure === 'OTHER_PROCEDURE'
+                        ? `${form.customProcedure} - ${form.customProcedureMinutes} min`
+                        : form.procedure,
                 date: form.date,
                 urgency: 'Normal',
                 isNpoRisk: 0,
@@ -479,8 +525,27 @@ const handleLogout = () => {
     color: white;
 }
 
-.nav-back-btn { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.18); border: 1.5px solid rgba(255,255,255,0.35); color: white; padding: 7px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; margin-left: auto; margin-right: 10px; transition: background 0.2s; }
-.nav-back-btn:hover { background: rgba(255,255,255,0.28); }
+.nav-back-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.18);
+    border: 1.5px solid rgba(255, 255, 255, 0.35);
+    color: white;
+    padding: 7px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-left: auto;
+    margin-right: 10px;
+    transition: background 0.2s;
+}
+
+.nav-back-btn:hover {
+    background: rgba(255, 255, 255, 0.28);
+}
+
 .logout-btn {
     background: transparent;
     border: none;
@@ -513,7 +578,12 @@ const handleLogout = () => {
     color: #1f3a66;
 }
 
-.age-read-only { background: #f0f4f8; color: #555; cursor: not-allowed; }
+.age-read-only {
+    background: #f0f4f8;
+    color: #555;
+    cursor: not-allowed;
+}
+
 .grid-4 {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -707,6 +777,7 @@ textarea {
 
 /* RESPONSIVE */
 @media (max-width: 900px) {
+
     .grid-4,
     .grid-3 {
         grid-template-columns: repeat(2, 1fr);
@@ -735,6 +806,7 @@ textarea {
     gap: 20px;
     margin-top: 15px;
 }
+
 .note-label {
     font-size: 13px;
     font-weight: 600;
@@ -742,16 +814,37 @@ textarea {
     margin-bottom: 6px;
     display: block;
 }
+
 .date-note-row {
     display: flex;
     gap: 8px;
 }
+
 .date-input {
     max-width: 140px;
 }
 
+.custom-procedure-row {
+    display: flex;
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.custom-procedure-row input:first-child {
+    flex: 2;
+}
+
+.custom-procedure-row input:last-child {
+    flex: 1;
+}
+
 @media (max-width: 900px) {
-    .grid-2 { grid-template-columns: 1fr; }
-    .date-input { max-width: 120px; }
+    .grid-2 {
+        grid-template-columns: 1fr;
+    }
+
+    .date-input {
+        max-width: 120px;
+    }
 }
 </style>
