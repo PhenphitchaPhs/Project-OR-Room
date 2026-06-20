@@ -1,13 +1,14 @@
 <template>
     <div class="page-wrapper">
-        <button type="button" class="back-btn" @click="goHome">
-            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="15 18 9 12 15 6" />
-            </svg>
-        </button>
+
 
         <div class="card">
+            <button type="button" class="back-btn" @click="goHome">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="15 18 9 12 15 6" />
+                </svg>
+            </button>
             <div v-if="tomorrowCount > 0" class="reminder-banner">
                 📢 Reminder: พรุ่งนี้มีนัดผ่าตัดทั้งหมด <strong>{{ tomorrowCount }}</strong> เคส
             </div>
@@ -53,14 +54,18 @@
                                 </option>
                             </optgroup>
                         </select>
-                        
+
                         <div style="display: flex; flex-direction: column;">
-                            <input type="date" v-model="form.date" :min="minDate" :max="maxDate" @change="checkValidDate"
-                                class="input-field green-theme" :readonly="isDateLocked && !!form.date" :class="{ 'locked-field': isDateLocked && form.date }" required />
-                            <span v-if="isDateLocked && form.date" style="color: #1a3a5f; font-size: 0.8rem; margin-top: 4px; font-weight: 600;">
+                            <input type="date" v-model="form.date" :min="minDate" :max="maxDate"
+                                @change="checkValidDate" class="input-field green-theme"
+                                :readonly="isDateLocked && !!form.date"
+                                :class="{ 'locked-field': isDateLocked && form.date }" required />
+                            <span v-if="isDateLocked && form.date"
+                                style="color: #1a3a5f; font-size: 0.8rem; margin-top: 4px; font-weight: 600;">
                                 🔒 ล็อควันที่จากปฏิทินแล้ว
                             </span>
-                            <span v-if="remainingTimeMsg" style="color: #0288d1; font-size: 0.85rem; margin-top: 6px; font-weight: 500;">
+                            <span v-if="remainingTimeMsg"
+                                style="color: #0288d1; font-size: 0.85rem; margin-top: 6px; font-weight: 500;">
                                 ⏳ {{ remainingTimeMsg }}
                             </span>
                         </div>
@@ -328,7 +333,7 @@ const checkValidDate = async () => {
             return sum + (match ? parseInt(match[1]) : 0)
         }, 0)
 
-        const MAX_MINUTES = 360 
+        const MAX_MINUTES = 360
         const remainingMinutes = MAX_MINUTES - usedMinutes
 
         if (remainingMinutes <= 0) {
@@ -632,6 +637,7 @@ const goHome = () => router.push('/home')
         transform: scale(.9);
         opacity: 0;
     }
+
     to {
         transform: scale(1);
         opacity: 1;
