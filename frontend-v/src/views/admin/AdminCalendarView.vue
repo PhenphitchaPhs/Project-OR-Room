@@ -206,7 +206,9 @@ const handleDateClick = (date) => {
 }
 
 
-const goAddPatient = () => router.push('/admin-add-patient')
+const goAddPatient = () => {
+    router.push(`/admin-add-patient?date=${selectedFullDate.value}`)
+}
 
 const formatDateThai = (d) => {
     if (!d) return ''
