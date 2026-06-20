@@ -128,6 +128,19 @@
         </div>
       </div>
     </Transition>
+    <Transition name="fade">
+      <div v-if="isLogoutModalOpen" class="modal-overlay-center" @click.self="isLogoutModalOpen = false">
+        <div class="white-modal-card">
+          <h2 class="modal-msg-title" style="color: #2c4c87; margin-bottom: 30px; margin-top: 10px;">
+            คุณต้องการออกจากระบบใช่หรือไม่?
+          </h2>
+          <div class="modal-button-group">
+            <button class="btn-cancel-gray" @click="isLogoutModalOpen = false">Cancel</button>
+            <button class="btn-confirm-day" @click="confirmLogout">Confirm</button>
+          </div>
+        </div>
+      </div>
+    </Transition>
 
     <main class="content-area">
       <RouterView />
@@ -250,12 +263,20 @@ const goTo = (path) => {
   router.push(path)
 }
 
+
+// ประกาศตัวแปรคุมสถานะเปิด/ปิดกล่องออกจากระบบ
+const isLogoutModalOpen = ref(false)
+
 const handleLogout = () => {
-  if (confirm("คุณต้องการออกจากระบบใช่หรือไม่?")) {
-    localStorage.clear()  // ล้างทุกอย่างรวมถึง isLoggedIn
-    isSidebarOpen.value = false
-    router.push('/login')
-  }
+  isSidebarOpen.value = false // ปิดเมนูข้าง
+  isLogoutModalOpen.value = true // สั่งเปิดหน้าต่าง Modal ของเรา
+}
+
+// ฟังก์ชันตอนกดยืนยันในกล่อง Modal
+const confirmLogout = () => {
+  localStorage.clear()  // ล้างทุกอย่างรวมถึง isLoggedIn
+  isLogoutModalOpen.value = false // ปิดกล่อง
+  router.push('/login') // เด้งไปหน้า Login
 }
 </script>
 
