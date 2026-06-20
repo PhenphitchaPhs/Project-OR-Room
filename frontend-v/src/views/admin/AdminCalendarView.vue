@@ -4,7 +4,7 @@
         <header class="calendar-navbar">
             <button class="back-btn" @click="router.push('/admin-home')">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-                    <path fill="white" d="M20 11H7.83l5.59-5.59L12 4l-8 8l8 8l1.41-1.41L7.83 13H20z"/>
+                    <path fill="white" d="M20 11H7.83l5.59-5.59L12 4l-8 8l8 8l1.41-1.41L7.83 13H20z" />
                 </svg>
             </button>
             <span class="nav-title">📅 Admin Calendar</span>
@@ -19,35 +19,35 @@
         </div>
 
         <div class="weekday-row">
-            <div v-for="d in ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']" :key="d" class="weekday-cell">{{ d }}</div>
+            <div v-for="d in ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']" :key="d" class="weekday-cell">{{ d }}
+            </div>
         </div>
 
         <div class="calendar-grid">
-            <div
-                v-for="(date, i) in calendarDays"
-                :key="i"
-                class="day-cell"
-                :class="{
-                    'empty-cell': !date.isCurrentMonth,
-                    'today-cell': date.fullDate === todayStr,
-                    'weekend-cell': date.isCurrentMonth && (date.dayOfWeek === 0 || date.dayOfWeek === 6),
-                    'holiday-cell': date.isCurrentMonth && isOfficialHoliday(date.fullDate),
-                    'has-booking': date.isCurrentMonth && hasBooking(date.fullDate)
-                }"
-                @click="date.isCurrentMonth && handleDateClick(date)"
-            >
+            <div v-for="(date, i) in calendarDays" :key="i" class="day-cell" :class="{
+                'empty-cell': !date.isCurrentMonth,
+                'today-cell': date.fullDate === todayStr,
+                'weekend-cell': date.isCurrentMonth && (date.dayOfWeek === 0 || date.dayOfWeek === 6),
+                'holiday-cell': date.isCurrentMonth && isOfficialHoliday(date.fullDate),
+                'has-booking': date.isCurrentMonth && hasBooking(date.fullDate),
+                'disabled-day':
+
+                    date.dayOfWeek === 0 ||
+                    date.dayOfWeek === 6 ||
+                    isOfficialHoliday(date.fullDate)
+            }" @click="date.isCurrentMonth && handleDateClick(date)">
                 <span class="day-number">{{ date.dayNumber }}</span>
-                <span v-if="date.isCurrentMonth && isOfficialHoliday(date.fullDate)" class="holiday-tag">{{ getHolidayName(date.fullDate) }}</span>
+                <span v-if="date.isCurrentMonth && isOfficialHoliday(date.fullDate)" class="holiday-tag">{{
+                    getHolidayName(date.fullDate) }}</span>
                 <div class="dot-row">
-                    <span
-                        v-for="b in getBookingsForDate(date.fullDate).slice(0,3)"
-                        :key="b.id"
-                        class="dot"
-                    ></span>
-                    <span v-if="getBookingsForDate(date.fullDate).length > 3" class="more-count">+{{ getBookingsForDate(date.fullDate).length - 3 }}</span>
+                    <span v-for="b in getBookingsForDate(date.fullDate).slice(0, 3)" :key="b.id" class="dot"></span>
+                    <span v-if="getBookingsForDate(date.fullDate).length > 3" class="more-count">+{{
+                        getBookingsForDate(date.fullDate).length - 3 }}</span>
                 </div>
                 <div v-if="date.isCurrentMonth && getUsedMinutes(date.fullDate) > 0" class="time-bar-wrap">
-                    <div class="time-bar" :style="{ width: Math.min(getUsedMinutes(date.fullDate) / 420 * 100, 100) + '%', background: getUsedMinutes(date.fullDate) >= 420 ? '#e53935' : '#43a047' }"></div>
+                    <div class="time-bar"
+                        :style="{ width: Math.min(getUsedMinutes(date.fullDate) / 420 * 100, 100) + '%', background: getUsedMinutes(date.fullDate) >= 420 ? '#e53935' : '#43a047' }">
+                    </div>
                 </div>
             </div>
         </div>
@@ -60,7 +60,8 @@
                     <div class="time-summary">
                         <span>⏱ Total used: <strong>{{ getUsedMinutes(selectedFullDate) }} / 420 min</strong></span>
                         <span class="time-remain" :class="{ 'full': getUsedMinutes(selectedFullDate) >= 420 }">
-                            {{ getUsedMinutes(selectedFullDate) >= 420 ? '🔴 Full' : `🟢 Remaining: ${420 - getUsedMinutes(selectedFullDate)} min` }}
+                            {{ getUsedMinutes(selectedFullDate) >= 420 ? '🔴 Full' : `🟢 Remaining: ${420 -
+                                getUsedMinutes(selectedFullDate)} min` }}
                         </span>
                     </div>
 
@@ -83,7 +84,7 @@
 
         <button class="fab-btn" @click="goAddPatient">
             <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24">
-                <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6z"/>
+                <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6z" />
             </svg>
         </button>
 
@@ -118,7 +119,7 @@ onMounted(async () => {
     } catch (e) {
         console.error('ดึงคิวไม่สำเร็จ', e)
     }
-    
+
     try {
         // ดึงชื่อหมอ map license -> doctorName
         const res2 = await fetch('https://or-room-backend.rockzee2018.workers.dev/api/users')
@@ -134,10 +135,10 @@ onMounted(async () => {
     try {
         const resHoliday = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/holidays`)
         const dataHoliday = await resHoliday.json()
-        
+
         if (dataHoliday.items) {
             officialHolidays.value = dataHoliday.items.map(item => ({
-                date: item.start.date, 
+                date: item.start.date,
                 name: item.summary
             }))
         }
@@ -146,7 +147,7 @@ onMounted(async () => {
     }
 })
 
-const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"]
+const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
 
 // 📍 3. อัปเดตฟังก์ชันให้เช็กวันหยุดจากตัวแปร officialHolidays.value แทน
 const isOfficialHoliday = (d) => officialHolidays.value.some(h => h.date === d)
@@ -186,12 +187,24 @@ const changeMonth = (v) => {
 }
 
 const handleDateClick = (date) => {
+
+    // วันว่างนอกเดือน
+    if (!date.isCurrentMonth) return
+    // วันย้อนหลัง
+    if (date.fullDate < todayStr) return
+
+    // เสาร์ = 6, อาทิตย์ = 0
+    if (date.dayOfWeek === 0 || date.dayOfWeek === 6) return
+
+    // วันหยุดราชการ
+    if (isOfficialHoliday(date.fullDate)) return
+
     selectedFullDate.value = date.fullDate
     selectedDateBookings.value = getBookingsForDate(date.fullDate)
-    if (selectedDateBookings.value.length > 0) {
-        isDetailPopupOpen.value = true
-    }
+
+    isDetailPopupOpen.value = true
 }
+
 
 const goAddPatient = () => router.push('/admin-add-patient')
 
@@ -203,7 +216,11 @@ const formatDateThai = (d) => {
 </script>
 
 <style scoped>
-* { box-sizing: border-box; margin: 0; padding: 0; }
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
 
 .calendar-page {
     min-height: 100vh;
@@ -222,6 +239,7 @@ const formatDateThai = (d) => {
     align-items: center;
     gap: 12px;
 }
+
 .back-btn {
     background: none;
     border: none;
@@ -232,10 +250,20 @@ const formatDateThai = (d) => {
     border-radius: 50%;
     transition: background 0.2s;
 }
-.back-btn:hover { background: rgba(255,255,255,0.15); }
-.nav-title { color: white; font-size: 1.1rem; font-weight: 700; flex: 1; }
+
+.back-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.nav-title {
+    color: white;
+    font-size: 1.1rem;
+    font-weight: 700;
+    flex: 1;
+}
+
 .nav-badge {
-    background: rgba(255,255,255,0.2);
+    background: rgba(255, 255, 255, 0.2);
     color: white;
     font-size: 11px;
     padding: 4px 10px;
@@ -252,6 +280,7 @@ const formatDateThai = (d) => {
     background: white;
     border-bottom: 1px solid #e8edf2;
 }
+
 .ctrl-btn {
     background: #f0f4f8;
     border: none;
@@ -265,8 +294,19 @@ const formatDateThai = (d) => {
     align-items: center;
     justify-content: center;
 }
-.ctrl-btn:hover { background: #dde6f0; }
-.month-label { font-weight: 700; font-size: 1rem; color: #1a3a5f; flex: 1; text-align: center; }
+
+.ctrl-btn:hover {
+    background: #dde6f0;
+}
+
+.month-label {
+    font-weight: 700;
+    font-size: 1rem;
+    color: #1a3a5f;
+    flex: 1;
+    text-align: center;
+}
+
 .today-btn {
     background: #1a3a5f;
     color: white;
@@ -285,6 +325,7 @@ const formatDateThai = (d) => {
     background: #e8edf5;
     padding: 6px 0;
 }
+
 .weekday-cell {
     text-align: center;
     font-size: 11px;
@@ -301,6 +342,7 @@ const formatDateThai = (d) => {
     gap: 1px;
     background: #dde3ea;
 }
+
 .day-cell {
     background: white;
     min-height: 80px;
@@ -309,12 +351,31 @@ const formatDateThai = (d) => {
     position: relative;
     transition: background 0.15s;
 }
-.day-cell:hover { background: #f0f5fb; }
-.empty-cell { background: #f8f9fb; cursor: default; }
-.today-cell { background: #e8f0fe; }
-.weekend-cell { background: #fdf8f0; }
-.holiday-cell { background: #fff3e0; }
-.has-booking { border-top: 3px solid #4a6fa5; }
+
+.day-cell:hover {
+    background: #f0f5fb;
+}
+
+.empty-cell {
+    background: #f8f9fb;
+    cursor: default;
+}
+
+.today-cell {
+    background: #e8f0fe;
+}
+
+.weekend-cell {
+    background: #fdf8f0;
+}
+
+.holiday-cell {
+    background: #fff3e0;
+}
+
+.has-booking {
+    border-top: 3px solid #4a6fa5;
+}
 
 .day-number {
     font-size: 13px;
@@ -322,6 +383,7 @@ const formatDateThai = (d) => {
     color: #333;
     display: block;
 }
+
 .today-cell .day-number {
     background: #1a3a5f;
     color: white;
@@ -333,6 +395,7 @@ const formatDateThai = (d) => {
     justify-content: center;
     font-size: 11px;
 }
+
 .holiday-tag {
     display: block;
     font-size: 9px;
@@ -340,6 +403,7 @@ const formatDateThai = (d) => {
     margin-top: 2px;
     line-height: 1.2;
 }
+
 .dot-row {
     display: flex;
     gap: 3px;
@@ -347,17 +411,20 @@ const formatDateThai = (d) => {
     flex-wrap: wrap;
     align-items: center;
 }
+
 .dot {
     width: 7px;
     height: 7px;
     border-radius: 50%;
     background: #4a6fa5;
 }
+
 .more-count {
     font-size: 9px;
     color: #666;
     font-weight: 600;
 }
+
 .time-bar-wrap {
     position: absolute;
     bottom: 4px;
@@ -368,6 +435,7 @@ const formatDateThai = (d) => {
     border-radius: 2px;
     overflow: hidden;
 }
+
 .time-bar {
     height: 100%;
     border-radius: 2px;
@@ -378,13 +446,14 @@ const formatDateThai = (d) => {
 .overlay-modal {
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.45);
+    background: rgba(0, 0, 0, 0.45);
     display: flex;
     justify-content: center;
     align-items: flex-end;
     z-index: 2000;
     padding: 0 0 20px 0;
 }
+
 .card-modal {
     background: white;
     width: 100%;
@@ -394,12 +463,14 @@ const formatDateThai = (d) => {
     max-height: 75vh;
     overflow-y: auto;
 }
+
 .modal-title {
     font-size: 1rem;
     font-weight: 700;
     color: #1a3a5f;
     margin-bottom: 12px;
 }
+
 .time-summary {
     background: #f0f4f8;
     border-radius: 10px;
@@ -410,11 +481,25 @@ const formatDateThai = (d) => {
     font-size: 13px;
     color: #444;
 }
-.time-remain { font-weight: 600; }
-.time-remain.full { color: #e53935; }
 
-.booking-item { margin-bottom: 10px; }
-.booking-item p { font-size: 13px; color: #333; margin: 3px 0; }
+.time-remain {
+    font-weight: 600;
+}
+
+.time-remain.full {
+    color: #e53935;
+}
+
+.booking-item {
+    margin-bottom: 10px;
+}
+
+.booking-item p {
+    font-size: 13px;
+    color: #333;
+    margin: 3px 0;
+}
+
 .booking-badge {
     display: inline-block;
     color: white;
@@ -424,11 +509,13 @@ const formatDateThai = (d) => {
     font-weight: 600;
     margin-bottom: 6px;
 }
+
 .actions {
     display: flex;
     gap: 10px;
     margin-top: 16px;
 }
+
 .btn-fill {
     flex: 1;
     background: #1a3a5f;
@@ -440,6 +527,7 @@ const formatDateThai = (d) => {
     cursor: pointer;
     font-size: 14px;
 }
+
 .btn-clear {
     flex: 1;
     background: #f0f4f8;
@@ -467,12 +555,28 @@ const formatDateThai = (d) => {
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
     z-index: 100;
     transition: 0.2s;
 }
-.fab-btn:hover { background: #244b7a; transform: scale(1.08); }
 
-.fade-enter-active, .fade-leave-active { transition: opacity 0.25s; }
-.fade-enter-from, .fade-leave-to { opacity: 0; }
+.fab-btn:hover {
+    background: #244b7a;
+    transform: scale(1.08);
+}
+
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 0.25s;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
+}
+
+.disabled-day {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
 </style>
