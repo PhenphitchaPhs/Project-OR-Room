@@ -323,6 +323,27 @@
                                         <span><strong>Procedure:</strong> {{ item.procedure }}</span>
                                     </div>
                                 </div>
+                                <transition name="expand">
+                                    <div v-if="expandedId === item.id" class="case-detail">
+                                        <div class="detail-row"><strong>HN:</strong> {{ item.hn }}</div>
+                                        <div class="detail-row"><strong>Full Name:</strong> {{ item.fullName }}</div>
+                                        <div class="detail-row"><strong>Age:</strong> {{ item.age }}</div>
+                                        <div><strong>Gender:</strong> {{ item.gender === 'male' ? 'ชาย' : 'หญิง' }}
+                                        </div>
+                                        <div class="detail-row"><strong>Procedure:</strong> {{ item.procedure }}</div>
+                                        <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
+                                        <div class="detail-row"><strong>Notes:</strong> {{ item.notes || '-' }}</div>
+                                    </div>
+                                </transition>
+
+                                <div class="see-more-toggle">
+                                    <span class="see-more-text">
+                                        {{ expandedId === item.id ? 'See less' : 'See more' }}
+                                    </span>
+                                    <span class="material-icons see-more-icon">
+                                        {{ expandedId === item.id ? 'expand_less' : 'expand_more' }}
+                                    </span>
+                                </div>
 
                             </div>
                         </div>
