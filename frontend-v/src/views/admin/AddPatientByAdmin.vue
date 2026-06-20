@@ -83,11 +83,10 @@
             <h3 class="section-title">Patient Information</h3>
 
             <div class="grid-4">
-                <input type="text" placeholder="Full Name" v-model="form.fullName" />
 
                 <!-- HN + autofill -->
                 <div style="position: relative;">
-                    <input type="text" placeholder="HN Number" v-model="form.hn" @blur="lookupHN" />
+                    <input type="text" placeholder="HN Number" v-model="form.hn" @input="lookupHN" />
                     <span v-if="hnStatus === 'loading'"
                         style="position:absolute;right:10px;top:14px;font-size:11px;color:#888">⏳</span>
                     <span v-if="hnStatus === 'found'"
@@ -95,10 +94,12 @@
                     <span v-if="hnStatus === 'notfound'"
                         style="position:absolute;right:10px;top:14px;font-size:11px;color:#888">👤 ใหม่</span>
                 </div>
+                <input type="text" placeholder="Full Name" v-model="form.fullName" />
 
-                <input type="number" placeholder="Age" v-model="form.age" readonly class="age-read-only"
+                <!-- <input type="number" placeholder="Age" v-model="form.age" readonly class="age-read-only"
                     :title="form.dob ? 'คำนวณจากวันเกิด' : 'กรอก DOB ก่อน'" />
-                <input type="date" v-model="form.dob" :max="todayStr" placeholder="Date of Birth" @change="updateAge" />
+                <input type="date" v-model="form.dob" :max="todayStr" placeholder="Date of Birth" @change="updateAge" /> -->
+                <input type="number" placeholder="Age" v-model="form.age" min="0" />
 
                 <select v-model="form.gender">
                     <option value="">Select Gender</option>
@@ -115,39 +116,6 @@
             </div>
 
             <textarea rows="4" placeholder="Additional Notes" v-model="form.notes"></textarea>
-
-            <h3 class="section-title">Pre-operative & Admission Notes</h3>
-            <div class="grid-2">
-                <div>
-                    <label class="note-label">CXR (Date & Note)</label>
-                    <div class="date-note-row">
-                        <input type="date" v-model="form.cxrDate" class="date-input" />
-                        <input type="text" v-model="form.cxrNote" placeholder="CXR result / finding" />
-                    </div>
-                </div>
-                <div>
-                    <label class="note-label">ECG (Date & Note)</label>
-                    <div class="date-note-row">
-                        <input type="date" v-model="form.ecgDate" class="date-input" />
-                        <input type="text" v-model="form.ecgNote" placeholder="ECG result / rhythm" />
-                    </div>
-                </div>
-                <div>
-                    <label class="note-label">Lab (Date & Note)</label>
-                    <div class="date-note-row">
-                        <input type="date" v-model="form.labDate" class="date-input" />
-                        <input type="text" v-model="form.labNote" placeholder="Lab results" />
-                    </div>
-                </div>
-                <div>
-                    <label class="note-label">Admission (Date & Note)</label>
-                    <div class="date-note-row">
-                        <input type="date" v-model="form.admDate" class="date-input" />
-                        <input type="text" v-model="form.admNote" placeholder="Admission plan / ward" />
-                    </div>
-                </div>
-            </div>
-
             <!-- Surgery Detail -->
             <h3 class="section-title">Surgery Detail</h3>
 
@@ -206,6 +174,40 @@
                 </div>
             </div>
 
+            <h3 class="section-title">Pre-operative & Admission Notes</h3>
+            <div class="grid-2">
+                <div>
+                    <label class="note-label">CXR (Date & Note)</label>
+                    <div class="date-note-row">
+                        <input type="date" v-model="form.cxrDate" class="date-input" />
+                        <input type="text" v-model="form.cxrNote" placeholder="CXR result / finding" />
+                    </div>
+                </div>
+                <div>
+                    <label class="note-label">ECG (Date & Note)</label>
+                    <div class="date-note-row">
+                        <input type="date" v-model="form.ecgDate" class="date-input" />
+                        <input type="text" v-model="form.ecgNote" placeholder="ECG result / rhythm" />
+                    </div>
+                </div>
+                <div>
+                    <label class="note-label">Lab (Date & Note)</label>
+                    <div class="date-note-row">
+                        <input type="date" v-model="form.labDate" class="date-input" />
+                        <input type="text" v-model="form.labNote" placeholder="Lab results" />
+                    </div>
+                </div>
+                <div>
+                    <label class="note-label">Admission (Date & Note)</label>
+                    <div class="date-note-row">
+                        <input type="date" v-model="form.admDate" class="date-input" />
+                        <input type="text" v-model="form.admNote" placeholder="Admission plan / ward" />
+                    </div>
+                </div>
+            </div>
+
+
+
             <div class="btn-container">
                 <button class="primary-btn" @click="handleSubmit">
                     Add Queue
@@ -239,6 +241,14 @@ onMounted(async () => {
         console.error('ดึงรายชื่อหมอไม่สำเร็จ', e)
     }
 })
+const clearPatientInfo = () => {
+    form.fullName = ''
+    form.age = ''
+    form.dob = ''
+    form.gender = ''
+    form.disease = ''
+    hnStatus.value = ''
+}
 
 const today = new Date()
 today.setHours(0, 0, 0, 0)
@@ -271,22 +281,39 @@ const updateAge = () => {
 
 // autofill ข้อมูลผู้ป่วยเก่าจาก HN
 const lookupHN = async () => {
-    if (form.hn.length < 3) return
+    if (!form.hn || form.hn.length < 3) {
+        clearPatientInfo()
+        return
+    }
+
     hnStatus.value = 'loading'
+
     try {
-        const res = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/patients/${form.hn}`)
+        const res = await fetch(
+            `https://or-room-backend.rockzee2018.workers.dev/api/patients/${form.hn}`
+        )
+
         if (res.ok) {
             const p = await res.json()
+
             form.fullName = p.fullName
             form.gender = p.gender
             form.disease = p.underlying || ''
-            if (p.dob) { form.dob = p.dob; updateAge() }
-            else if (p.age) form.age = p.age
+
+            if (p.dob) {
+                form.dob = p.dob
+                updateAge()
+            } else if (p.age) {
+                form.age = p.age
+            }
+
             hnStatus.value = 'found'
         } else {
+            clearPatientInfo()
             hnStatus.value = 'notfound'
         }
     } catch (e) {
+        clearPatientInfo()
         hnStatus.value = 'notfound'
     }
 }
