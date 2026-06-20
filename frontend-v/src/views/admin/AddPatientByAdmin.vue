@@ -48,6 +48,22 @@
                 </div>
             </div>
         </Transition>
+        <!-- ALERT MODAL -->
+        <Transition name="fade">
+            <div v-if="alertModal.isOpen" class="modal-overlay-center">
+                <div class="white-modal-card">
+                    <h2 class="modal-msg-title">
+                        {{ alertModal.message }}
+                    </h2>
+
+                    <div class="modal-button-group">
+                        <button class="btn-confirm-green" @click="closeAlert">
+                            OK
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </Transition>
 
         <!-- TOP BAR -->
         <header class="top-nav">
@@ -86,7 +102,9 @@
 
                 <!-- HN + autofill -->
                 <div style="position: relative;">
-                    <input type="text" placeholder="HN Number" v-model="form.hn" @input="lookupHN" />
+                    <input type="text" placeholder="HN Number" v-model="form.hn"
+                        @input="() => { lookupHN(); errors.hn = false }" :class="{ 'error-input': errors.hn }" />
+
                     <span v-if="hnStatus === 'loading'"
                         style="position:absolute;right:10px;top:14px;font-size:11px;color:#888">⏳</span>
                     <span v-if="hnStatus === 'found'"
@@ -94,14 +112,17 @@
                     <span v-if="hnStatus === 'notfound'"
                         style="position:absolute;right:10px;top:14px;font-size:11px;color:#888">👤 ใหม่</span>
                 </div>
-                <input type="text" placeholder="Full Name" v-model="form.fullName" />
+                <input type="text" placeholder="Full Name" v-model="form.fullName" @input="errors.fullName = false"
+                    :class="{ 'error-input': errors.fullName }" />
 
                 <!-- <input type="number" placeholder="Age" v-model="form.age" readonly class="age-read-only"
                     :title="form.dob ? 'คำนวณจากวันเกิด' : 'กรอก DOB ก่อน'" />
                 <input type="date" v-model="form.dob" :max="todayStr" placeholder="Date of Birth" @change="updateAge" /> -->
-                <input type="number" placeholder="Age" v-model="form.age" min="0" />
+                <input type="number" placeholder="Age" v-model="form.age" min="0" @input="errors.age = false"
+                    :class="{ 'error-input': errors.age }" />
 
-                <select v-model="form.gender">
+
+                <select v-model="form.gender" @change="errors.gender = false" :class="{ 'error-input': errors.gender }">
                     <option value="">Select Gender</option>
                     <option value="male">Male</option>
                     <option value="female">Female</option>
@@ -216,6 +237,7 @@
 
         </div>
     </div>
+
 </template>
 
 <script setup>
@@ -228,6 +250,29 @@ const isLogoutModalOpen = ref(false)
 const userLicense = ref('Admin')
 const doctors = ref([])
 const hnStatus = ref('') // '', 'loading', 'found', 'notfound'
+// --- ระบบจัดการ Alert Modal ---
+const alertModal = reactive({
+    isOpen: false,
+    message: '',
+    type: 'error' // มี 'error' กับ 'success'
+})
+let alertCallback = null // เอาไว้ทำคำสั่งต่อหลังจากกด OK (เช่น กลับหน้า Home)
+
+const showAlert = (msg, type = 'error', callback = null) => {
+    alertModal.message = msg
+    alertModal.type = type
+    alertCallback = callback
+    alertModal.isOpen = true
+}
+
+const closeAlert = () => {
+    alertModal.isOpen = false
+    if (alertCallback) {
+        alertCallback()
+        alertCallback = null
+    }
+}
+// ----------------------------
 
 
 // ดึงรายชื่อหมอจาก Cloudflare
@@ -322,11 +367,14 @@ const lookupHN = async () => {
 const checkValidDate = async () => {
     if (!form.date) return
 
+
     // เช็ควันเสาร์-อาทิตย์
     const selected = new Date(form.date)
+    if (selected.getFullYear() < 2000) return;
+
     const dow = selected.getDay()
     if (dow === 0 || dow === 6) {
-        alert('❌ วันเสาร์-อาทิตย์ ห้องผ่าตัดปิดให้บริการ')
+        showAlert('วันเสาร์-อาทิตย์ ห้องผ่าตัดปิดให้บริการ')
         form.date = ''; return
     }
 
@@ -338,7 +386,7 @@ const checkValidDate = async () => {
             const userData = await res.json()
             const workingDay = userData.day
             if (workingDay && dayMap[workingDay] !== dow) {
-                alert(`❌ หมอคนนี้ทำงานเฉพาะวัน ${workingDay} เท่านั้น`)
+                showAlert(`หมอคนนี้ทำงานเฉพาะวัน ${workingDay} เท่านั้น`)
                 form.date = ''; return
             }
         } catch (e) { console.error('ดึงวันทำงานหมอไม่สำเร็จ', e) }
@@ -363,7 +411,9 @@ const checkValidDate = async () => {
         }
         if (usedMinutes + newProcMin > 420) {
             const remaining = 420 - usedMinutes
-            alert(`❌ วันที่ ${form.date} มีเวลาเหลือแค่ ${remaining} นาที\nแต่ procedure นี้ใช้ ${newProcMin} นาที\nกรุณาเลือกวันอื่น`)
+            showAlert(
+                `วันที่ ${form.date} มีเวลาเหลือ ${remaining} นาที แต่ Procedure นี้ใช้ ${newProcMin} นาที กรุณาเลือกวันอื่น`
+            )
             form.date = ''
         }
     } catch (e) {
@@ -372,14 +422,7 @@ const checkValidDate = async () => {
 }
 
 const handleSubmit = async () => {
-    if (
-        !form.fullName ||
-        !form.hn ||
-        !form.doctorLicense ||
-        !form.date ||
-        !form.procedure
-    ) {
-        alert('กรุณากรอกข้อมูลให้ครบ')
+    if (!validateForm()) {
         return
     }
 
@@ -387,7 +430,7 @@ const handleSubmit = async () => {
         form.procedure === 'OTHER_PROCEDURE' &&
         (!form.customProcedure || !form.customProcedureMinutes)
     ) {
-        alert('กรุณาระบุชื่อการผ่าตัดและเวลา')
+        showAlert('กรุณาระบุชื่อการผ่าตัดและเวลา')
         return
     }
     try {
@@ -419,13 +462,35 @@ const handleSubmit = async () => {
             })
         })
         if (!res.ok) throw new Error()
-        alert('✅ เพิ่มคิวสำเร็จ')
-        router.push('/admin-home')
+        showAlert(
+            'เพิ่มคิวสำเร็จ',
+            'success',
+            () => router.push('/admin-home')
+        )
     } catch (e) {
-        alert('❌ เพิ่มคิวไม่สำเร็จ')
+        showAlert('❌ เพิ่มคิวไม่สำเร็จ')
     }
 }
 
+const errors = reactive({
+    hn: false,
+    fullName: false,
+    age: false,
+    gender: false
+})
+const validateForm = () => {
+    errors.hn = !form.hn
+    errors.fullName = !form.fullName
+    errors.age = !form.age
+    errors.gender = !form.gender
+
+    return !(
+        errors.hn ||
+        errors.fullName ||
+        errors.age ||
+        errors.gender
+    )
+}
 const goHome = () => {
     isDrawerOpen.value = false
     router.push('/admin-home')
@@ -863,6 +928,16 @@ textarea {
 
 .custom-procedure-row input:last-child {
     flex: 1;
+}
+
+.error-input {
+    border: 2px solid #ef4444 !important;
+    background: #fef2f2 !important;
+}
+
+.error-input:focus {
+    border-color: #dc2626 !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important;
 }
 
 @media (max-width: 900px) {
