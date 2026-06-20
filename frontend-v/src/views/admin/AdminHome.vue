@@ -175,7 +175,7 @@
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                        }}</div>
+                                            }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
                                             item.cxrNote || '-' }}</div>
@@ -251,7 +251,7 @@
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                        }}</div>
+                                            }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
                                             item.cxrNote || '-' }}</div>
@@ -351,7 +351,7 @@
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                        }}</div>
+                                            }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
                                             item.cxrNote || '-' }}</div>
@@ -474,9 +474,13 @@ const filter = ref(FILTERS.TODAY)
 const passFilter = ref('Completed')
 const bookings = ref([])
 const matchSearch = (item) => {
+    console.log('search =', searchQuery.value)
+
     if (!searchQuery.value.trim()) return true
 
     const q = searchQuery.value.toLowerCase().trim()
+    if (!searchQuery.value.trim()) return true
+
 
     const doctorName =
         doctorMap.value[item.doctorLicense] || ''
