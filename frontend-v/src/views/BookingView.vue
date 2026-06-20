@@ -1,19 +1,20 @@
 <template>
     <div class="page-wrapper">
-
-
         <div class="card">
-            <button type="button" class="back-btn" @click="goHome">
-                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="15 18 9 12 15 6" />
-                </svg>
-            </button>
             <div v-if="tomorrowCount > 0" class="reminder-banner">
                 📢 Reminder: พรุ่งนี้มีนัดผ่าตัดทั้งหมด <strong>{{ tomorrowCount }}</strong> เคส
             </div>
 
-            <h1 class="title">Scheduling a surgery</h1>
+            <div class="header-row">
+                <button type="button" class="back-btn" @click="goHome">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="#0f2a47" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="15 18 9 12 15 6" />
+                    </svg>
+                </button>
+                <h1 class="title">Scheduling a surgery</h1>
+                <div class="header-spacer"></div>
+            </div>
 
             <form @submit.prevent="submitForm">
                 <div class="section-group">
@@ -54,18 +55,14 @@
                                 </option>
                             </optgroup>
                         </select>
-
+                        
                         <div style="display: flex; flex-direction: column;">
-                            <input type="date" v-model="form.date" :min="minDate" :max="maxDate"
-                                @change="checkValidDate" class="input-field green-theme"
-                                :readonly="isDateLocked && !!form.date"
-                                :class="{ 'locked-field': isDateLocked && form.date }" required />
-                            <span v-if="isDateLocked && form.date"
-                                style="color: #1a3a5f; font-size: 0.8rem; margin-top: 4px; font-weight: 600;">
+                            <input type="date" v-model="form.date" :min="minDate" :max="maxDate" @change="checkValidDate"
+                                class="input-field green-theme" :readonly="isDateLocked && !!form.date" :class="{ 'locked-field': isDateLocked && form.date }" required />
+                            <span v-if="isDateLocked && form.date" style="color: #1a3a5f; font-size: 0.8rem; margin-top: 4px; font-weight: 600;">
                                 🔒 ล็อควันที่จากปฏิทินแล้ว
                             </span>
-                            <span v-if="remainingTimeMsg"
-                                style="color: #0288d1; font-size: 0.85rem; margin-top: 6px; font-weight: 500;">
+                            <span v-if="remainingTimeMsg" style="color: #0288d1; font-size: 0.85rem; margin-top: 6px; font-weight: 500;">
                                 ⏳ {{ remainingTimeMsg }}
                             </span>
                         </div>
@@ -214,7 +211,6 @@ max.setDate(max.getDate() + 90)
 const maxDate = ref(max.toISOString().split('T')[0])
 
 onMounted(async () => {
-    // 📍 ถ้ามาจากการกดวันที่ในหน้าปฏิทิน ให้ล็อควันที่นั้นไว้ ห้ามแก้
     if (route.query.date) {
         form.date = route.query.date
         isDateLocked.value = true
@@ -245,7 +241,6 @@ onMounted(async () => {
         }
     } catch (e) { console.error("ดึงวันหยุดล้มเหลว", e) }
 
-    // 📍 เช็คความจุห้องผ่าตัด/แสดงเวลาที่เหลือของวันที่ถูกล็อคมาจากปฏิทิน
     if (isDateLocked.value) {
         await checkValidDate()
     }
@@ -333,7 +328,7 @@ const checkValidDate = async () => {
             return sum + (match ? parseInt(match[1]) : 0)
         }, 0)
 
-        const MAX_MINUTES = 360
+        const MAX_MINUTES = 360 
         const remainingMinutes = MAX_MINUTES - usedMinutes
 
         if (remainingMinutes <= 0) {
@@ -358,7 +353,6 @@ const checkValidDate = async () => {
 }
 
 const submitForm = async () => {
-    // 🛠️ เอา !form.disease ออกจากเงื่อนไขเพื่อให้ข้ามการตรวจความว่างไปได้
     if (!form.hn || !form.fullName || !form.age || !form.gender || !form.date || !form.procedure) {
         showAlert('กรุณากรอกข้อมูล Patient Information และ Surgery Details ให้ครบถ้วนทุกช่องครับ')
         return
@@ -373,7 +367,7 @@ const submitForm = async () => {
         gender: form.gender || '',
         procedure: form.procedure,
         date: form.date,
-        underlying: form.disease || '', // ส่งเป็น String ว่างถ้าไม่ได้กรอก
+        underlying: form.disease || '',
         notes: form.notes,
         cxrDate: form.cxrDate, cxrNote: form.cxrNote,
         ecgDate: form.ecgDate, ecgNote: form.ecgNote,
@@ -412,7 +406,6 @@ const goHome = () => router.push('/home')
 </script>
 
 <style scoped>
-/* ส่วนของ CSS สไตล์คงเดิมเหมือนต้นฉบับทั้งหมด */
 .page-wrapper {
     display: flex;
     justify-content: center;
@@ -428,7 +421,6 @@ const goHome = () => router.push('/home')
     padding: 30px;
     border-radius: 16px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-    position: relative;
 }
 
 .reminder-banner {
@@ -441,12 +433,50 @@ const goHome = () => router.push('/home')
     font-size: 14px;
 }
 
+/* ---------------------------------
+   ส่วน Header และ Back Button ฉบับแก้ให้ตรงรูป
+   --------------------------------- */
+.header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 25px;
+}
+
+.header-spacer {
+    width: 40px; /* ขยายความกว้างให้สมดุลกับปุ่ม */
+    flex-shrink: 0;
+}
+
 .title {
     color: #0f2a47;
     text-align: center;
-    font-size: 22px;
-    margin-bottom: 25px;
+    font-size: 24px;
+    font-family: 'Times New Roman', Times, serif; /* เพิ่มฟอนต์มีหัวให้เหมือนในรูปเป๊ะ */
+    font-weight: bold;
+    margin-bottom: 0;
+    flex: 1;
+    line-height: 1;
 }
+
+.back-btn {
+    width: 40px; /* ปรับขนาดความกว้างปุ่ม */
+    height: 40px; /* ปรับขนาดความสูงปุ่มให้รับกับตัวอักษร */
+    border-radius: 12px; /* เปลี่ยนจากวงกลม 50% เป็นสี่เหลี่ยมขอบมนแบบในรูป */
+    border: none;
+    background: #f0f4f8; /* สีพื้นหลังเทาอมฟ้า */
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background-color 0.2s;
+}
+
+.back-btn:hover {
+    background-color: #e2e8f0;
+}
+/* --------------------------------- */
 
 .notes-grid {
     display: grid;
@@ -524,21 +554,6 @@ const goHome = () => router.push('/home')
     font-weight: 700;
     cursor: pointer;
     margin-top: 20px;
-}
-
-.back-btn {
-    position: absolute;
-    top: 20px;
-    left: 20px;
-    width: 35px;
-    height: 35px;
-    border-radius: 50%;
-    border: none;
-    background: #f0f4f8;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
 @media (max-width: 600px) {
@@ -637,10 +652,11 @@ const goHome = () => router.push('/home')
         transform: scale(.9);
         opacity: 0;
     }
-
     to {
         transform: scale(1);
         opacity: 1;
     }
 }
 </style>
+
+```
