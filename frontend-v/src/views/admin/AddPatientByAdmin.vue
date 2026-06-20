@@ -242,9 +242,11 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
+
 
 const router = useRouter()
+const route = useRoute()
 const isDrawerOpen = ref(false)
 const isLogoutModalOpen = ref(false)
 const userLicense = ref('Admin')
@@ -304,7 +306,7 @@ const form = reactive({
     fullName: '', hn: '', age: '', dob: '', gender: '',
     disease: '', allergy: '', bloodType: '',
     notes: '', doctorLicense: '', room: '',
-    date: '', procedure: '', urgency: 'Normal',
+    date: route.query.date || '', procedure: '', urgency: 'Normal',
     isNpoRisk: false, isInfected: false,
     // 👇 เพิ่มบรรทัดด้านล่างนี้เข้าไป 👇
     cxrDate: '', cxrNote: '', ecgDate: '', ecgNote: '',
