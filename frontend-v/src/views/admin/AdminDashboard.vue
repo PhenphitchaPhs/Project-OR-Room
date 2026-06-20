@@ -13,32 +13,60 @@
                 </div>
             </div>
         </Transition>
+        <Transition name="fade">
+            <div v-if="dialogOpen" class="modal-overlay-center">
+                <div class="white-modal-card">
+                    <h2 class="modal-msg-title">{{ dialogTitle }}</h2>
+
+                    <p style="margin-bottom:20px">
+                        {{ dialogMessage }}
+                    </p>
+
+                    <div class="modal-button-group">
+                        <button class="btn-cancel-blue" @click="dialogOpen = false">
+                            Cancel
+                        </button>
+
+                        <button class="btn-confirm-green" @click="
+                            dialogCallback?.();
+                        dialogOpen = false;
+                        ">
+                            Confirm
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </Transition>
+
 
         <!-- Top Nav -->
         <header class="top-nav">
             <div class="user-group">
                 <div class="avatar-circle small">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-                        <path fill="white" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10s10-4.48 10-10S17.52 2 12 2m0 4c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6m0 14c-2.03 0-4.43-.82-6.14-2.88a9.947 9.947 0 0 1 12.28 0C16.43 19.18 14.03 20 12 20" />
+                        <path fill="white"
+                            d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10s10-4.48 10-10S17.52 2 12 2m0 4c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6m0 14c-2.03 0-4.43-.82-6.14-2.88a9.947 9.947 0 0 1 12.28 0C16.43 19.18 14.03 20 12 20" />
                     </svg>
                 </div>
                 <span class="license-text">{{ userLicense }}</span>
             </div>
             <button class="nav-btn" @click="router.push('/admin-home')">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24">
-                    <path fill="white" d="M10 20v-6h4v6h5v-8h3L12 3L2 12h3v8z"/>
+                    <path fill="white" d="M10 20v-6h4v6h5v-8h3L12 3L2 12h3v8z" />
                 </svg>
                 <span>Queue</span>
             </button>
             <button class="nav-btn" @click="router.push('/admin-calendar')">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24">
-                    <path fill="white" d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2m0 16H5V10h14zm0-12H5V6h14z"/>
+                    <path fill="white"
+                        d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2m0 16H5V10h14zm0-12H5V6h14z" />
                 </svg>
                 <span>Calendar</span>
             </button>
             <button class="logout-btn" @click="isLogoutModalOpen = true">
                 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24">
-                    <path fill="white" d="M5 21q-.825 0-1.412-.587T3 19V5q0-.825.588-1.412T5 3h6q.425 0 .713.288T12 4t-.288.713T11 5H5v14h6q.425 0 .713.288T12 20t-.288.713T11 21zm12.175-8H10q-.425 0-.712-.288T9 12t.288-.712T10 11h7.175L15.3 9.125q-.275-.275-.275-.675t.275-.7.7-.313t.725.288L20.3 11.3q.3.3.3.7t-.3.7l-3.575 3.575q-.3.3-.712.288t-.713-.313q-.275-.3-.262-.712t.287-.688z" />
+                    <path fill="white"
+                        d="M5 21q-.825 0-1.412-.587T3 19V5q0-.825.588-1.412T5 3h6q.425 0 .713.288T12 4t-.288.713T11 5H5v14h6q.425 0 .713.288T12 20t-.288.713T11 21zm12.175-8H10q-.425 0-.712-.288T9 12t.288-.712T10 11h7.175L15.3 9.125q-.275-.275-.275-.675t.275-.7.7-.313t.725.288L20.3 11.3q.3.3.3.7t-.3.7l-3.575 3.575q-.3.3-.712.288t-.713-.313q-.275-.3-.262-.712t.287-.688z" />
                 </svg>
             </button>
         </header>
@@ -112,7 +140,8 @@
                                     </span>
                                 </td>
                                 <td>
-                                    <button v-if="doc.role !== 'admin'" class="btn-delete-doc" @click="deleteDoctor(doc.license, doc.doctorName)">Delete</button>
+                                    <button v-if="doc.role !== 'admin'" class="btn-delete-doc"
+                                        @click="deleteDoctor(doc.license, doc.doctorName)">Delete</button>
                                     <span v-else class="protected-text">Protected</span>
                                 </td>
                             </tr>
@@ -175,20 +204,69 @@ onMounted(async () => {
         loading.value = false
     }
 })
-
-const deleteDoctor = async (license, name) => {
-    if (!confirm(`ลบบัญชี "${name}" ออกจากระบบ?\n(ข้อมูลคิวผ่าตัดของหมอยังคงอยู่)`)) return
-    try {
-        const res = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/users/${license}`, { method: 'DELETE' })
-        const data = await res.json()
-        if (res.ok) {
-            doctorList.value = doctorList.value.filter(d => d.license !== license)
-            alert('✅ ลบบัญชีสำเร็จ')
-        } else {
-            alert('❌ ' + (data.error || 'ลบไม่สำเร็จ'))
-        }
-    } catch (e) { alert('❌ เกิดข้อผิดพลาด') }
+const dialogOpen = ref(false)
+const dialogTitle = ref('')
+const dialogMessage = ref('')
+const dialogType = ref('info')
+const dialogCallback = ref(null)
+const showDialog = (title, message, callback = null) => {
+    dialogTitle.value = title
+    dialogMessage.value = message
+    dialogCallback.value = callback
+    dialogOpen.value = true
 }
+
+// const deleteDoctor = async (license, name) => {
+//     if (!confirm(`ลบบัญชี "${name}" ออกจากระบบ?\n(ข้อมูลคิวผ่าตัดของหมอยังคงอยู่)`)) return
+//     try {
+//         const res = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/users/${license}`, { method: 'DELETE' })
+//         const data = await res.json()
+//         if (res.ok) {
+//             doctorList.value = doctorList.value.filter(d => d.license !== license)
+//             alert('✅ ลบบัญชีสำเร็จ')
+//         } else {
+//             alert('❌ ' + (data.error || 'ลบไม่สำเร็จ'))
+//         }
+//     } catch (e) { alert('❌ เกิดข้อผิดพลาด') }
+// }
+const deleteDoctor = (license, name) => {
+    showDialog(
+        'Delete Doctor',
+        `ลบบัญชี "${name}" ออกจากระบบ?`,
+        async () => {
+            try {
+                const res = await fetch(
+                    `https://or-room-backend.rockzee2018.workers.dev/api/users/${license}`,
+                    { method: 'DELETE' }
+                )
+
+                const data = await res.json()
+
+                if (res.ok) {
+                    doctorList.value = doctorList.value.filter(
+                        d => d.license !== license
+                    )
+
+                    showDialog(
+                        'Success',
+                        'ลบบัญชีสำเร็จ'
+                    )
+                } else {
+                    showDialog(
+                        'Error',
+                        data.error || 'ลบไม่สำเร็จ'
+                    )
+                }
+            } catch {
+                showDialog(
+                    'Error',
+                    'เกิดข้อผิดพลาด'
+                )
+            }
+        }
+    )
+}
+
 
 const handleLogout = () => { localStorage.clear(); router.push('/login') }
 </script>
@@ -196,65 +274,301 @@ const handleLogout = () => { localStorage.clear(); router.push('/login') }
 <style scoped>
 @import url('https://fonts.googleapis.com/icon?family=Material+Icons');
 
-.main-layout { min-height: 100vh; display: flex; flex-direction: column; background-color: #f5f7fa; }
+.main-layout {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: #f5f7fa;
+}
 
-.top-nav { background-color: #1a3a5f !important; height: 80px; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; }
+.top-nav {
+    background-color: #1a3a5f !important;
+    height: 80px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
+}
 
-.user-group { display: flex; align-items: center; gap: 10px; margin-right: auto; }
-.avatar-circle.small { width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; }
-.license-text { color: white; font-size: 14px; font-weight: 600; }
+.user-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-right: auto;
+}
 
-.nav-btn { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.18); border: 1.5px solid rgba(255,255,255,0.35); color: white; padding: 7px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; margin-right: 10px; transition: background 0.2s; }
-.nav-btn:hover { background: rgba(255,255,255,0.28); }
+.avatar-circle.small {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
 
-.logout-btn { background: none; border: none; cursor: pointer; display: flex; align-items: center; padding: 4px; }
+.license-text {
+    color: white;
+    font-size: 14px;
+    font-weight: 600;
+}
 
-.page-container { padding: 24px; max-width: 900px; margin: 0 auto; width: 100%; }
+.nav-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.18);
+    border: 1.5px solid rgba(255, 255, 255, 0.35);
+    color: white;
+    padding: 7px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-right: 10px;
+    transition: background 0.2s;
+}
 
-.main-title { color: #1a3a5f; font-size: 1.6rem; font-weight: bold; margin-bottom: 24px; }
+.nav-btn:hover {
+    background: rgba(255, 255, 255, 0.28);
+}
+
+.logout-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    padding: 4px;
+}
+
+.page-container {
+    padding: 16px;
+    max-width: 900px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.main-title {
+    color: #1a3a5f;
+    font-size: 1.6rem;
+    font-weight: bold;
+    margin-bottom: 24px;
+}
 
 /* Stats */
-.stats-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-bottom: 28px; }
-@media (min-width: 600px) { .stats-row { grid-template-columns: repeat(4, 1fr); } }
+.stats-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+    margin-bottom: 28px;
+}
 
-.stat-card { background: white; border-radius: 16px; padding: 18px 16px; display: flex; align-items: center; gap: 14px; box-shadow: 0 4px 14px rgba(0,0,0,0.06); border-left: 5px solid #ccc; }
-.stat-card.blue { border-left-color: #4a6fa5; }
-.stat-card.green { border-left-color: #28a745; }
-.stat-card.purple { border-left-color: #7b5ea7; }
-.stat-card.orange { border-left-color: #f0a500; }
-.stat-icon { font-size: 28px; }
-.stat-number { font-size: 1.6rem; font-weight: 800; color: #1a3a5f; line-height: 1; }
-.stat-label { font-size: 12px; color: #888; margin-top: 4px; }
+@media (min-width: 600px) {
+    .stats-row {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+.stat-card {
+    background: white;
+    border-radius: 16px;
+    padding: 18px 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+    border-left: 5px solid #ccc;
+}
+
+.stat-card.blue {
+    border-left-color: #4a6fa5;
+}
+
+.stat-card.green {
+    border-left-color: #28a745;
+}
+
+.stat-card.purple {
+    border-left-color: #7b5ea7;
+}
+
+.stat-card.orange {
+    border-left-color: #f0a500;
+}
+
+.stat-icon {
+    font-size: 28px;
+}
+
+.stat-number {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: #1a3a5f;
+    line-height: 1;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: #888;
+    margin-top: 4px;
+}
 
 /* Doctor Section */
-.doctor-section { background: white; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); overflow: hidden; }
-.section-header { background: #1a3a5f; padding: 16px 20px; }
-.section-title { color: white; font-size: 1rem; font-weight: 700; margin: 0; }
+.doctor-section {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+}
 
-.doctor-table-wrap { overflow-x: auto; }
-.doctor-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-.doctor-table th { background: #eef2f7; color: #1a3a5f; font-weight: 700; padding: 12px 16px; text-align: left; }
-.doctor-table td { padding: 12px 16px; border-bottom: 1px solid #f0f0f0; color: #333; }
-.doctor-table tbody tr:hover { background: #f9fbff; }
+.section-header {
+    background: #1a3a5f;
+    padding: 16px 20px;
+}
 
-.role-badge { padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
-.role-badge.admin { background: #fff3cd; color: #856404; }
-.role-badge.user { background: #e8f4fd; color: #1a6fa5; }
+.section-title {
+    color: white;
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 0;
+}
 
-.btn-delete-doc { background: #fff0f0; color: #dc3545; border: 1px solid #f5c6cb; border-radius: 8px; padding: 5px 12px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
-.btn-delete-doc:hover { background: #dc3545; color: white; }
-.protected-text { color: #aaa; font-size: 12px; font-style: italic; }
+.doctor-table-wrap {
+    overflow-x: auto;
+}
 
-.empty-state { text-align: center; color: #999; }
+.doctor-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.doctor-table th {
+    background: #eef2f7;
+    color: #1a3a5f;
+    font-weight: 700;
+    padding: 12px 16px;
+    text-align: left;
+}
+
+.doctor-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid #f0f0f0;
+    color: #333;
+}
+
+.doctor-table tbody tr:hover {
+    background: #f9fbff;
+}
+
+.role-badge {
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.role-badge.admin {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.role-badge.user {
+    background: #e8f4fd;
+    color: #1a6fa5;
+}
+
+.btn-delete-doc {
+    background: #fff0f0;
+    color: #dc3545;
+    border: 1px solid #f5c6cb;
+    border-radius: 8px;
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-delete-doc:hover {
+    background: #dc3545;
+    color: white;
+}
+
+.protected-text {
+    color: #aaa;
+    font-size: 12px;
+    font-style: italic;
+}
+
+.empty-state {
+    text-align: center;
+    color: #999;
+}
 
 /* Modal */
-.modal-overlay-center { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; justify-content: center; align-items: center; z-index: 999; }
-.white-modal-card { background: white; border-radius: 20px; padding: 32px 28px; width: 320px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.15); }
-.modal-msg-title { font-size: 1.1rem; font-weight: 700; color: #1a3a5f; margin-bottom: 24px; }
-.modal-button-group { display: flex; gap: 12px; justify-content: center; }
-.btn-cancel-blue { flex: 1; padding: 10px; border-radius: 10px; border: 2px solid #4a6fa5; color: #4a6fa5; background: white; font-weight: 600; cursor: pointer; }
-.btn-confirm-green { flex: 1; padding: 10px; border-radius: 10px; border: none; background: #28a745; color: white; font-weight: 600; cursor: pointer; }
+.modal-overlay-center {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+}
 
-.fade-enter-active, .fade-leave-active { transition: opacity 0.2s; }
-.fade-enter-from, .fade-leave-to { opacity: 0; }
+.white-modal-card {
+    background: white;
+    border-radius: 20px;
+    padding: 32px 28px;
+    width: 320px;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+}
+
+.modal-msg-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1a3a5f;
+    margin-bottom: 24px;
+}
+
+.modal-button-group {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.btn-cancel-blue {
+    flex: 1;
+    padding: 10px;
+    border-radius: 10px;
+    border: 2px solid #4a6fa5;
+    color: #4a6fa5;
+    background: white;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn-confirm-green {
+    flex: 1;
+    padding: 10px;
+    border-radius: 10px;
+    border: none;
+    background: #28a745;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 0.2s;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
+}
 </style>
