@@ -1,13 +1,13 @@
+ได้เลยครับ นี่คือโค้ดฉบับสมบูรณ์ที่แก้ไขไอคอนโปรไฟล์เป็นรูปฟันเฟือง (CogOutlineIcon) ตามที่คุณต้องการเรียบร้อยแล้วครับ:
+
+```vue
 <template>
   <div class="app-container">
 
     <header class="main-header" v-if="showLayout && !isSidebarOpen">
       <div class="profile-trigger" @click="toggleSidebar">
         <div class="icon-circle">
-          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24">
-            <path fill="currentColor"
-              d="M12 2A10 10 0 0 0 2 12a10 10 0 0 0 10 10a10 10 0 0 0 10-10A10 10 0 0 0 12 2M7.07 18.28c.43-.9 3.05-1.78 4.93-1.78s4.5.88 4.93 1.78A7.9 7.9 0 0 1 12 20c-1.86 0-3.57-.64-4.93-1.72m11.29-1.45c-1.43-1.74-4.9-2.33-6.36-2.33s-4.93.59-6.36 2.33A7.93 7.93 0 0 1 4 12c0-4.41 3.59-8 8-8s8 3.59 8 8c0 1.82-.62 3.49-1.64 4.83M12 6c-1.94 0-3.5 1.56-3.5 3.5S10.06 13 12 13s3.5-1.56 3.5-3.5S13.94 6 12 6m0 5a1.5 1.5 0 0 1-1.5-1.5A1.5 1.5 0 0 1 12 8a1.5 1.5 0 0 1 1.5 1.5A1.5 1.5 0 0 1 12 11" />
-          </svg>
+          <CogOutlineIcon width="32" height="32" />
         </div>
       </div>
     </header>
@@ -19,10 +19,7 @@
         <div class="sidebar-header">
           <div class="user-info">
             <div class="avatar-icon" @click="toggleSidebar">
-              <svg xmlns="http://www.w3.org/2000/svg" width="45" height="45" viewBox="0 0 24 24">
-                <path fill="currentColor"
-                  d="M12 2A10 10 0 0 0 2 12a10 10 0 0 0 10 10a10 10 0 0 0 10-10A10 10 0 0 0 12 2M7.07 18.28c.43-.9 3.05-1.78 4.93-1.78s4.5.88 4.93 1.78A7.9 7.9 0 0 1 12 20c-1.86 0-3.57-.64-4.93-1.72m11.29-1.45c-1.43-1.74-4.9-2.33-6.36-2.33s-4.93.59-6.36 2.33A7.93 7.93 0 0 1 4 12c0-4.41 3.59-8 8-8s8 3.59 8 8c0 1.82-.62 3.5-1.64 4.83M12 6c-1.94 0-3.5 1.56-3.5 3.5S10.06 13 12 13s3.5-1.56 3.5-3.5S13.94 6 12 6m0 5a1.5 1.5 0 0 1-1.5-1.5A1.5 1.5 0 0 1 12 8a1.5 1.5 0 0 1 1.5 1.5A1.5 1.5 0 0 1 12 11" />
-              </svg>
+              <CogOutlineIcon width="45" height="45" />
             </div>
             <div class="user-details">
               <span class="user-id">{{ userLicense }}</span>
@@ -84,13 +81,7 @@
               </div>
             </li>
 
-            <!-- <li class="delete-acc" @click="openDeleteModal">
-              <div class="menu-item">
-                <span class="menu-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"><path fill="currentColor" d="M19 4h-3.5l-1-1h-5l-1 1H5v2h14M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6z"/></svg></span>
-                <span class="menu-text">Delete Account</span>
-              </div>
-            </li> -->
-          </ul>
+            </ul>
         </nav>
       </aside>
     </transition>
@@ -128,6 +119,7 @@
         </div>
       </div>
     </Transition>
+
     <Transition name="fade">
       <div v-if="isLogoutModalOpen" class="modal-overlay-center" @click.self="isLogoutModalOpen = false">
         <div class="white-modal-card">
@@ -151,6 +143,9 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { RouterView, useRouter, useRoute } from 'vue-router'
+
+// เพิ่มการ Import ไอคอนฟันเฟืองจาก Iconify ที่นี่
+import CogOutlineIcon from '@iconify-vue/mdi/cog-outline';
 
 const isSidebarOpen = ref(false)
 const isDeleteAccModalOpen = ref(false)
@@ -262,7 +257,6 @@ const goTo = (path) => {
   isSidebarOpen.value = false
   router.push(path)
 }
-
 
 // ประกาศตัวแปรคุมสถานะเปิด/ปิดกล่องออกจากระบบ
 const isLogoutModalOpen = ref(false)

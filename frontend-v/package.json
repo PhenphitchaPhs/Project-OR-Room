@@ -17,7 +17,8 @@
     "format": "prettier --write --experimental-cli src/"
   },
   "dependencies": {
-    "@iconify/vue": "^5.0.0",
+    "@iconify-vue/mdi": "^1.0.3",
+    "@iconify/vue": "^5.0.1",
     "@vuepic/vue-datepicker": "^11.0.3",
     "axios": "^1.13.2",
     "pinia": "^3.0.4",
