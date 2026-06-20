@@ -58,10 +58,17 @@
                     <h3 class="modal-title">📅 {{ formatDateThai(selectedFullDate) }}</h3>
 
                     <div class="time-summary">
-                        <span>⏱ Total used: <strong>{{ getUsedMinutes(selectedFullDate) }} / 420 min</strong></span>
+                        <span>
+                            ⏱ Total used:
+                            <strong>
+                                {{ formatMinutes(getUsedMinutes(selectedFullDate)) }}
+                                /
+                                {{ formatMinutes(420) }}
+                            </strong>
+                        </span>
                         <span class="time-remain" :class="{ 'full': getUsedMinutes(selectedFullDate) >= 420 }">
-                            {{ getUsedMinutes(selectedFullDate) >= 420 ? '🔴 Full' : `🟢 Remaining: ${420 -
-                                getUsedMinutes(selectedFullDate)} min` }}
+                            {{ getUsedMinutes(selectedFullDate) >= 420 ? '🔴 Full' : `🟢 Remaining: ${formatMinutes(420
+                                - getUsedMinutes(selectedFullDate))}` }}
                         </span>
                     </div>
 
@@ -162,6 +169,12 @@ const getUsedMinutes = (d) => {
         const match = b.procedure?.match(/(\d+)\s*min/)
         return sum + (match ? parseInt(match[1]) : 0)
     }, 0)
+}
+const formatMinutes = (mins) => {
+    const h = Math.floor(mins / 60)
+    const m = mins % 60
+
+    return `${h}h ${m}m`
 }
 
 const calendarDays = computed(() => {
