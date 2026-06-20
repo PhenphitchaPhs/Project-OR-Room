@@ -9,13 +9,13 @@
                 <button class="ctrl-btn" @click="changeMonth(1)">›</button>
             </div>
             <div class="nav-right">
-                <button class="today-btn" @click="goToToday">Today</button>
+                <button class="today-btn" @click="goToToday">วันนี้</button>
             </div>
         </header>
 
         <div class="weekday-row">
-            <div v-for="d in ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']" :key="d" class="weekday-cell"
-                :class="{ 'weekend-label': d === 'Sun' || d === 'Sat' }">{{ d }}</div>
+            <div v-for="d in ['อา.','จ.','อ.','พ.','พฤ.','ศ.','ส.']" :key="d" class="weekday-cell"
+                :class="{ 'weekend-label': d === 'อา.' || d === 'ส.' }">{{ d }}</div>
         </div>
 
         <div class="calendar-grid">
@@ -112,18 +112,14 @@ const isDetailPopupOpen = ref(false)
 const selectedDateBookings = ref([])
 
 const bookings = ref([])
-// 📍 1. เปลี่ยนจากพิมพ์มือ เป็นตัวแปรว่างๆ ไว้รอรับข้อมูลจาก API
 const officialHolidays = ref([])
-// 📍 ความจุห้องผ่าตัดต้องนับรวมทุกคน (ไม่กรองตาม license) เพื่อเช็คว่าวันไหนเต็ม/ว่าง
 const capacityBookings = ref([])
 const MAX_MINUTES = 360
-// 📍 วันทำงานของแพทย์คนนี้ (เช่น 'Monday') ใช้เช็คว่ากดจองคิวในวันนั้นได้จริงไหม
 const myWorkingDay = ref('')
 
 onMounted(async () => {
     const license = localStorage.getItem('userLicense')
     
-    // 📍 2. ดึงข้อมูลคิวจอง (เฉพาะของแพทย์คนนี้ ใช้แสดงในปฏิทิน)
     try {
         const res = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/bookings?license=${license}`)
         const data = await res.json()
@@ -132,7 +128,6 @@ onMounted(async () => {
         console.error('ดึงคิวไม่สำเร็จ', e)
     }
 
-    // 📍 2.1 ดึงคิวทั้งหมดของห้องผ่าตัด (ทุกแพทย์) ใช้คำนวณว่าวันไหนเต็ม/ว่าง
     try {
         const resAll = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/bookings`)
         const dataAll = await resAll.json()
@@ -141,7 +136,6 @@ onMounted(async () => {
         console.error('ดึงข้อมูลความจุห้องผ่าตัดไม่สำเร็จ', e)
     }
 
-    // 📍 2.2 ดึงวันทำงานของแพทย์คนนี้ ใช้เช็คว่าวันที่กดจองตรงกับวันทำงานหรือไม่
     try {
         const resUser = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/users/${license}`)
         if (resUser.ok) {
@@ -152,12 +146,10 @@ onMounted(async () => {
         console.error('ดึงวันทำงานของแพทย์ไม่สำเร็จ', e)
     }
 
-    // 📍 3. ดึงข้อมูลวันหยุดจาก API หลังบ้านของเรา
     try {
         const resHoliday = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/holidays`)
         const dataHoliday = await resHoliday.json()
         
-        // แปลงข้อมูลจาก Google Calendar ให้อยู่ในรูปแบบที่หน้าเว็บใช้ได้
         if (dataHoliday.items) {
             officialHolidays.value = dataHoliday.items.map(item => ({
                 date: item.start.date, 
@@ -169,20 +161,18 @@ onMounted(async () => {
     }
 })
 
-const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
-const weekDaysFull = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+// เปลี่ยนชื่อเดือนเป็นภาษาไทย
+const monthNames = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"]
 
-// 📍 4. อัปเดตฟังก์ชันให้ใช้ตัวแปร .value (เพราะเป็นตัวแปรแบบ ref)
 const isOfficialHoliday = (d) => officialHolidays.value.some(h => h.date === d)
-const getHolidayName = (d) => officialHolidays.value.find(h => h.date === d)?.name || 'Holiday'
-// 📍 ห้องผ่าตัดปิดทำการวันเสาร์-อาทิตย์ และวันหยุดราชการ จึงไม่ต้องโชว์เวลาว่าง/เต็มในวันเหล่านี้
+const getHolidayName = (d) => officialHolidays.value.find(h => h.date === d)?.name || 'วันหยุด'
+
 const isWeekend = (d) => {
     const dow = new Date(d + 'T00:00:00').getDay()
     return dow === 0 || dow === 6
 }
 const isClosedDay = (d) => isWeekend(d) || isOfficialHoliday(d)
 
-// 📍 เช็คว่าวันนั้นตรงกับวันทำงานของแพทย์คนนี้หรือไม่ (ถ้ายังไม่รู้วันทำงาน ไม่บล็อก)
 const dayMap = { 'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4, 'Friday': 5 }
 const dayNameThai = { 'Monday': 'วันจันทร์', 'Tuesday': 'วันอังคาร', 'Wednesday': 'วันพุธ', 'Thursday': 'วันพฤหัสบดี', 'Friday': 'วันศุกร์' }
 const isMyWorkingDay = (d) => {
@@ -190,10 +180,8 @@ const isMyWorkingDay = (d) => {
     const dow = new Date(d + 'T00:00:00').getDay()
     return dayMap[myWorkingDay.value] === dow
 }
-// 📍 จะกดจองคิวในวันนี้ได้จริง ต้องไม่ใช่วันที่ห้องผ่าตัดปิด และต้องเป็นวันทำงานของแพทย์คนนี้ด้วย
 const canBookOnDate = (d) => !isClosedDay(d) && isMyWorkingDay(d)
 
-// ดึงคิวของวันนั้นๆ พร้อมเรียงลำดับ: 1) อายุมากสุดขึ้นก่อน 2) อายุเท่ากันให้ผู้หญิงขึ้นก่อน
 const sortByAgeThenFemaleFirst = (arr) => {
     return [...arr].sort((a, b) => {
         const ageA = Number(a.age) || 0
@@ -208,7 +196,6 @@ const sortByAgeThenFemaleFirst = (arr) => {
 const getBookingsForDate = (d) => sortByAgeThenFemaleFirst(bookings.value.filter(b => b.date === d && b.status !== 'Succeed'))
 const hasBooking = (d) => getBookingsForDate(d).length > 0
 
-// 📍 คำนวณความจุห้องผ่าตัด (รวมทุกแพทย์) ของวันนั้นๆ เพื่อใช้บอกว่า "ว่าง" หรือ "เต็ม"
 const getUsedMinutesForDate = (d) => {
     return capacityBookings.value
         .filter(b => b.date === d && b.status !== 'Succeed' && b.status !== 'Cancelled')
@@ -258,8 +245,6 @@ const handleDateClick = (date) => {
     isDetailPopupOpen.value = true
 }
 
-// ปุ่ม + พาไปหน้า Booking
-// ถ้ามีการระบุวัน (มาจากการกดในปฏิทิน) จะส่งวันที่นั้นไปล็อคไว้ในหน้าจองให้เลย
 const goToBooking = (lockDate = null) => {
     if (lockDate) {
         router.push({ path: '/booking', query: { date: lockDate } })
@@ -268,15 +253,15 @@ const goToBooking = (lockDate = null) => {
     }
 }
 
+// อัปเดตฟังก์ชันเพื่อแสดงผล วัน เดือน ปี (พ.ศ.) ในภาษาไทย
 const formatDateThai = (d) => {
     if (!d) return ''
     const dt = new Date(d + 'T00:00:00')
-    return `${monthNames[dt.getMonth()]} ${dt.getDate()}, ${dt.getFullYear() + 543}`
+    return `${dt.getDate()} ${monthNames[dt.getMonth()]} ${dt.getFullYear() + 543}`
 }
 </script>
 
 <style scoped>
-/* สไตล์ยังคงเหมือนเดิมเป๊ะๆ ครับ */
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 .calendar-page {
@@ -340,7 +325,6 @@ const formatDateThai = (d) => {
     font-size: 11px;
     font-weight: 700;
     color: #4a6fa5;
-    text-transform: uppercase;
 }
 .weekend-label { color: #c0392b; }
 
