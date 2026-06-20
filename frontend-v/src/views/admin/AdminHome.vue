@@ -195,8 +195,11 @@
                                     <button class="btn-delete" @click.stop="openCancelModal(item.id)">
                                         Cancel
                                     </button>
+
                                 </div>
+
                             </div>
+
 
                         </div>
 
@@ -263,7 +266,9 @@
                                             {{ item.admNote || '-' }}</div>
                                         <div class="detail-row"><strong>Notes:</strong> {{ item.notes || '-' }}</div>
                                     </div>
+
                                 </transition>
+
                                 <div class="case-actions">
                                     <button class="btn-success" @click.stop="openSucceedModal(item.id)">
                                         Succeed
@@ -272,8 +277,20 @@
                                         Cancel
                                     </button>
                                 </div>
+                                <div class="see-more-toggle">
+                                    <span class="see-more-text">
+                                        {{ expandedId === item.id ? 'See less' : 'See more' }}
+                                    </span>
+                                    <span class="material-icons see-more-icon">
+                                        {{ expandedId === item.id ? 'expand_less' : 'expand_more' }}
+                                    </span>
+                                </div>
+
                             </div>
+
+
                         </div>
+
                     </div>
 
                     <div v-if="filter === FILTERS.PASS && passFilter === 'Completed'">
@@ -364,6 +381,7 @@
                                         <div class="detail-row"><strong>Notes:</strong> {{ item.notes || '-' }}</div>
                                     </div>
                                 </transition>
+
                                 <div class="case-actions">
                                     <button class="btn-success" @click.stop="openSucceedModal(item.id)">
                                         Succeed
@@ -373,7 +391,18 @@
                                         Back to Upcoming
                                     </button>
 
+
                                 </div>
+
+                                <div class="see-more-toggle">
+                                    <span class="see-more-text">
+                                        {{ expandedId === item.id ? 'See less' : 'See more' }}
+                                    </span>
+                                    <span class="material-icons see-more-icon">
+                                        {{ expandedId === item.id ? 'expand_less' : 'expand_more' }}
+                                    </span>
+                                </div>
+
                             </div>
 
                         </div>
@@ -961,6 +990,7 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
     border: 1px solid #e4e9f0;
     cursor: pointer;
     box-shadow: 0 3px 10px rgba(0, 0, 0, 0.04);
+
 }
 
 .drag-item {
@@ -1503,5 +1533,34 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
     font-size: 1.6rem;
     font-weight: bold;
     margin: 0 0 30px;
+}
+
+/* ---------- See More Toggle ---------- */
+.see-more-toggle {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-top: 12px;
+    margin-bottom: -25px;
+    /* 🟢 ใช้ค่าติดลบเพื่อดึงให้ชิดขอบล่างสุดของการ์ด */
+    color: #cfd5dd;
+    transition: all 0.25s ease;
+}
+
+/* ตอนเอาเมาส์ชี้ให้สีเข้มขึ้นนิดนึง */
+.case-card:hover .see-more-toggle {
+    color: #475569;
+}
+
+.see-more-text {
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.see-more-icon {
+    font-size: 24px;
+    margin-top: -2px;
+    /* ดึงลูกศรให้ชิดตัวหนังสือมากขึ้น */
 }
 </style>
