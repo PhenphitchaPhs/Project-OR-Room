@@ -65,7 +65,7 @@ app.post('/api/login', async (c) => {
   }
 })
 
-// 🟢 ลืมรหัสผ่าน (Demo Mode)
+// 🟢 ลืมรหัสผ่าน — สร้าง token ไว้รอให้ frontend ส่งอีเมลจริงผ่าน EmailJS
 app.post('/api/forgot-password', async (c) => {
   const { email } = await c.req.json()
   try {
@@ -73,15 +73,45 @@ app.post('/api/forgot-password', async (c) => {
     if (!user) return c.json({ error: 'ไม่พบอีเมลนี้ในระบบ' }, 404)
 
     const token = crypto.randomUUID()
-    const expiry = Date.now() + 3600000 
+    const expiry = Date.now() + 3600000 // ลิงก์มีอายุ 1 ชั่วโมง
 
     await c.env.DB.prepare('UPDATE users SET reset_token = ?, reset_token_expiry = ? WHERE email = ?').bind(token, expiry, email).run()
 
     const resetLink = `https://project-or-room.vercel.app/newpassword?token=${token}`
-    
-    return c.json({ success: true, demoLink: resetLink, message: 'Demo Mode: ข้ามการส่งอีเมลจริง' })
+
+    // 📍 ไม่ส่งอีเมลที่นี่แล้ว (ฝั่ง backend ส่งได้แค่อีเมลตัวเองถ้าไม่มีโดเมน)
+    // ส่ง resetLink กลับไปให้ frontend ยิงผ่าน EmailJS แทน เพื่อให้ส่งถึงอีเมลผู้ใช้จริงได้แบบฟรี
+    return c.json({ success: true, resetLink, message: 'สร้างลิงก์รีเซ็ตรหัสผ่านสำเร็จ' })
   } catch (e) {
+    console.error(e)
     return c.json({ error: 'ระบบขัดข้อง' }, 500)
+  }
+})
+
+// 🟢 ตั้งรหัสผ่านใหม่ด้วย token จากลิงก์ในอีเมล
+app.post('/api/reset-password', async (c) => {
+  try {
+    const { token, newPassword } = await c.req.json()
+    if (!token || !newPassword) {
+      return c.json({ error: 'ข้อมูลไม่ครบถ้วน' }, 400)
+    }
+
+    const user = await c.env.DB.prepare('SELECT * FROM users WHERE reset_token = ?').bind(token).first()
+    if (!user) return c.json({ error: 'ลิงก์รีเซ็ตรหัสผ่านไม่ถูกต้อง หรือถูกใช้ไปแล้ว' }, 400)
+
+    const expiry = Number(user.reset_token_expiry)
+    if (!expiry || Date.now() > expiry) {
+      return c.json({ error: 'ลิงก์รีเซ็ตรหัสผ่านหมดอายุแล้ว กรุณาขอลิงก์ใหม่' }, 400)
+    }
+
+    // อัปเดตรหัสผ่านใหม่ และล้าง token ทิ้งกันใช้ซ้ำ
+    await c.env.DB.prepare('UPDATE users SET password = ?, reset_token = NULL, reset_token_expiry = NULL WHERE reset_token = ?')
+      .bind(newPassword, token).run()
+
+    return c.json({ success: true, message: 'ตั้งรหัสผ่านใหม่สำเร็จ' })
+  } catch (e) {
+    console.error(e)
+    return c.json({ error: 'ระบบรีเซ็ตรหัสผ่านขัดข้อง' }, 500)
   }
 })
 
@@ -124,6 +154,7 @@ app.put('/api/users/:license/day', async (c) => {
     return c.json({ error: 'Update Failed' }, 500)
   }
 })
+
 
 // 🔴 ลบบัญชีผู้ใช้ (ห้ามลบ Admin และไม่ลบข้อมูลคิวผ่าตัด)
 app.delete('/api/users/:license', async (c) => {

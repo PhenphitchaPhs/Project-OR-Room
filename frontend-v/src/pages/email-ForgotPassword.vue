@@ -30,12 +30,18 @@
 <script setup>
 import { ref } from "vue";
 import { useRouter } from "vue-router";
+import emailjs from '@emailjs/browser';
 
 const router = useRouter();
 const email = ref("");
 const isLoading = ref(false);
 const message = ref("");
 const isSuccess = ref(false);
+
+// 📍 ใส่ค่าจาก EmailJS dashboard ของคุณ (Account > API Keys, Email Services, Email Templates)
+const EMAILJS_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID;
+const EMAILJS_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
+const EMAILJS_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
 
 const goBack = () => { router.replace("/"); };
 
@@ -58,24 +64,25 @@ const handleSubmit = async () => {
 
         const data = await response.json();
 
-        if (response.ok) {
-            isSuccess.value = true;
-            message.value = "✅ พบอีเมลในระบบ (Demo Mode)";
-            
-            // 💡 เด้ง Alert แจ้งอาจารย์ พร้อมลิงก์ไปตั้งรหัสใหม่
-            setTimeout(() => {
-                if (confirm("🚨 [Demo Mode] \nเนื่องจากข้อจำกัดของระบบส่งอีเมลฟรี ในระบบจริงลิงก์จะถูกส่งไปยัง " + email.value + " \n\nคลิก OK เพื่อจำลองการกดลิงก์จากในอีเมลครับ")) {
-                    // พาอาจารย์วาร์ปไปหน้าตั้งรหัสใหม่
-                    window.location.href = data.demoLink;
-                }
-            }, 500);
+        if (!response.ok) throw new Error(data.error || "เกิดข้อผิดพลาด");
 
-        } else {
-            throw new Error(data.error || "เกิดข้อผิดพลาด");
-        }
+        // 📍 ส่งอีเมลจริงผ่าน EmailJS (ฟรี ส่งถึงอีเมลผู้ใช้จริง ไม่ใช่ Demo Mode แล้ว)
+        await emailjs.send(
+            EMAILJS_SERVICE_ID,
+            EMAILJS_TEMPLATE_ID,
+            {
+                to_email: email.value,
+                reset_link: data.resetLink,
+            },
+            { publicKey: EMAILJS_PUBLIC_KEY }
+        );
+
+        isSuccess.value = true;
+        message.value = "✅ ส่งลิงก์รีเซ็ตรหัสผ่านไปที่อีเมลของคุณแล้ว กรุณาตรวจสอบกล่องข้อความ (รวมถึง Junk/Spam)";
+
     } catch (error) {
         isSuccess.value = false;
-        message.value = "❌ " + error.message;
+        message.value = "❌ " + (error.message || "ส่งอีเมลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
     } finally {
         isLoading.value = false;
     }

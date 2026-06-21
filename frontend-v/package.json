@@ -17,6 +17,7 @@
     "format": "prettier --write --experimental-cli src/"
   },
   "dependencies": {
+    "@emailjs/browser": "^4.4.1",
     "@iconify-vue/mdi": "^1.0.3",
     "@iconify/vue": "^5.0.1",
     "@vuepic/vue-datepicker": "^11.0.3",
