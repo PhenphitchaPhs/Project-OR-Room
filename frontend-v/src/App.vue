@@ -1,13 +1,13 @@
-ได้เลยครับ นี่คือโค้ดฉบับสมบูรณ์ที่แก้ไขไอคอนโปรไฟล์เป็นรูปฟันเฟือง (CogOutlineIcon) ตามที่คุณต้องการเรียบร้อยแล้วครับ:
-
-```vue
 <template>
   <div class="app-container">
 
     <header class="main-header" v-if="showLayout && !isSidebarOpen">
       <div class="profile-trigger" @click="toggleSidebar">
         <div class="icon-circle">
-          <CogOutlineIcon width="32" height="32" />
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24">
+            <path fill="currentColor"
+              d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29l-2.39-0.96c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 c-0.12,0.21-0.08,0.47,0.12,0.61l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z" />
+          </svg>
         </div>
       </div>
     </header>
@@ -19,7 +19,10 @@
         <div class="sidebar-header">
           <div class="user-info">
             <div class="avatar-icon" @click="toggleSidebar">
-              <CogOutlineIcon width="45" height="45" />
+              <svg xmlns="http://www.w3.org/2000/svg" width="45" height="45" viewBox="0 0 24 24">
+                <path fill="currentColor"
+                  d="M12 2A10 10 0 0 0 2 12a10 10 0 0 0 10 10a10 10 0 0 0 10-10A10 10 0 0 0 12 2M7.07 18.28c.43-.9 3.05-1.78 4.93-1.78s4.5.88 4.93 1.78A7.9 7.9 0 0 1 12 20c-1.86 0-3.57-.64-4.93-1.72m11.29-1.45c-1.43-1.74-4.9-2.33-6.36-2.33s-4.93.59-6.36 2.33A7.93 7.93 0 0 1 4 12c0-4.41 3.59-8 8-8s8 3.59 8 8c0 1.82-.62 3.5-1.64 4.83M12 6c-1.94 0-3.5 1.56-3.5 3.5S10.06 13 12 13s3.5-1.56 3.5-3.5S13.94 6 12 6m0 5a1.5 1.5 0 0 1-1.5-1.5A1.5 1.5 0 0 1 12 8a1.5 1.5 0 0 1 1.5 1.5A1.5 1.5 0 0 1 12 11" />
+              </svg>
             </div>
             <div class="user-details">
               <span class="user-id">{{ userLicense }}</span>
@@ -80,8 +83,7 @@
                 <span class="menu-text">Calendar</span>
               </div>
             </li>
-
-            </ul>
+          </ul>
         </nav>
       </aside>
     </transition>
@@ -106,34 +108,6 @@
       </div>
     </Transition>
 
-    <Transition name="fade">
-      <div v-if="isDeleteAccModalOpen" class="modal-overlay-center" @click.self="isDeleteAccModalOpen = false">
-        <div class="white-modal-card">
-          <div class="warning-icon">⚠️</div>
-          <h2 class="modal-msg-title red-text">Delete Account?</h2>
-          <p class="modal-desc">All your surgery data will be permanently removed.</p>
-          <div class="modal-button-group">
-            <button class="btn-cancel-gray" @click="isDeleteAccModalOpen = false">Cancel</button>
-            <button class="btn-confirm-red" @click="handleDeleteAccount">Delete</button>
-          </div>
-        </div>
-      </div>
-    </Transition>
-
-    <Transition name="fade">
-      <div v-if="isLogoutModalOpen" class="modal-overlay-center" @click.self="isLogoutModalOpen = false">
-        <div class="white-modal-card">
-          <h2 class="modal-msg-title" style="color: #2c4c87; margin-bottom: 30px; margin-top: 10px;">
-            คุณต้องการออกจากระบบใช่หรือไม่?
-          </h2>
-          <div class="modal-button-group">
-            <button class="btn-cancel-gray" @click="isLogoutModalOpen = false">Cancel</button>
-            <button class="btn-confirm-day" @click="confirmLogout">Confirm</button>
-          </div>
-        </div>
-      </div>
-    </Transition>
-
     <main class="content-area">
       <RouterView />
     </main>
@@ -141,19 +115,19 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { RouterView, useRouter, useRoute } from 'vue-router'
 
-// เพิ่มการ Import ไอคอนฟันเฟืองจาก Iconify ที่นี่
-import CogOutlineIcon from '@iconify-vue/mdi/cog-outline';
-
 const isSidebarOpen = ref(false)
-const isDeleteAccModalOpen = ref(false)
 const isDayModalOpen = ref(false) // สถานะเปิด/ปิด Pop-up เลือกวัน
 
 const router = useRouter()
 const route = useRoute()
-const userLicense = computed(() => localStorage.getItem('userLicense') || '------')
+// 📍 เปลี่ยนจาก computed(() => localStorage...) เป็น ref + sync เอง
+// เพราะ localStorage ไม่ใช่ reactive source, computed จะ cache ค่าแรกไว้ตลอดไป
+// ทำให้พอ logout แล้ว login ด้วยบัญชีอื่น (เป็นแค่ client-side navigation ไม่ reload หน้า)
+// ค่าที่โชว์จะยังเป็นเลข license ของบัญชีเก่าอยู่
+const userLicense = ref(localStorage.getItem('userLicense') || '------')
 const selectedDay = ref(localStorage.getItem('selectedDay') || '...')
 
 // สถานะการเลือกวัน
@@ -178,8 +152,11 @@ const showLayout = computed(() => {
   return !hiddenPages.includes(route.path)
 })
 
-onMounted(async () => {
+// 📍 ดึงข้อมูลผู้ใช้ปัจจุบันจาก localStorage มาซิงค์ใหม่ทุกครั้ง (กันค่าค้างจากบัญชีเก่า)
+const syncUserFromStorage = async () => {
   const license = localStorage.getItem('userLicense')
+  userLicense.value = license || '------'
+
   const savedDay = localStorage.getItem('selectedDay')
 
   if (savedDay) {
@@ -198,7 +175,13 @@ onMounted(async () => {
       console.error('ดึงวันทำงานไม่สำเร็จ', e)
     }
   }
-})
+}
+
+onMounted(syncUserFromStorage)
+
+// 📍 ทุกครั้งที่เปลี่ยนหน้า (เช่น login เสร็จแล้วเด้งมา /home) ให้ซิงค์ค่าผู้ใช้ใหม่
+// เผื่อ login ด้วยบัญชีอื่นต่อจากที่ logout ไปแบบไม่ reload หน้าเว็บ
+watch(() => route.path, syncUserFromStorage)
 
 const toggleSidebar = () => { isSidebarOpen.value = !isSidebarOpen.value }
 const closeSidebar = () => { isSidebarOpen.value = false }
@@ -232,45 +215,18 @@ const confirmDayChange = async () => {
   }
 }
 
-// --- ฟังก์ชันลบบัญชี ---
-const openDeleteModal = () => {
-  isSidebarOpen.value = false
-  isDeleteAccModalOpen.value = true
-}
-
-const handleDeleteAccount = async () => {
-  const license = localStorage.getItem('userLicense')
-  try {
-    await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/users/${license}`, {
-      method: 'DELETE'
-    })
-  } catch (e) {
-    console.error('ลบบัญชีไม่สำเร็จ', e)
-  }
-  localStorage.clear()
-  isDeleteAccModalOpen.value = false
-  router.push('/login')
-}
-
 // เปลี่ยนหน้าทั่วไป
 const goTo = (path) => {
   isSidebarOpen.value = false
   router.push(path)
 }
 
-// ประกาศตัวแปรคุมสถานะเปิด/ปิดกล่องออกจากระบบ
-const isLogoutModalOpen = ref(false)
-
 const handleLogout = () => {
-  isSidebarOpen.value = false // ปิดเมนูข้าง
-  isLogoutModalOpen.value = true // สั่งเปิดหน้าต่าง Modal ของเรา
-}
-
-// ฟังก์ชันตอนกดยืนยันในกล่อง Modal
-const confirmLogout = () => {
-  localStorage.clear()  // ล้างทุกอย่างรวมถึง isLoggedIn
-  isLogoutModalOpen.value = false // ปิดกล่อง
-  router.push('/login') // เด้งไปหน้า Login
+  if (confirm("คุณต้องการออกจากระบบใช่หรือไม่?")) {
+    localStorage.clear()  // ล้างทุกอย่างรวมถึง isLoggedIn
+    isSidebarOpen.value = false
+    router.push('/login')
+  }
 }
 </script>
 
@@ -515,66 +471,6 @@ const confirmLogout = () => {
   border-radius: 12px;
   cursor: pointer;
   font-weight: bold;
-}
-
-/* --- Pop-up: ลบบัญชี --- */
-.white-modal-card {
-  background: white;
-  width: 90%;
-  max-width: 320px;
-  padding: 30px 20px;
-  border-radius: 24px;
-  text-align: center;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-}
-
-.modal-msg-title {
-  color: #2c4c87;
-  font-size: 1.1rem;
-  margin-bottom: 25px;
-}
-
-.red-text {
-  color: #d50000;
-  font-weight: bold;
-}
-
-.modal-desc {
-  font-size: 0.85rem;
-  color: #666;
-  margin-top: -15px;
-  margin-bottom: 25px;
-}
-
-.warning-icon {
-  font-size: 2.5rem;
-  margin-bottom: 10px;
-}
-
-.modal-button-group {
-  display: flex;
-  justify-content: center;
-  gap: 15px;
-}
-
-.btn-confirm-red {
-  background-color: #d50000;
-  color: white;
-  border: none;
-  padding: 10px 25px;
-  border-radius: 12px;
-  font-weight: bold;
-  cursor: pointer;
-}
-
-.btn-cancel-gray {
-  background-color: #eee;
-  color: #666;
-  border: none;
-  padding: 10px 25px;
-  border-radius: 12px;
-  font-weight: bold;
-  cursor: pointer;
 }
 </style>
 

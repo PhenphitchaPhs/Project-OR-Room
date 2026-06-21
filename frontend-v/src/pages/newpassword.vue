@@ -36,24 +36,44 @@
             </p>
 
             <!-- button -->
-            <button class="btn" @click="confirm">
-                confirm
+            <button class="btn" @click="confirm" :disabled="isLoading">
+                {{ isLoading ? 'กำลังบันทึก...' : 'confirm' }}
             </button>
+
+            <p v-if="message" class="status-msg" :class="{ success: isSuccess, error: !isSuccess }">
+                {{ message }}
+            </p>
         </div>
     </div>
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
-import { useRouter } from "vue-router";
+import { ref, computed, onMounted } from "vue";
+import { useRouter, useRoute } from "vue-router";
 
 const router = useRouter();
+const route = useRoute();
 
 const newPassword = ref("");
 const confirmPassword = ref("");
 
 const showNew = ref(false);
 const showConfirm = ref(false);
+
+const isLoading = ref(false);
+const message = ref("");
+const isSuccess = ref(false);
+
+// 📍 ดึง token จากลิงก์ที่ส่งมาในอีเมล (?token=xxxx)
+const token = ref("");
+
+onMounted(() => {
+    token.value = route.query.token || "";
+    if (!token.value) {
+        message.value = "❌ ลิงก์ไม่ถูกต้อง กรุณากดลิงก์จากอีเมลรีเซ็ตรหัสผ่านอีกครั้ง";
+        isSuccess.value = false;
+    }
+});
 
 const toggleNew = () => (showNew.value = !showNew.value);
 const toggleConfirm = () => (showConfirm.value = !showConfirm.value);
@@ -66,9 +86,16 @@ const passwordMismatch = computed(() => {
     );
 });
 
-const confirm = () => {
+const confirm = async () => {
+    if (!token.value) {
+        message.value = "❌ ลิงก์ไม่ถูกต้อง กรุณากดลิงก์จากอีเมลรีเซ็ตรหัสผ่านอีกครั้ง";
+        isSuccess.value = false;
+        return;
+    }
+
     if (!newPassword.value || !confirmPassword.value) {
-        alert("กรุณากรอกรหัสผ่านให้ครบ");
+        message.value = "กรุณากรอกรหัสผ่านให้ครบ";
+        isSuccess.value = false;
         return;
     }
 
@@ -76,8 +103,31 @@ const confirm = () => {
         return;
     }
 
-    alert("✅ Reset password สำเร็จ (Demo)");
-    router.push('/login');
+    isLoading.value = true;
+    message.value = "";
+
+    try {
+        const response = await fetch('https://or-room-backend.rockzee2018.workers.dev/api/reset-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: token.value, newPassword: newPassword.value })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) throw new Error(data.error || "เกิดข้อผิดพลาด");
+
+        isSuccess.value = true;
+        message.value = "✅ ตั้งรหัสผ่านใหม่สำเร็จ กำลังพาไปหน้าเข้าสู่ระบบ...";
+
+        setTimeout(() => { router.push('/login'); }, 1500);
+
+    } catch (error) {
+        isSuccess.value = false;
+        message.value = "❌ " + (error.message || "ตั้งรหัสผ่านใหม่ไม่สำเร็จ");
+    } finally {
+        isLoading.value = false;
+    }
 };
 </script>
 
@@ -182,5 +232,24 @@ const confirm = () => {
 
     display: block;
     margin: 8px auto 0;
+}
+
+.btn:disabled {
+    background: #9a9a9a;
+    cursor: not-allowed;
+}
+
+.status-msg {
+    margin-top: 15px;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.success {
+    color: #03c172;
+}
+
+.error {
+    color: #ef4444;
 }
 </style>

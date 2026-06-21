@@ -1,86 +1,5 @@
 <template>
     <div class="main-layout">
-        <Transition name="fade">
-            <div v-if="isDrawerOpen || isDayModalOpen || isLogoutModalOpen || isDeleteAccModalOpen || isDetailModalOpen"
-                class="drawer-overlay" @click="closeAllOverlays"></div>
-        </Transition>
-
-        <Transition name="slide">
-            <aside v-if="isDrawerOpen" class="side-drawer">
-
-                <div class="drawer-header">
-                    <div class="drawer-user-info">
-                        <div class="avatar-circle">
-                            <Icon icon="mdi:cog-outline" width="32" height="32" style="color: white" />
-                        </div>
-                        <div class="user-meta">
-                            <span class="drawer-license">{{ userLicense }}</span>
-                            <span class="drawer-day">{{ selectedDay }}</span>
-                        </div>
-                    </div>
-                </div>
-                <nav class="drawer-menu">
-                    <div class="menu-item" @click="openDayModal">
-                        <span class="material-icons">sync_alt</span>
-                        <span class="menu-text">Change days</span>
-                    </div>
-                    <div class="menu-item" @click="goToCalendar">
-                        <span class="material-icons">calendar_today</span>
-                        <span class="menu-text">Calendar</span>
-                    </div>
-                    <div class="menu-item delete-acc-btn" @click="isDeleteAccModalOpen = true">
-                        <span class="material-icons">delete</span>
-                        <span class="menu-text">Delete Account</span>
-                    </div>
-                </nav>
-            </aside>
-        </Transition>
-
-        <Transition name="fade">
-            <div v-if="isDayModalOpen" class="modal-overlay-center">
-                <div class="day-modal-card">
-                    <h2 class="day-modal-title">Choose your day</h2>
-                    <div class="days-list">
-                        <div v-for="day in daysOfWeek" :key="day" class="day-option" @click="tempSelectedDay = day">
-                            <span :class="{ 'active-day-text': tempSelectedDay === day }">{{ day }}</span>
-                            <div class="checkbox-box">
-                                <span v-if="tempSelectedDay === day" class="material-icons check-icon">check</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="day-modal-footer">
-                        <button class="btn-confirm-day" @click="confirmDayChange">Confirm</button>
-                    </div>
-                </div>
-            </div>
-        </Transition>
-
-        <Transition name="fade">
-            <div v-if="isLogoutModalOpen" class="modal-overlay-center">
-                <div class="white-modal-card">
-                    <h2 class="modal-msg-title">Are you sure you want to log out?</h2>
-                    <div class="modal-button-group">
-                        <button class="btn-cancel-blue" @click="isLogoutModalOpen = false">Cancel</button>
-                        <button class="btn-confirm-green" @click="handleLogout">Confirm</button>
-                    </div>
-                </div>
-            </div>
-        </Transition>
-
-        <Transition name="fade">
-            <div v-if="isDeleteAccModalOpen" class="modal-overlay-center">
-                <div class="white-modal-card">
-                    <div class="warning-icon">⚠️</div>
-                    <h2 class="modal-msg-title red-text">Delete Account?</h2>
-                    <p class="modal-desc">Your account will be deleted, but patient surgery data will remain in the
-                        system.</p>
-                    <div class="modal-button-group">
-                        <button class="btn-cancel-gray" @click="isDeleteAccModalOpen = false">Cancel</button>
-                        <button class="btn-confirm-red" @click="handleDeleteAccount">Delete</button>
-                    </div>
-                </div>
-            </div>
-        </Transition>
 
         <Transition name="fade">
             <div v-if="isDetailModalOpen" class="detail-overlay" @click.self="closeDetailModal">
@@ -111,14 +30,6 @@
 
         <header class="top-nav">
 
-            <div class="user-group" @click="isDrawerOpen = true">
-                <div class="avatar-circle small">
-                    <Icon icon="mdi:cog-outline" width="24" height="24" style="color: white" />
-                </div>
-
-                <span class="license-text">{{ userLicense }}</span>
-            </div>
-
             <!-- SEARCH -->
             <div class="search-box">
                 <span class="material-icons search-icon">search</span>
@@ -126,13 +37,6 @@
                 <input type="text" v-model="searchHN" placeholder="Search patient, HN, procedure" />
 
             </div>
-
-            <!-- <button class="logout-btn" @click="isLogoutModalOpen = true">
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24">
-                    <path fill="white"
-                        d="M5 21q-.825 0-1.412-.587T3 19V5q0-.825.588-1.412T5 3h6q.425 0 .713.288T12 4t-.288.713T11 5H5v14h6q.425 0 .713.288T12 20t-.288.713T11 21zm12.175-8H10q-.425 0-.712-.288T9 12t.288-.712T10 11h7.175L15.3 9.125q-.275-.275-.275-.675t.275-.7.7-.313t.725.288L20.3 11.3q.3.3.3.7t-.3.7l-3.575 3.575q-.3.3-.712.288t-.713-.313q-.275-.3-.262-.712t.287-.688z" />
-                </svg>
-            </button> -->
 
         </header>
 
@@ -440,7 +344,7 @@
                                                     item.underlying || '-' }}</div>
                                                 <div class="detail-row"><strong>Proposed Procedure:</strong> {{
                                                     item.procedure
-                                                }}</div>
+                                                    }}</div>
                                                 <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
 
                                                 <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }}
@@ -865,7 +769,6 @@ import { useRouter } from 'vue-router'
 import VueDatePicker from '@vuepic/vue-datepicker'
 import draggable from 'vuedraggable'
 import '@vuepic/vue-datepicker/dist/main.css'
-import { Icon } from '@iconify/vue'
 
 const getRestoredCases = () => {
     return JSON.parse(
@@ -1252,10 +1155,6 @@ const succeedTab = ref(FILTERS.COMPLETE)
 const expandedId = ref(null)
 const isLoading = ref(false)
 
-const selectedDay = ref('Monday')
-const tempSelectedDay = ref('Monday')
-const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
-
 
 
 // ================= ระบบจัดเรียงคิว (รวม Drag&Drop แบบใหม่) =================
@@ -1494,17 +1393,6 @@ const resetQueue = async () => {
 
 
 // ================= โหลดข้อมูลจาก Backend =================
-const fetchUserDay = async (license) => {
-    try {
-        const response = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/users/${license}`);
-        const data = await response.json();
-        if (data.day) {
-            selectedDay.value = data.day;
-            tempSelectedDay.value = data.day;
-        }
-    } catch (error) { console.error("❌ ดึงวันทำงานไม่สำเร็จ", error); }
-};
-
 const fetchBookings = async () => {
     isLoading.value = true
     try {
@@ -1522,39 +1410,13 @@ onMounted(() => {
 
     if (savedLicense) {
         userLicense.value = savedLicense
-        fetchUserDay(savedLicense)
     }
     if (savedName) doctorName.value = savedName
     fetchBookings()
 })
 
-// ================= ฟังก์ชันเปลี่ยนวัน =================
-const confirmDayChange = async () => {
-    try {
-        const response = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/users/${userLicense.value}/day`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ day: tempSelectedDay.value })
-        })
-
-        if (!response.ok) throw new Error("API Error")
-
-        selectedDay.value = tempSelectedDay.value
-        isDayModalOpen.value = false
-        showMessageDialog('✅ อัปเดตข้อมูลสำเร็จ')
-
-    } catch (error) {
-        console.error("❌ PUT Error:", error)
-        showMessageDialog("❌ ล้มเหลว!")
-    }
-}
-
 // ================= ฟังก์ชัน UI อื่นๆ =================
 const toggleDetail = (id) => expandedId.value = expandedId.value === id ? null : id
-const isDrawerOpen = ref(false)
-const isDayModalOpen = ref(false)
-const isLogoutModalOpen = ref(false)
-const isDeleteAccModalOpen = ref(false)
 const isDetailModalOpen = ref(false)
 const selectedCase = ref(null)
 const isRestoreModalOpen = ref(false)
@@ -1565,38 +1427,7 @@ const restoreData = ref({
     time: ''
 })
 
-const openDayModal = () => { isDrawerOpen.value = false; tempSelectedDay.value = selectedDay.value; isDayModalOpen.value = true }
-const closeAllOverlays = () => { isDrawerOpen.value = isDayModalOpen.value = isLogoutModalOpen.value = isDeleteAccModalOpen.value = isDetailModalOpen.value = false }
-const goToCalendar = () => { isDrawerOpen.value = false; router.push('/calendar') }
-const goAddPatient = () => { isDrawerOpen.value = false; router.push('/booking') }
-const handleLogout = () => { localStorage.clear(); router.push('/login') }
-// 🟢 อัปเดตฟังก์ชันลบบัญชีให้เรียกใช้งาน API จริง
-const handleDeleteAccount = async () => {
-    const license = localStorage.getItem('userLicense')
-    if (!license) return
-
-    try {
-        // ยิง API ไปลบข้อมูลที่ Backend
-        const response = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/users/${license}`, {
-            method: 'DELETE'
-        })
-
-        const data = await response.json()
-
-        if (response.ok) {
-            showMessageDialog('✅ ' + data.message)
-            isDeleteAccModalOpen.value = false // ปิด Modal
-            localStorage.clear() // ล้างข้อมูลในเครื่อง
-            router.push('/login') // เด้งกลับหน้าล็อกอิน
-        } else {
-            showMessageDialog('❌ ' + (data.error || 'ลบไม่สำเร็จ'))
-            isDeleteAccModalOpen.value = false
-        }
-    } catch (error) {
-        showMessageDialog('❌ ระบบขัดข้อง ไม่สามารถติดต่อเซิร์ฟเวอร์ได้')
-        isDeleteAccModalOpen.value = false
-    }
-}
+const goAddPatient = () => router.push('/booking')
 const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.value = true }
 const closeDetailModal = () => { isDetailModalOpen.value = false }
 
@@ -1685,9 +1516,8 @@ const markAsSucceed = async (id) => {
     background-color: #f5f7fa;
 }
 
-/* --- สี Navy Blue สำหรับ Top Nav & Drawer --- */
-.top-nav,
-.drawer-header {
+/* --- สี Navy Blue สำหรับ Top Nav --- */
+.top-nav {
     background-color: #1a3a5f !important;
     height: 80px;
     display: flex;
@@ -1695,88 +1525,6 @@ const markAsSucceed = async (id) => {
     align-items: center;
     padding: 0 20px;
 }
-
-/* --- Side Drawer (คงของเดิมแต่เปลี่ยนสี) --- */
-.side-drawer {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 280px;
-    height: 100vh;
-    background-color: #f0f7ff;
-    z-index: 3000;
-    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1);
-}
-
-.avatar-circle {
-    width: 48px;
-    height: 48px;
-    border: 2px solid white;
-    border-radius: 50%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.avatar-circle.small {
-    width: 32px;
-    height: 32px;
-    border-width: 1px;
-}
-
-.drawer-user-info {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    color: white;
-}
-
-.user-meta {
-    display: flex;
-    flex-direction: column;
-}
-
-.drawer-license {
-    font-size: 1.2rem;
-    font-weight: 600;
-}
-
-.drawer-day {
-    font-size: 0.85rem;
-    opacity: 0.8;
-}
-
-.drawer-menu {
-    padding: 15px 0;
-}
-
-.menu-item {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    padding: 15px 25px;
-    color: #4a6fa5;
-    cursor: pointer;
-}
-
-.menu-item:hover {
-    background-color: #e6effa;
-}
-
-.delete-acc-btn {
-    color: #b80000;
-    margin-top: 0px;
-}
-
-.user-group {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    cursor: pointer;
-    color: white;
-    margin-left: 15px;
-}
-
 
 /* --- Main Dashboard Content (UI อัปเดตใหม่) --- */
 .dashboard-container {
@@ -1984,16 +1732,6 @@ const markAsSucceed = async (id) => {
 }
 
 /* --- Modals & Transitions (ของเดิมทั้งหมด) --- */
-.drawer-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.3);
-    z-index: 2500;
-}
-
 .modal-overlay-center {
     position: fixed;
     top: 0;
@@ -2017,81 +1755,10 @@ const markAsSucceed = async (id) => {
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
 }
 
-.day-modal-card {
-    background-color: #e3f2fd;
-    width: 90%;
-    max-width: 340px;
-    padding: 30px;
-    border-radius: 24px;
-}
-
-.day-modal-title {
-    color: #2c4c87;
-    text-align: center;
-    margin-bottom: 20px;
-}
-
-.day-option {
-    display: flex;
-    justify-content: space-between;
-    padding: 12px;
-    color: #6a92d4;
-    cursor: pointer;
-}
-
-.active-day-text {
-    color: #2c4c87;
-    font-weight: bold;
-}
-
-.checkbox-box {
-    width: 22px;
-    height: 22px;
-    border: 2px solid #2c4c87;
-    border-radius: 4px;
-    background: white;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.check-icon {
-    color: #2c4c87;
-    font-size: 18px;
-}
-
-.btn-confirm-day {
-    background: #2c4c87;
-    color: white;
-    border: none;
-    padding: 10px 25px;
-    border-radius: 12px;
-    cursor: pointer;
-    float: right;
-    margin-top: 15px;
-}
-
 .modal-msg-title {
     color: #2c4c87;
     font-size: 1.1rem;
     margin-bottom: 25px;
-}
-
-.red-text {
-    color: #d50000;
-    font-weight: bold;
-}
-
-.modal-desc {
-    font-size: 0.85rem;
-    color: #666;
-    margin-top: -15px;
-    margin-bottom: 25px;
-}
-
-.warning-icon {
-    font-size: 2.5rem;
-    margin-bottom: 10px;
 }
 
 .modal-button-group {
@@ -2102,16 +1769,6 @@ const markAsSucceed = async (id) => {
 
 .btn-confirm-green {
     background-color: #03c172;
-    color: white;
-    border: none;
-    padding: 10px 25px;
-    border-radius: 12px;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-.btn-cancel-blue {
-    background-color: #6a92d4;
     color: white;
     border: none;
     padding: 10px 25px;
@@ -2721,11 +2378,6 @@ input[type="checkbox"] {
 
     .search-icon {
         font-size: 26px;
-    }
-
-    .logout-btn svg {
-        width: 26px;
-        height: 26px;
     }
 
     .top-nav {
