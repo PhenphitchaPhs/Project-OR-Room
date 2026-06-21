@@ -1,13 +1,13 @@
-ได้เลยครับ นี่คือโค้ดฉบับสมบูรณ์ที่แก้ไขไอคอนโปรไฟล์เป็นรูปฟันเฟือง (CogOutlineIcon) ตามที่คุณต้องการเรียบร้อยแล้วครับ:
-
-```vue
 <template>
   <div class="app-container">
 
     <header class="main-header" v-if="showLayout && !isSidebarOpen">
       <div class="profile-trigger" @click="toggleSidebar">
         <div class="icon-circle">
-          <CogOutlineIcon width="32" height="32" />
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24">
+            <path fill="currentColor"
+              d="M12 2A10 10 0 0 0 2 12a10 10 0 0 0 10 10a10 10 0 0 0 10-10A10 10 0 0 0 12 2M7.07 18.28c.43-.9 3.05-1.78 4.93-1.78s4.5.88 4.93 1.78A7.9 7.9 0 0 1 12 20c-1.86 0-3.57-.64-4.93-1.72m11.29-1.45c-1.43-1.74-4.9-2.33-6.36-2.33s-4.93.59-6.36 2.33A7.93 7.93 0 0 1 4 12c0-4.41 3.59-8 8-8s8 3.59 8 8c0 1.82-.62 3.49-1.64 4.83M12 6c-1.94 0-3.5 1.56-3.5 3.5S10.06 13 12 13s3.5-1.56 3.5-3.5S13.94 6 12 6m0 5a1.5 1.5 0 0 1-1.5-1.5A1.5 1.5 0 0 1 12 8a1.5 1.5 0 0 1 1.5 1.5A1.5 1.5 0 0 1 12 11" />
+          </svg>
         </div>
       </div>
     </header>
@@ -19,7 +19,10 @@
         <div class="sidebar-header">
           <div class="user-info">
             <div class="avatar-icon" @click="toggleSidebar">
-              <CogOutlineIcon width="45" height="45" />
+              <svg xmlns="http://www.w3.org/2000/svg" width="45" height="45" viewBox="0 0 24 24">
+                <path fill="currentColor"
+                  d="M12 2A10 10 0 0 0 2 12a10 10 0 0 0 10 10a10 10 0 0 0 10-10A10 10 0 0 0 12 2M7.07 18.28c.43-.9 3.05-1.78 4.93-1.78s4.5.88 4.93 1.78A7.9 7.9 0 0 1 12 20c-1.86 0-3.57-.64-4.93-1.72m11.29-1.45c-1.43-1.74-4.9-2.33-6.36-2.33s-4.93.59-6.36 2.33A7.93 7.93 0 0 1 4 12c0-4.41 3.59-8 8-8s8 3.59 8 8c0 1.82-.62 3.5-1.64 4.83M12 6c-1.94 0-3.5 1.56-3.5 3.5S10.06 13 12 13s3.5-1.56 3.5-3.5S13.94 6 12 6m0 5a1.5 1.5 0 0 1-1.5-1.5A1.5 1.5 0 0 1 12 8a1.5 1.5 0 0 1 1.5 1.5A1.5 1.5 0 0 1 12 11" />
+              </svg>
             </div>
             <div class="user-details">
               <span class="user-id">{{ userLicense }}</span>
@@ -80,8 +83,7 @@
                 <span class="menu-text">Calendar</span>
               </div>
             </li>
-
-            </ul>
+          </ul>
         </nav>
       </aside>
     </transition>
@@ -106,34 +108,6 @@
       </div>
     </Transition>
 
-    <Transition name="fade">
-      <div v-if="isDeleteAccModalOpen" class="modal-overlay-center" @click.self="isDeleteAccModalOpen = false">
-        <div class="white-modal-card">
-          <div class="warning-icon">⚠️</div>
-          <h2 class="modal-msg-title red-text">Delete Account?</h2>
-          <p class="modal-desc">All your surgery data will be permanently removed.</p>
-          <div class="modal-button-group">
-            <button class="btn-cancel-gray" @click="isDeleteAccModalOpen = false">Cancel</button>
-            <button class="btn-confirm-red" @click="handleDeleteAccount">Delete</button>
-          </div>
-        </div>
-      </div>
-    </Transition>
-
-    <Transition name="fade">
-      <div v-if="isLogoutModalOpen" class="modal-overlay-center" @click.self="isLogoutModalOpen = false">
-        <div class="white-modal-card">
-          <h2 class="modal-msg-title" style="color: #2c4c87; margin-bottom: 30px; margin-top: 10px;">
-            คุณต้องการออกจากระบบใช่หรือไม่?
-          </h2>
-          <div class="modal-button-group">
-            <button class="btn-cancel-gray" @click="isLogoutModalOpen = false">Cancel</button>
-            <button class="btn-confirm-day" @click="confirmLogout">Confirm</button>
-          </div>
-        </div>
-      </div>
-    </Transition>
-
     <main class="content-area">
       <RouterView />
     </main>
@@ -144,11 +118,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { RouterView, useRouter, useRoute } from 'vue-router'
 
-// เพิ่มการ Import ไอคอนฟันเฟืองจาก Iconify ที่นี่
-import CogOutlineIcon from '@iconify-vue/mdi/cog-outline';
-
 const isSidebarOpen = ref(false)
-const isDeleteAccModalOpen = ref(false)
 const isDayModalOpen = ref(false) // สถานะเปิด/ปิด Pop-up เลือกวัน
 
 const router = useRouter()
@@ -232,45 +202,18 @@ const confirmDayChange = async () => {
   }
 }
 
-// --- ฟังก์ชันลบบัญชี ---
-const openDeleteModal = () => {
-  isSidebarOpen.value = false
-  isDeleteAccModalOpen.value = true
-}
-
-const handleDeleteAccount = async () => {
-  const license = localStorage.getItem('userLicense')
-  try {
-    await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/users/${license}`, {
-      method: 'DELETE'
-    })
-  } catch (e) {
-    console.error('ลบบัญชีไม่สำเร็จ', e)
-  }
-  localStorage.clear()
-  isDeleteAccModalOpen.value = false
-  router.push('/login')
-}
-
 // เปลี่ยนหน้าทั่วไป
 const goTo = (path) => {
   isSidebarOpen.value = false
   router.push(path)
 }
 
-// ประกาศตัวแปรคุมสถานะเปิด/ปิดกล่องออกจากระบบ
-const isLogoutModalOpen = ref(false)
-
 const handleLogout = () => {
-  isSidebarOpen.value = false // ปิดเมนูข้าง
-  isLogoutModalOpen.value = true // สั่งเปิดหน้าต่าง Modal ของเรา
-}
-
-// ฟังก์ชันตอนกดยืนยันในกล่อง Modal
-const confirmLogout = () => {
-  localStorage.clear()  // ล้างทุกอย่างรวมถึง isLoggedIn
-  isLogoutModalOpen.value = false // ปิดกล่อง
-  router.push('/login') // เด้งไปหน้า Login
+  if (confirm("คุณต้องการออกจากระบบใช่หรือไม่?")) {
+    localStorage.clear()  // ล้างทุกอย่างรวมถึง isLoggedIn
+    isSidebarOpen.value = false
+    router.push('/login')
+  }
 }
 </script>
 
@@ -515,66 +458,6 @@ const confirmLogout = () => {
   border-radius: 12px;
   cursor: pointer;
   font-weight: bold;
-}
-
-/* --- Pop-up: ลบบัญชี --- */
-.white-modal-card {
-  background: white;
-  width: 90%;
-  max-width: 320px;
-  padding: 30px 20px;
-  border-radius: 24px;
-  text-align: center;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-}
-
-.modal-msg-title {
-  color: #2c4c87;
-  font-size: 1.1rem;
-  margin-bottom: 25px;
-}
-
-.red-text {
-  color: #d50000;
-  font-weight: bold;
-}
-
-.modal-desc {
-  font-size: 0.85rem;
-  color: #666;
-  margin-top: -15px;
-  margin-bottom: 25px;
-}
-
-.warning-icon {
-  font-size: 2.5rem;
-  margin-bottom: 10px;
-}
-
-.modal-button-group {
-  display: flex;
-  justify-content: center;
-  gap: 15px;
-}
-
-.btn-confirm-red {
-  background-color: #d50000;
-  color: white;
-  border: none;
-  padding: 10px 25px;
-  border-radius: 12px;
-  font-weight: bold;
-  cursor: pointer;
-}
-
-.btn-cancel-gray {
-  background-color: #eee;
-  color: #666;
-  border: none;
-  padding: 10px 25px;
-  border-radius: 12px;
-  font-weight: bold;
-  cursor: pointer;
 }
 </style>
 
