@@ -57,12 +57,17 @@
                         </select>
                         
                         <div style="display: flex; flex-direction: column;">
-                            <input type="date" v-model="form.date" :min="minDate" :max="maxDate" @change="checkValidDate"
-                                class="input-field green-theme" :readonly="isDateLocked && !!form.date" :class="{ 'locked-field': isDateLocked && form.date }" required />
-                            <span v-if="isDateLocked && form.date" style="color: #1a3a5f; font-size: 0.8rem; margin-top: 4px; font-weight: 600;">
+                            <input type="date" v-model="form.date" :min="minDate" :max="maxDate" @blur="checkValidDate"
+                                class="input-field green-theme" :readonly="isDateLocked && !!form.date"
+                                :class="{ 'locked-field': isDateLocked && form.date }" required />
+
+                            <span v-if="isDateLocked && form.date"
+                                style="color: #1a3a5f; font-size: 0.8rem; margin-top: 4px; font-weight: 600;">
                                 🔒 ล็อควันที่จากปฏิทินแล้ว
                             </span>
-                            <span v-if="remainingTimeMsg" style="color: #0288d1; font-size: 0.85rem; margin-top: 6px; font-weight: 500;">
+
+                            <span v-if="remainingTimeMsg"
+                                style="color: #0288d1; font-size: 0.85rem; margin-top: 6px; font-weight: 500;">
                                 ⏳ {{ remainingTimeMsg }}
                             </span>
                         </div>
@@ -294,7 +299,16 @@ const validateHolidayAndWeekend = (dateStr) => {
 
 const checkValidDate = async () => {
     remainingTimeMsg.value = ''
+
     if (!form.date) return
+
+    // รอให้กรอกวันที่ให้ครบก่อน
+    if (form.date.length !== 10) return
+
+    const testDate = new Date(form.date)
+
+    // ป้องกันวันที่ไม่สมบูรณ์
+    if (isNaN(testDate.getTime())) return
 
     if (!validateHolidayAndWeekend(form.date)) return
 
@@ -302,33 +316,57 @@ const checkValidDate = async () => {
     const dow = selected.getDay()
 
     const license = localStorage.getItem('userLicense')
+
     if (license) {
-        const dayMap = { 'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4, 'Friday': 5 }
+        const dayMap = {
+            Monday: 1,
+            Tuesday: 2,
+            Wednesday: 3,
+            Thursday: 4,
+            Friday: 5
+        }
+
         try {
-            const res = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/users/${license}`)
+            const res = await fetch(
+                `https://or-room-backend.rockzee2018.workers.dev/api/users/${license}`
+            )
+
             const userData = await res.json()
             const workingDay = userData.day
 
             if (workingDay && dayMap[workingDay] !== dow) {
-                showAlert(`คุณสามารถจองคิวได้เฉพาะวัน ${workingDay} ซึ่งเป็นวันทำงานของคุณเท่านั้นครับ`)
+                showAlert(
+                    `คุณสามารถจองคิวได้เฉพาะวัน ${workingDay} ซึ่งเป็นวันทำงานของคุณเท่านั้นครับ`
+                )
+
                 form.date = ''
                 return
             }
-        } catch (e) { console.error('เช็กวันทำงานไม่สำเร็จ', e) }
+        } catch (e) {
+            console.error('เช็กวันทำงานไม่สำเร็จ', e)
+        }
     }
 
     try {
-        const res = await fetch('https://or-room-backend.rockzee2018.workers.dev/api/bookings')
+        const res = await fetch(
+            'https://or-room-backend.rockzee2018.workers.dev/api/bookings'
+        )
+
         const allBookings = await res.json()
 
-        const sameDayBookings = allBookings.filter(b => b.date === form.date && b.status !== 'Succeed' && b.status !== 'Cancelled')
+        const sameDayBookings = allBookings.filter(
+            b =>
+                b.date === form.date &&
+                b.status !== 'Succeed' &&
+                b.status !== 'Cancelled'
+        )
 
         const usedMinutes = sameDayBookings.reduce((sum, b) => {
             const match = b.procedure?.match(/(\d+)\s*min/)
             return sum + (match ? parseInt(match[1]) : 0)
         }, 0)
 
-        const MAX_MINUTES = 360 
+        const MAX_MINUTES = 360
         const remainingMinutes = MAX_MINUTES - usedMinutes
 
         if (remainingMinutes <= 0) {
@@ -336,20 +374,33 @@ const checkValidDate = async () => {
         } else {
             const hrs = Math.floor(remainingMinutes / 60)
             const mins = remainingMinutes % 60
-            remainingTimeMsg.value = `เหลือเวลาว่างอีก ${hrs} ชม. ${mins > 0 ? mins + ' นาที' : ''}`
+
+            remainingTimeMsg.value =
+                `เหลือเวลาว่างอีก ${hrs} ชม. ` +
+                (mins > 0 ? `${mins} นาที` : '')
         }
 
         if (form.procedure) {
             const matchProc = form.procedure.match(/(\d+)\s*min/)
-            const newProcMin = matchProc ? parseInt(matchProc[1]) : 0
+            const newProcMin = matchProc
+                ? parseInt(matchProc[1])
+                : 0
 
             if (usedMinutes + newProcMin > MAX_MINUTES) {
-                showAlert(`วันที่ ${form.date} คิวเต็มแล้วครับ\nเหลือเวลา ${remainingMinutes} นาที แต่หัตถการนี้ใช้ ${newProcMin} นาที\nกรุณาเลือกวันอื่นครับ`)
+                showAlert(
+                    `วันที่ ${form.date} คิวเต็มแล้วครับ\n` +
+                    `เหลือเวลา ${remainingMinutes} นาที ` +
+                    `แต่หัตถการนี้ใช้ ${newProcMin} นาที\n` +
+                    `กรุณาเลือกวันอื่นครับ`
+                )
+
                 form.date = ''
                 remainingTimeMsg.value = ''
             }
         }
-    } catch (e) { console.error('เช็กความจุห้องผ่าตัดไม่สำเร็จ', e) }
+    } catch (e) {
+        console.error('เช็กความจุห้องผ่าตัดไม่สำเร็จ', e)
+    }
 }
 
 const submitForm = async () => {
@@ -658,5 +709,3 @@ const goHome = () => router.push('/home')
     }
 }
 </style>
-
-```
