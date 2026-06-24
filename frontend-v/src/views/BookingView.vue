@@ -55,7 +55,7 @@
                                 </option>
                             </optgroup>
                         </select>
-                        
+
                         <div style="display: flex; flex-direction: column;">
                             <input type="date" v-model="form.date" :min="minDate" :max="maxDate" @blur="checkValidDate"
                                 class="input-field green-theme" :readonly="isDateLocked && !!form.date"
@@ -127,7 +127,7 @@
     <Transition name="fade">
         <div v-if="showAlertModal" class="modal-overlay" @click="showAlertModal = false">
             <div class="alert-modal" @click.stop>
-                <div class="alert-icon">✔️</div>
+                <div class="alert-icon">❌</div>
                 <div class="alert-message">
                     {{ alertMessage }}
                 </div>
@@ -142,15 +142,18 @@
 <script setup>
 import { reactive, ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router'
 
 const router = useRouter()
 const route = useRoute()
+const bookingId = route.params.id
 const tomorrowCount = ref(0)
 const hnStatus = ref('')
 const showAlertModal = ref(false)
 const alertMessage = ref('')
 const remainingTimeMsg = ref('')
 const isDateLocked = ref(false)
+
 
 const apiHolidays = ref({})
 
@@ -216,6 +219,44 @@ max.setDate(max.getDate() + 90)
 const maxDate = ref(max.toISOString().split('T')[0])
 
 onMounted(async () => {
+    // 🌟 ดึงข้อมูลเก่ามาใส่ฟอร์มถ้าเป็นการ Edit (มี bookingId)
+    if (bookingId) {
+        try {
+            const res = await fetch('https://or-room-backend.rockzee2018.workers.dev/api/bookings')
+
+            if (res.ok) {
+                const allBookings = await res.json()
+                const booking = allBookings.find(b => String(b.id) === String(bookingId))
+
+                if (booking) {
+                    form.hn = booking.hn || ''
+                    form.fullName = booking.fullName || ''
+                    form.age = booking.age || ''
+                    form.gender = booking.gender || ''
+                    form.disease = booking.underlying || ''
+                    form.procedure = booking.procedure || ''
+                    form.date = booking.date || ''
+                    form.notes = booking.notes || ''
+
+                    form.cxrDate = booking.cxrDate || ''
+                    form.cxrNote = booking.cxrNote || ''
+
+                    form.ecgDate = booking.ecgDate || ''
+                    form.ecgNote = booking.ecgNote || ''
+
+                    form.labDate = booking.labDate || ''
+                    form.labNote = booking.labNote || ''
+
+                    form.admDate = booking.admDate || ''
+                    form.admNote = booking.admNote || ''
+                }
+            }
+        } catch (err) {
+            console.error('โหลดข้อมูลสำหรับแก้ไขไม่สำเร็จ:', err)
+        }
+    }
+
+    // ... (โค้ดดึง route.query.date, tomorrowCount และ apiHolidays คงไว้เหมือนเดิม) ...
     if (route.query.date) {
         form.date = route.query.date
         isDateLocked.value = true
@@ -432,14 +473,21 @@ const submitForm = async () => {
     }
 
     try {
-        const res = await fetch('https://or-room-backend.rockzee2018.workers.dev/api/bookings', {
-            method: 'POST',
+        // 🌟 แยก URL และ Method ให้ถูกต้อง
+        const url = bookingId
+            ? `https://or-room-backend.rockzee2018.workers.dev/api/bookings/${bookingId}`
+            : 'https://or-room-backend.rockzee2018.workers.dev/api/bookings'
+
+        const method = bookingId ? 'PUT' : 'POST'
+
+        const res = await fetch(url, {
+            method: method,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         })
 
         if (res.ok) {
-            showAlert('จองคิวสำเร็จ!')
+            showAlert(bookingId ? 'อัปเดตคิวสำเร็จ!' : 'จองคิวสำเร็จ!')
             setTimeout(() => {
                 router.push('/home')
             }, 1500)
@@ -495,7 +543,8 @@ const goHome = () => router.push('/home')
 }
 
 .header-spacer {
-    width: 40px; /* ขยายความกว้างให้สมดุลกับปุ่ม */
+    width: 40px;
+    /* ขยายความกว้างให้สมดุลกับปุ่ม */
     flex-shrink: 0;
 }
 
@@ -503,7 +552,8 @@ const goHome = () => router.push('/home')
     color: #0f2a47;
     text-align: center;
     font-size: 24px;
-    font-family: 'Times New Roman', Times, serif; /* เพิ่มฟอนต์มีหัวให้เหมือนในรูปเป๊ะ */
+    font-family: 'Times New Roman', Times, serif;
+    /* เพิ่มฟอนต์มีหัวให้เหมือนในรูปเป๊ะ */
     font-weight: bold;
     margin-bottom: 0;
     flex: 1;
@@ -511,11 +561,15 @@ const goHome = () => router.push('/home')
 }
 
 .back-btn {
-    width: 40px; /* ปรับขนาดความกว้างปุ่ม */
-    height: 40px; /* ปรับขนาดความสูงปุ่มให้รับกับตัวอักษร */
-    border-radius: 12px; /* เปลี่ยนจากวงกลม 50% เป็นสี่เหลี่ยมขอบมนแบบในรูป */
+    width: 40px;
+    /* ปรับขนาดความกว้างปุ่ม */
+    height: 40px;
+    /* ปรับขนาดความสูงปุ่มให้รับกับตัวอักษร */
+    border-radius: 12px;
+    /* เปลี่ยนจากวงกลม 50% เป็นสี่เหลี่ยมขอบมนแบบในรูป */
     border: none;
-    background: #f0f4f8; /* สีพื้นหลังเทาอมฟ้า */
+    background: #f0f4f8;
+    /* สีพื้นหลังเทาอมฟ้า */
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -527,6 +581,7 @@ const goHome = () => router.push('/home')
 .back-btn:hover {
     background-color: #e2e8f0;
 }
+
 /* --------------------------------- */
 
 .notes-grid {
@@ -703,6 +758,7 @@ const goHome = () => router.push('/home')
         transform: scale(.9);
         opacity: 0;
     }
+
     to {
         transform: scale(1);
         opacity: 1;
