@@ -51,7 +51,7 @@
                         <span>OR Usage Today</span>
                     </div>
 
-                    <span>{{ parseFloat((usedMinutes / 60).toFixed(1)) }}/6 hrs.</span>
+                    <span>{{ Math.round((usedMinutes / 60) * 10) / 10 }}/7 hrs.</span>
                 </div>
 
                 <div class="capacity-bar">
@@ -63,14 +63,22 @@
 
                 <div class="capacity-detail">
 
-                    <div class="remaining-time">
-                        <span class="material-icons small-icon">schedule</span>
-                        <span>{{ remainingHour }}h {{ remainingMin }}m left</span>
+                    <div class="remaining-time" :style="{ color: remainingMinutes <= 0 ? '#dc2626' : '' }">
+                        <span class="material-icons small-icon">
+                            {{ remainingMinutes <= 0 ? 'warning' : 'schedule' }} </span>
+
+                                <span v-if="remainingMinutes > 0">
+                                    {{ remainingHour }}h {{ remainingMin }}m left
+                                </span>
+
+                                <span v-else>
+                                    Exceeded by {{ exceededHour }}h {{ exceededMin }}m
+                                </span>
                     </div>
 
                     <div class="capacity-status" :class="{
                         warning: usagePercent >= 70 && usagePercent < 90,
-                        danger: usagePercent >= 90
+                        danger: usagePercent >= 90 || remainingMinutes <= 0
                     }">
 
                         <span class="material-icons small-icon">
@@ -83,11 +91,12 @@
 
                         <span>
                             {{
-                                usagePercent >= 90
+                                remainingMinutes <= 0 ? 'Exceeded 7-hour limit' : usagePercent >= 90
                                     ? 'OR almost full'
                                     : 'Next remaining time'
                             }}
                         </span>
+
 
                     </div>
 
@@ -344,7 +353,7 @@
                                                     item.underlying || '-' }}</div>
                                                 <div class="detail-row"><strong>Proposed Procedure:</strong> {{
                                                     item.procedure
-                                                    }}</div>
+                                                }}</div>
                                                 <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
 
                                                 <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }}
@@ -1109,10 +1118,10 @@ const confirmRestoreCase = async () => {
 
 }
 
-const MAX_MINUTES = 360
-// เปอร์เซ็นต์ progress
+const MAX_MINUTES = 420
+// เปอร์เซ็นต์ progress  อันนี้เกิน7ชม.ได้
 const usagePercent = computed(() => {
-    return Math.min((usedMinutes.value / MAX_MINUTES) * 100, 100)
+    return (usedMinutes.value / MAX_MINUTES) * 100
 })
 
 
@@ -1127,6 +1136,17 @@ const remainingHour = computed(() => {
 
 const remainingMin = computed(() => {
     return remainingMinutes.value % 60
+})
+const exceededMinutes = computed(() => {
+    return Math.max(usedMinutes.value - MAX_MINUTES, 0)
+})
+
+const exceededHour = computed(() => {
+    return Math.floor(exceededMinutes.value / 60)
+})
+
+const exceededMin = computed(() => {
+    return exceededMinutes.value % 60
 })
 
 // เปลี่ยนสี progress bar
