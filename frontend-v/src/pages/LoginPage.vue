@@ -3,7 +3,7 @@
     <div class="card">
       <img src="../assets/logo.png" class="logo" />
 
-      <h2 class="title">Hospital</h2>
+      <h2 class="title">OR Chestrator</h2>
 
       <input v-model="license" type="text" inputmode="numeric" maxlength="5" placeholder="License" class="input"
         @input="handleLicenseInput" />
