@@ -154,9 +154,7 @@
                                 <template #item="{ element: item }">
                                     <div class="case-card drag-item" @click="toggleDetail(item.id)">
 
-                                        <div class="drag-handle">
-                                            <span class="material-icons">more_horiz</span>
-                                        </div>
+
 
                                         <div class="case-grid">
                                             <div class="drag-handle">
@@ -181,14 +179,7 @@
                                             </div>
 
                                         </div>
-                                        <div class="see-more-toggle">
-                                            <span class="see-more-text">
-                                                {{ expandedId === item.id ? 'See less' : 'See more' }}
-                                            </span>
-                                            <span class="material-icons see-more-icon">
-                                                {{ expandedId === item.id ? 'expand_less' : 'expand_more' }}
-                                            </span>
-                                        </div>
+
 
                                         <transition name="expand">
 
@@ -267,6 +258,14 @@
                                                 Cancel
                                             </button>
                                         </div>
+                                        <div class="see-more-toggle">
+                                            <span class="see-more-text">
+                                                {{ expandedId === item.id ? 'See less' : 'See more' }}
+                                            </span>
+                                            <span class="material-icons see-more-icon">
+                                                {{ expandedId === item.id ? 'expand_less' : 'expand_more' }}
+                                            </span>
+                                        </div>
                                     </div>
                                 </template>
 
@@ -334,14 +333,7 @@
                                                 <span><strong>Procedure:</strong> {{ item.procedure }}</span>
                                             </div>
                                         </div>
-                                        <div class="see-more-toggle">
-                                            <span class="see-more-text">
-                                                {{ expandedId === item.id ? 'See less' : 'See more' }}
-                                            </span>
-                                            <span class="material-icons see-more-icon">
-                                                {{ expandedId === item.id ? 'expand_less' : 'expand_more' }}
-                                            </span>
-                                        </div>
+
 
                                         <transition name="expand">
                                             <div v-if="expandedId === item.id" class="case-detail">
@@ -388,6 +380,14 @@
                                             <button class="btn-delete" @click.stop="deleteCase(item.id)">
                                                 Cancel
                                             </button>
+                                        </div>
+                                        <div class="see-more-toggle">
+                                            <span class="see-more-text">
+                                                {{ expandedId === item.id ? 'See less' : 'See more' }}
+                                            </span>
+                                            <span class="material-icons see-more-icon">
+                                                {{ expandedId === item.id ? 'expand_less' : 'expand_more' }}
+                                            </span>
                                         </div>
 
 
@@ -1614,9 +1614,9 @@ const markAsSucceed = async (id) => {
     border-color: #16a34a;
 }
 
-.case-card.succeed-item {
+/* .case-card.succeed-item {
     padding-bottom: 55px !important;
-}
+} */
 
 /* CANCELLED TAB */
 .sub-filter button.cancelled-active {
@@ -1630,17 +1630,7 @@ const markAsSucceed = async (id) => {
     padding: 60px 20px;
 }
 
-.case-card {
-    background: white;
-    padding: 16px;
-    border-radius: 12px;
-    margin-bottom: 12px;
-    margin-block: 20px;
-    margin-left: 10px;
-    margin-right: 10px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 
-}
 
 .sortable-ghost {
     opacity: 0.3 !important;
@@ -1889,9 +1879,14 @@ const markAsSucceed = async (id) => {
 .case-card {
     background: #ffffff;
     padding: 20px;
-    border-radius: 16px;
-    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-radius: 12px;
+
+    margin: 20px 10px 12px 10px;
+
     border: 1px solid #e4e9f0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+
     cursor: pointer;
 }
 
@@ -2473,9 +2468,11 @@ input[type="checkbox"] {
     flex-direction: column;
     align-items: center;
     justify-content: center;
+
     margin-top: 12px;
-    margin-bottom: -50px;
-    /* 🟢 ใช้ค่าติดลบเพื่อดึงให้ชิดขอบล่างสุดของการ์ด */
+    margin-bottom: 0;
+    /* ลบ -90px ออก */
+
     color: #94a3b8;
     transition: all 0.25s ease;
 }
@@ -2488,6 +2485,7 @@ input[type="checkbox"] {
 .see-more-text {
     font-size: 13px;
     font-weight: 500;
+    margin-top: -5px;
 }
 
 .see-more-icon {
