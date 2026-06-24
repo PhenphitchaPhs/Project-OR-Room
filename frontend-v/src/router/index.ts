@@ -28,7 +28,7 @@ const routes = [
   { path: '/forgot-password', name: 'forgot-password', component: ForgotPassword },
   { path: '/newpassword', name: 'newpassword', component: NewPassword },
   { path: '/home', name: 'home', component: HomeView, meta: { requiresAuth: true } },
-  { path: '/booking', name: 'booking', component: BookingView, meta: { requiresAuth: true } },
+  { path: '/booking/:id?', name: 'booking', component: BookingView, meta: { requiresAuth: true } },
   { path: '/calendar', name: 'calendar', component: CalendarView, meta: { requiresAuth: true } },
 
   // ---------- ADMIN ----------
