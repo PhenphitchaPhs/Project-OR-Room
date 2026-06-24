@@ -259,6 +259,10 @@
 
                                         </transition>
                                         <div class="case-actions">
+                                            <button class="btn-edit" @click.stop="editCase(item.id)">
+                                                Edit
+                                            </button>
+
                                             <button class="btn-delete" @click.stop="deleteCase(item.id)">
                                                 Cancel
                                             </button>
@@ -377,6 +381,10 @@
                                         </transition>
 
                                         <div class="case-actions">
+                                            <button class="btn-edit" @click.stop="editCase(item.id)">
+                                                Edit
+                                            </button>
+
                                             <button class="btn-delete" @click.stop="deleteCase(item.id)">
                                                 Cancel
                                             </button>
@@ -2498,5 +2506,22 @@ input[type="checkbox"] {
 
 .drag-handle:active {
     cursor: grabbing;
+}
+
+.btn-edit {
+    background: #ffd92d;
+    color: rgb(0, 0, 0);
+    border: none;
+    padding: 8px 18px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+.btn-edit:hover {
+    background: #dec400;
+    transform: translateY(-1px);
 }
 </style>
