@@ -259,7 +259,7 @@
 
                                         </transition>
                                         <div class="case-actions">
-                                            <button class="btn-edit" @click.stop="editCase(item.id)">
+                                            <button class="btn-edit" @click.stop="router.push(`/booking/${item.id}`)">
                                                 Edit
                                             </button>
 
@@ -786,6 +786,10 @@ import { useRouter } from 'vue-router'
 import VueDatePicker from '@vuepic/vue-datepicker'
 import draggable from 'vuedraggable'
 import '@vuepic/vue-datepicker/dist/main.css'
+
+const editCase = (id) => {
+    router.push(`/booking/${id}`)
+}
 
 const getRestoredCases = () => {
     return JSON.parse(
