@@ -75,8 +75,8 @@
                             </span>
 
                             <span v-if="remainingTimeMsg"
-                                style="color: #0288d1; font-size: 0.85rem; margin-top: 6px; font-weight: 500;">
-                                ⏳ {{ remainingTimeMsg }}
+                                :style="{ color: isOverCapacity ? '#dc2626' : '#0288d1', fontSize: '0.85rem', marginTop: '6px', fontWeight: '500' }">
+                                {{ isOverCapacity ? '⚠️' : '⏳' }} {{ remainingTimeMsg }}
                             </span>
                         </div>
                     </div>
@@ -160,6 +160,7 @@ const hnStatus = ref('')
 const showAlertModal = ref(false)
 const alertMessage = ref('')
 const remainingTimeMsg = ref('')
+const isOverCapacity = ref(false)
 const isDateLocked = ref(false)
 
 
@@ -348,6 +349,7 @@ const validateHolidayAndWeekend = (dateStr) => {
 
 const checkValidDate = async () => {
     remainingTimeMsg.value = ''
+    isOverCapacity.value = false
 
     if (!form.date) return
 
@@ -415,36 +417,49 @@ const checkValidDate = async () => {
             return sum + (match ? parseInt(match[1]) : 0)
         }, 0)
 
-        const MAX_MINUTES = 360
+        // 📍 เปลี่ยนเป็น 420 นาที (7 ชม.) ให้ตรงกับมาตรฐานเดียวกับหน้า Home
+        const MAX_MINUTES = 420
         const remainingMinutes = MAX_MINUTES - usedMinutes
 
         if (remainingMinutes <= 0) {
-            remainingTimeMsg.value = 'คิวเต็มแล้วครับ (0 ชม.)'
+            const exceededMin = Math.abs(remainingMinutes)
+            const exHrs = Math.floor(exceededMin / 60)
+            const exMins = exceededMin % 60
+            isOverCapacity.value = true
+            remainingTimeMsg.value =
+                `เกินเวลาที่กำหนดแล้ว ${exHrs} ชม. ` +
+                (exMins > 0 ? `${exMins} นาที ` : '') +
+                '(ยังสามารถจองต่อได้)'
         } else {
             const hrs = Math.floor(remainingMinutes / 60)
             const mins = remainingMinutes % 60
 
+            isOverCapacity.value = false
             remainingTimeMsg.value =
                 `เหลือเวลาว่างอีก ${hrs} ชม. ` +
                 (mins > 0 ? `${mins} นาที` : '')
         }
 
+        // 📍 ไม่บล็อกการจองอีกต่อไป แม้เวลารวมจะเกิน MAX_MINUTES ก็ยังจองได้
+        // แค่อัปเดตข้อความให้รู้ว่าจะเกินไปเท่าไหร่ (เหมือนพฤติกรรมบาร์เวลาในหน้า Home)
         if (form.procedure) {
             const matchProc = form.procedure.match(/(\d+)\s*min/)
             const newProcMin = matchProc
                 ? parseInt(matchProc[1])
                 : 0
 
-            if (usedMinutes + newProcMin > MAX_MINUTES) {
-                showAlert(
-                    `วันที่ ${form.date} คิวเต็มแล้วครับ\n` +
-                    `เหลือเวลา ${remainingMinutes} นาที ` +
-                    `แต่หัตถการนี้ใช้ ${newProcMin} นาที\n` +
-                    `กรุณาเลือกวันอื่นครับ`
-                )
+            const totalAfterAdd = usedMinutes + newProcMin
 
-                form.date = ''
-                remainingTimeMsg.value = ''
+            if (totalAfterAdd > MAX_MINUTES) {
+                const overBy = totalAfterAdd - MAX_MINUTES
+                const overHrs = Math.floor(overBy / 60)
+                const overMins = overBy % 60
+
+                isOverCapacity.value = true
+                remainingTimeMsg.value =
+                    `วันที่ ${form.date} เวลารวมจะเกิน ${MAX_MINUTES / 60} ชม. ไป ${overHrs} ชม. ` +
+                    (overMins > 0 ? `${overMins} นาที ` : '') +
+                    '(ยังสามารถจองต่อได้)'
             }
         }
     } catch (e) {
