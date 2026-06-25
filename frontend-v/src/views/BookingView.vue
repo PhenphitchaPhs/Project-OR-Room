@@ -1,5 +1,4 @@
 <template>
-    <div class="section-group"></div>
     <div class="page-wrapper">
         <div class="card">
             <div v-if="tomorrowCount > 0" class="reminder-banner">
@@ -87,6 +86,11 @@
                                 {{ isOverCapacity ? '⚠️' : '⏳' }} {{ remainingTimeMsg }}
                             </span>
                         </div>
+
+                        <select v-model="form.room" class="input-field green-theme" @change="checkValidDate" required>
+                            <option value="" disabled>Select OR Room</option>
+                            <option v-for="n in orRooms" :key="n" :value="`OR-${n}`">OR-{{ n }}</option>
+                        </select>
                     </div>
                 </div>
 
@@ -181,12 +185,15 @@ const showAlert = (message) => {
 
 const form = reactive({
     hn: '', fullName: '', age: '', gender: '', disease: '',
-    procedure: '', date: '', notes: '',
+    procedure: '', date: '', room: '', notes: '',
     cxrDate: '', cxrNote: '',
     ecgDate: '', ecgNote: '',
     labDate: '', labNote: '',
     admDate: '', admNote: ''
 })
+
+// 📍 เลขห้องผ่าตัด OR-201 ถึง OR-220 ให้เลือกตอนจอง/แก้คิว
+const orRooms = Array.from({ length: 20 }, (_, i) => 201 + i)
 
 const procedureGroups = ref([
     {
@@ -236,6 +243,8 @@ max.setDate(max.getDate() + 90)
 const maxDate = ref(max.toISOString().split('T')[0])
 
 onMounted(async () => {
+    const myLicense = localStorage.getItem('userLicense')
+
     // 🌟 ดึงข้อมูลเก่ามาใส่ฟอร์มถ้าเป็นการ Edit (มี bookingId)
     if (bookingId) {
         try {
@@ -246,6 +255,13 @@ onMounted(async () => {
                 const booking = allBookings.find(b => String(b.id) === String(bookingId))
 
                 if (booking) {
+                    // 📍 เช็คก่อนว่าเป็นคิวของตัวเองจริงไหม ห้ามแก้คิวของแพทย์คนอื่น
+                    if (booking.doctorLicense !== myLicense) {
+                        showAlert('คุณไม่มีสิทธิ์แก้ไขคิวนี้ เพราะไม่ใช่คิวของคุณครับ')
+                        setTimeout(() => { router.push('/home') }, 1500)
+                        return
+                    }
+
                     form.hn = booking.hn || ''
                     form.fullName = booking.fullName || ''
                     form.age = booking.age || ''
@@ -253,6 +269,7 @@ onMounted(async () => {
                     form.disease = booking.underlying || ''
                     form.procedure = booking.procedure || ''
                     form.date = booking.date || ''
+                    form.room = booking.room || ''
                     form.notes = booking.notes || ''
 
                     form.cxrDate = booking.cxrDate || ''
@@ -270,6 +287,17 @@ onMounted(async () => {
             }
         } catch (err) {
             console.error('โหลดข้อมูลสำหรับแก้ไขไม่สำเร็จ:', err)
+        }
+    } else if (myLicense) {
+        // 📍 ถ้าเป็นการจองใหม่ (ไม่ใช่ edit) ตั้งค่าห้องเริ่มต้นเป็นห้องประจำของแพทย์คนนี้
+        try {
+            const res = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/users/${myLicense}`)
+            if (res.ok) {
+                const userData = await res.json()
+                if (userData.orNumber) form.room = `OR-${userData.orNumber}`
+            }
+        } catch (e) {
+            console.error('ดึงห้อง OR ประจำไม่สำเร็จ', e)
         }
     }
 
@@ -371,39 +399,13 @@ const checkValidDate = async () => {
 
     if (!validateHolidayAndWeekend(form.date)) return
 
-    const selected = new Date(form.date)
-    const dow = selected.getDay()
+    // 📍 ไม่ต้องเช็ค "วันทำงาน" ของแพทย์อีกแล้ว เพราะระบบเปลี่ยนจากเลือกวันทำงานเป็นเลือกห้อง OR ประจำแทน
 
-    const license = localStorage.getItem('userLicense')
-
-    if (license) {
-        const dayMap = {
-            Monday: 1,
-            Tuesday: 2,
-            Wednesday: 3,
-            Thursday: 4,
-            Friday: 5
-        }
-
-        try {
-            const res = await fetch(
-                `https://or-room-backend.rockzee2018.workers.dev/api/users/${license}`
-            )
-
-            const userData = await res.json()
-            const workingDay = userData.day
-
-            if (workingDay && dayMap[workingDay] !== dow) {
-                showAlert(
-                    `คุณสามารถจองคิวได้เฉพาะวัน ${workingDay} ซึ่งเป็นวันทำงานของคุณเท่านั้นครับ`
-                )
-
-                form.date = ''
-                return
-            }
-        } catch (e) {
-            console.error('เช็กวันทำงานไม่สำเร็จ', e)
-        }
+    // ยังไม่ได้เลือกห้อง รอให้เลือกก่อนค่อยเช็คความจุ
+    if (!form.room) {
+        remainingTimeMsg.value = ''
+        isOverCapacity.value = false
+        return
     }
 
     try {
@@ -413,11 +415,14 @@ const checkValidDate = async () => {
 
         const allBookings = await res.json()
 
+        // 📍 เช็คความจุของ "ห้องที่เลือก" เท่านั้น ไม่รวมห้องอื่น และไม่นับคิวตัวเองตอนแก้ไข (กันนับซ้ำ)
         const sameDayBookings = allBookings.filter(
             b =>
                 b.date === form.date &&
+                b.room === form.room &&
                 b.status !== 'Succeed' &&
-                b.status !== 'Cancelled'
+                b.status !== 'Cancelled' &&
+                String(b.id) !== String(bookingId)
         )
 
         const usedMinutes = sameDayBookings.reduce((sum, b) => {
@@ -435,7 +440,7 @@ const checkValidDate = async () => {
             const exMins = exceededMin % 60
             isOverCapacity.value = true
             remainingTimeMsg.value =
-                `เกินเวลาที่กำหนดแล้ว ${exHrs} ชม. ` +
+                `ห้อง ${form.room} เกินเวลาที่กำหนดแล้ว ${exHrs} ชม. ` +
                 (exMins > 0 ? `${exMins} นาที ` : '') +
                 '(ยังสามารถจองต่อได้)'
         } else {
@@ -444,7 +449,7 @@ const checkValidDate = async () => {
 
             isOverCapacity.value = false
             remainingTimeMsg.value =
-                `เหลือเวลาว่างอีก ${hrs} ชม. ` +
+                `ห้อง ${form.room} เหลือเวลาว่างอีก ${hrs} ชม. ` +
                 (mins > 0 ? `${mins} นาที` : '')
         }
 
@@ -465,7 +470,7 @@ const checkValidDate = async () => {
 
                 isOverCapacity.value = true
                 remainingTimeMsg.value =
-                    `วันที่ ${form.date} เวลารวมจะเกิน ${MAX_MINUTES / 60} ชม. ไป ${overHrs} ชม. ` +
+                    `ห้อง ${form.room} วันที่ ${form.date} เวลารวมจะเกิน ${MAX_MINUTES / 60} ชม. ไป ${overHrs} ชม. ` +
                     (overMins > 0 ? `${overMins} นาที ` : '') +
                     '(ยังสามารถจองต่อได้)'
             }
@@ -476,7 +481,7 @@ const checkValidDate = async () => {
 }
 
 const submitForm = async () => {
-    if (!form.hn || !form.fullName || !form.age || !form.gender || !form.date || !form.procedure) {
+    if (!form.hn || !form.fullName || !form.age || !form.gender || !form.date || !form.procedure || !form.room) {
         showAlert('กรุณากรอกข้อมูล Patient Information และ Surgery Details ให้ครบถ้วนทุกช่องครับ')
         return
     }
@@ -490,6 +495,7 @@ const submitForm = async () => {
         gender: form.gender || '',
         procedure: form.procedure,
         date: form.date,
+        room: form.room,
         underlying: form.disease || '',
         notes: form.notes,
         cxrDate: form.cxrDate, cxrNote: form.cxrNote,

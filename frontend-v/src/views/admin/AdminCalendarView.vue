@@ -2,25 +2,27 @@
     <div class="calendar-page">
 
         <header class="calendar-navbar">
-            <button class="back-btn" @click="router.push('/admin-home')">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-                    <path fill="white" d="M20 11H7.83l5.59-5.59L12 4l-8 8l8 8l1.41-1.41L7.83 13H20z" />
-                </svg>
-            </button>
-            <span class="nav-title">📅 Admin Calendar</span>
-            <div class="nav-badge">All Doctors</div>
+            <div class="nav-left">
+                <button class="back-btn" @click="router.push('/admin-home')">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24">
+                        <path fill="white" d="M20 11H7.83l5.59-5.59L12 4l-8 8l8 8l1.41-1.41L7.83 13H20z" />
+                    </svg>
+                </button>
+            </div>
+            <div class="nav-center">
+                <button class="ctrl-btn" @click="changeMonth(-1)">‹</button>
+                <div class="month-label">{{ monthNames[currentMonth] }} {{ currentYear + 543 }}</div>
+                <button class="ctrl-btn" @click="changeMonth(1)">›</button>
+            </div>
+            <div class="nav-right">
+                <span class="nav-badge">All Doctors</span>
+                <button class="today-btn" @click="goToToday">วันนี้</button>
+            </div>
         </header>
 
-        <div class="cal-controls">
-            <button class="ctrl-btn" @click="changeMonth(-1)">‹</button>
-            <div class="month-label">{{ monthNames[currentMonth] }} {{ currentYear }}</div>
-            <button class="ctrl-btn" @click="changeMonth(1)">›</button>
-            <button class="today-btn" @click="goToToday">Today</button>
-        </div>
-
         <div class="weekday-row">
-            <div v-for="d in ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']" :key="d" class="weekday-cell">{{ d }}
-            </div>
+            <div v-for="d in ['อา.','จ.','อ.','พ.','พฤ.','ศ.','ส.']" :key="d" class="weekday-cell"
+                :class="{ 'weekend-label': d === 'อา.' || d === 'ส.' }">{{ d }}</div>
         </div>
 
         <div class="calendar-grid">
@@ -39,15 +41,16 @@
                 <span class="day-number">{{ date.dayNumber }}</span>
                 <span v-if="date.isCurrentMonth && isOfficialHoliday(date.fullDate)" class="holiday-tag">{{
                     getHolidayName(date.fullDate) }}</span>
+                <span
+                    v-if="date.isCurrentMonth && !isClosedDay(date.fullDate)"
+                    class="capacity-badge"
+                    :class="{ 'badge-full': availableRoomsCount(date.fullDate) === 0, 'badge-available': availableRoomsCount(date.fullDate) > 0 }"
+                >{{ availableRoomsCount(date.fullDate) }}/20 ห้องว่าง</span>
                 <div class="dot-row">
-                    <span v-for="b in getBookingsForDate(date.fullDate).slice(0, 3)" :key="b.id" class="dot"></span>
+                    <span v-for="b in getBookingsForDate(date.fullDate).slice(0, 3)" :key="b.id" class="dot"
+                        :style="{ background: urgencyColor(b.urgency) }"></span>
                     <span v-if="getBookingsForDate(date.fullDate).length > 3" class="more-count">+{{
                         getBookingsForDate(date.fullDate).length - 3 }}</span>
-                </div>
-                <div v-if="date.isCurrentMonth && getUsedMinutes(date.fullDate) > 0" class="time-bar-wrap">
-                    <div class="time-bar"
-                        :style="{ width: Math.min(getUsedMinutes(date.fullDate) / 420 * 100, 100) + '%', background: getUsedMinutes(date.fullDate) >= 420 ? '#e53935' : '#43a047' }">
-                    </div>
                 </div>
             </div>
         </div>
@@ -57,32 +60,44 @@
                 <div class="card-modal">
                     <h3 class="modal-title">📅 {{ formatDateThai(selectedFullDate) }}</h3>
 
-                    <div class="time-summary">
-                        <span>
-                            ⏱ Total used:
-                            <strong>
-                                {{ formatMinutes(getUsedMinutes(selectedFullDate)) }}
-                                /
-                                {{ formatMinutes(420) }}
-                            </strong>
-                        </span>
-                        <span class="time-remain" :class="{ 'full': getUsedMinutes(selectedFullDate) >= 420 }">
-                            {{ getUsedMinutes(selectedFullDate) >= 420 ? '🔴 Full' : `🟢 Remaining: ${formatMinutes(420
-                                - getUsedMinutes(selectedFullDate))}` }}
-                        </span>
+                    <p v-if="!isClosedDay(selectedFullDate)" class="capacity-line">
+                        🏥 ห้องว่าง {{ availableRoomsCount(selectedFullDate) }}/20 ห้อง
+                    </p>
+                    <p v-else class="capacity-line capacity-closed-text">
+                        🔒 ห้องผ่าตัดปิดทำการ
+                    </p>
+
+                    <!-- 📍 Admin เห็นสถานะของห้องผ่าตัดทุกห้อง (OR-201 ถึง OR-220) เหมือนฝั่งแพทย์ -->
+                    <div v-if="!isClosedDay(selectedFullDate)" class="room-grid">
+                        <div
+                            v-for="r in orRooms"
+                            :key="r"
+                            class="room-chip"
+                            :class="{ 'room-full': isRoomFull(selectedFullDate, r), 'room-available': !isRoomFull(selectedFullDate, r) }"
+                        >
+                            <span class="room-num">OR-{{ r }}</span>
+                            <span class="room-time">{{ roomRemainingLabel(selectedFullDate, r) }}</span>
+                        </div>
+                    </div>
+
+                    <div v-if="selectedDateBookings.length === 0" class="empty-state">
+                        ยังไม่มีคิวที่จองในวันนี้
                     </div>
 
                     <div v-for="b in selectedDateBookings" :key="b.id" class="booking-item">
+                        <p><strong>Room:</strong> {{ b.room || '-' }}</p>
+                        <p><strong>Doctor:</strong> {{ doctorMap[b.doctorLicense] || b.doctorLicense || '-' }}</p>
                         <p><strong>Patient:</strong> {{ b.fullName }}</p>
                         <p><strong>HN:</strong> {{ b.hn }}</p>
-                        <p><strong>Doctor:</strong> {{ doctorMap[b.doctorLicense] || b.doctorLicense || '-' }}</p>
+                        <p><strong>Age / Gender:</strong> {{ b.age || '-' }} ปี · {{ b.gender === 'female' ? 'หญิง' : 'ชาย' }}</p>
                         <p><strong>Procedure:</strong> {{ b.procedure }}</p>
-                        <p><strong>Room:</strong> {{ b.room }}</p>
+                        <p v-if="b.isNpoRisk">🍼 <strong>NPO Risk</strong></p>
+                        <p v-if="b.isInfected">🦠 <strong>Infection Risk</strong></p>
                         <hr style="border-color:#eee; margin: 8px 0" />
                     </div>
 
                     <div class="actions">
-                        <button @click="goAddPatient" class="btn-fill">+ Add Queue</button>
+                        <button v-if="!isClosedDay(selectedFullDate)" @click="goAddPatient" class="btn-fill">+ Add Queue</button>
                         <button @click="isDetailPopupOpen = false" class="btn-clear">Close</button>
                     </div>
                 </div>
@@ -154,27 +169,46 @@ onMounted(async () => {
     }
 })
 
-const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+const monthNames = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"]
 
-// 📍 3. อัปเดตฟังก์ชันให้เช็กวันหยุดจากตัวแปร officialHolidays.value แทน
+// 📍 อัปเดตฟังก์ชันให้เช็กวันหยุดจากตัวแปร officialHolidays.value แทน
 const isOfficialHoliday = (d) => officialHolidays.value.some(h => h.date === d)
-const getHolidayName = (d) => officialHolidays.value.find(h => h.date === d)?.name || 'Holiday'
+const getHolidayName = (d) => officialHolidays.value.find(h => h.date === d)?.name || 'วันหยุด'
+
+const isWeekend = (d) => {
+    const dow = new Date(d + 'T00:00:00').getDay()
+    return dow === 0 || dow === 6
+}
+const isClosedDay = (d) => isWeekend(d) || isOfficialHoliday(d)
 
 const getBookingsForDate = (d) => bookings.value.filter(b => b.date === d && b.status !== 'Succeed')
 const hasBooking = (d) => getBookingsForDate(d).length > 0
 
-// คำนวณเวลาใช้ไปทุกหมอรวมกัน
-const getUsedMinutes = (d) => {
-    return getBookingsForDate(d).reduce((sum, b) => {
-        const match = b.procedure?.match(/(\d+)\s*min/)
-        return sum + (match ? parseInt(match[1]) : 0)
-    }, 0)
+// 📍 เลขห้องผ่าตัด OR-201 ถึง OR-220 และฟังก์ชันคำนวณความจุต่อห้อง (เหมือนฝั่งแพทย์ทุกอย่าง)
+const orRooms = Array.from({ length: 20 }, (_, i) => 201 + i)
+const MAX_MINUTES = 420
+const getUsedMinutesForRoom = (d, roomNum) => {
+    return bookings.value
+        .filter(b => b.date === d && b.room === `OR-${roomNum}` && b.status !== 'Succeed' && b.status !== 'Cancelled')
+        .reduce((sum, b) => {
+            const match = b.procedure?.match(/(\d+)\s*min/)
+            return sum + (match ? parseInt(match[1]) : 0)
+        }, 0)
 }
-const formatMinutes = (mins) => {
-    const h = Math.floor(mins / 60)
-    const m = mins % 60
+const isRoomFull = (d, roomNum) => getUsedMinutesForRoom(d, roomNum) >= MAX_MINUTES
+const roomRemainingLabel = (d, roomNum) => {
+    const remain = Math.max(MAX_MINUTES - getUsedMinutesForRoom(d, roomNum), 0)
+    if (remain <= 0) return 'เต็ม'
+    const hrs = Math.floor(remain / 60)
+    const mins = remain % 60
+    return `${hrs}ชม${mins > 0 ? ' ' + mins + 'น' : ''}`
+}
+const availableRoomsCount = (d) => orRooms.filter(r => !isRoomFull(d, r)).length
 
-    return `${h}h ${m}m`
+const urgencyColor = (urgency) => {
+    if (urgency === 'Emergency') return '#e53935'
+    if (urgency === 'Urgent') return '#f9a825'
+    return '#43a047'
 }
 
 const calendarDays = computed(() => {
@@ -200,17 +234,7 @@ const changeMonth = (v) => {
 }
 
 const handleDateClick = (date) => {
-
-    // วันว่างนอกเดือน
     if (!date.isCurrentMonth) return
-    // วันย้อนหลัง
-    if (date.fullDate < todayStr) return
-
-    // เสาร์ = 6, อาทิตย์ = 0
-    if (date.dayOfWeek === 0 || date.dayOfWeek === 6) return
-
-    // วันหยุดราชการ
-    if (isOfficialHoliday(date.fullDate)) return
 
     selectedFullDate.value = date.fullDate
     selectedDateBookings.value = getBookingsForDate(date.fullDate)
@@ -226,7 +250,7 @@ const goAddPatient = () => {
 const formatDateThai = (d) => {
     if (!d) return ''
     const dt = new Date(d + 'T00:00:00')
-    return `${monthNames[dt.getMonth()]} ${dt.getDate()}, ${dt.getFullYear() + 543}`
+    return `${dt.getDate()} ${monthNames[dt.getMonth()]} ${dt.getFullYear() + 543}`
 }
 </script>
 
@@ -252,8 +276,11 @@ const formatDateThai = (d) => {
     padding: 0 20px;
     display: flex;
     align-items: center;
-    gap: 12px;
+    justify-content: space-between;
 }
+.nav-left { width: 40px; display: flex; align-items: center; }
+.nav-center { display: flex; align-items: center; gap: 12px; flex: 1; justify-content: center; }
+.nav-right { display: flex; align-items: center; gap: 10px; }
 
 .back-btn {
     background: none;
@@ -270,13 +297,6 @@ const formatDateThai = (d) => {
     background: rgba(255, 255, 255, 0.15);
 }
 
-.nav-title {
-    color: white;
-    font-size: 1.1rem;
-    font-weight: 700;
-    flex: 1;
-}
-
 .nav-badge {
     background: rgba(255, 255, 255, 0.2);
     color: white;
@@ -284,35 +304,29 @@ const formatDateThai = (d) => {
     padding: 4px 10px;
     border-radius: 20px;
     font-weight: 600;
-}
-
-/* CONTROLS */
-.cal-controls {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 14px 20px;
-    background: white;
-    border-bottom: 1px solid #e8edf2;
+    white-space: nowrap;
 }
 
 .ctrl-btn {
-    background: #f0f4f8;
+    background: rgba(255,255,255,0.2);
     border: none;
     width: 34px;
     height: 34px;
     border-radius: 8px;
-    font-size: 20px;
+    font-size: 22px;
     cursor: pointer;
-    color: #1a3a5f;
+    color: white;
     display: flex;
     align-items: center;
     justify-content: center;
+    line-height: 1;
 }
 
 .ctrl-btn:hover {
-    background: #dde6f0;
+    background: rgba(255,255,255,0.3);
 }
+
+.month-label { font-weight: 700; font-size: 1rem; color: white; }
 
 .month-label {
     font-weight: 700;
@@ -323,15 +337,16 @@ const formatDateThai = (d) => {
 }
 
 .today-btn {
-    background: #1a3a5f;
+    background: rgba(255,255,255,0.2);
     color: white;
-    border: none;
+    border: 1.5px solid rgba(255,255,255,0.4);
     padding: 6px 14px;
     border-radius: 8px;
     font-size: 13px;
     cursor: pointer;
     font-weight: 600;
 }
+.today-btn:hover { background: rgba(255,255,255,0.3); }
 
 /* WEEKDAY */
 .weekday-row {
@@ -346,8 +361,8 @@ const formatDateThai = (d) => {
     font-size: 11px;
     font-weight: 700;
     color: #4a6fa5;
-    text-transform: uppercase;
 }
+.weekend-label { color: #c0392b; }
 
 /* GRID */
 .calendar-grid {
@@ -431,7 +446,6 @@ const formatDateThai = (d) => {
     width: 7px;
     height: 7px;
     border-radius: 50%;
-    background: #4a6fa5;
 }
 
 .more-count {
@@ -440,22 +454,17 @@ const formatDateThai = (d) => {
     font-weight: 600;
 }
 
-.time-bar-wrap {
-    position: absolute;
-    bottom: 4px;
-    left: 4px;
-    right: 4px;
-    height: 3px;
-    background: #e0e0e0;
-    border-radius: 2px;
-    overflow: hidden;
+.capacity-badge {
+    display: inline-block;
+    font-size: 8.5px;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 6px;
+    margin-top: 3px;
+    color: white;
 }
-
-.time-bar {
-    height: 100%;
-    border-radius: 2px;
-    transition: width 0.3s;
-}
+.badge-available { background: #43a047; }
+.badge-full { background: #e53935; }
 
 /* POPUP */
 .overlay-modal {
@@ -486,23 +495,43 @@ const formatDateThai = (d) => {
     margin-bottom: 12px;
 }
 
-.time-summary {
-    background: #f0f4f8;
-    border-radius: 10px;
-    padding: 10px 14px;
-    margin-bottom: 14px;
-    display: flex;
-    justify-content: space-between;
-    font-size: 13px;
-    color: #444;
-}
-
-.time-remain {
+.capacity-line {
+    font-size: 12.5px;
     font-weight: 600;
+    color: #2e7d32;
+    margin-bottom: 14px;
 }
-
-.time-remain.full {
-    color: #e53935;
+.capacity-closed-text { color: #757575; }
+.empty-state {
+    text-align: center;
+    color: #888;
+    font-size: 13px;
+    padding: 20px 0;
+}
+.room-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+    margin-bottom: 16px;
+}
+.room-chip {
+    border-radius: 8px;
+    padding: 6px 4px;
+    text-align: center;
+    color: white;
+}
+.room-chip.room-available { background: #43a047; }
+.room-chip.room-full { background: #e53935; }
+.room-num {
+    display: block;
+    font-size: 10px;
+    font-weight: 700;
+}
+.room-time {
+    display: block;
+    font-size: 9px;
+    opacity: 0.9;
+    margin-top: 1px;
 }
 
 .booking-item {
@@ -513,16 +542,6 @@ const formatDateThai = (d) => {
     font-size: 13px;
     color: #333;
     margin: 3px 0;
-}
-
-.booking-badge {
-    display: inline-block;
-    color: white;
-    font-size: 11px;
-    padding: 3px 10px;
-    border-radius: 20px;
-    font-weight: 600;
-    margin-bottom: 6px;
 }
 
 .actions {

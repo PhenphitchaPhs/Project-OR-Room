@@ -38,14 +38,14 @@
                 <span
                     v-if="date.isCurrentMonth && !isClosedDay(date.fullDate)"
                     class="capacity-badge"
-                    :class="{ 'badge-full': isDayFull(date.fullDate), 'badge-available': !isDayFull(date.fullDate) }"
-                >{{ remainingLabel(date.fullDate) }}</span>
+                    :class="{ 'badge-full': availableRoomsCount(date.fullDate) === 0, 'badge-available': availableRoomsCount(date.fullDate) > 0 }"
+                >{{ availableRoomsCount(date.fullDate) }}/20 ห้องว่าง</span>
                 <div class="dot-row">
                     <span
                         v-for="b in getBookingsForDate(date.fullDate).slice(0,3)"
                         :key="b.id"
                         class="dot"
-                        :style="{ background: urgencyColor(b.urgency) }"
+                        :style="{ background: b.doctorLicense === myLicense ? urgencyColor(b.urgency) : '#b0b8c1' }"
                     ></span>
                     <span v-if="getBookingsForDate(date.fullDate).length > 3" class="more-count">+{{ getBookingsForDate(date.fullDate).length - 3 }}</span>
                 </div>
@@ -56,8 +56,8 @@
             <div v-if="isDetailPopupOpen" class="overlay-modal" @click.self="isDetailPopupOpen = false">
                 <div class="card-modal">
                     <h3 class="modal-title">📅 {{ formatDateThai(selectedFullDate) }}</h3>
-                    <p v-if="!isClosedDay(selectedFullDate)" class="capacity-line" :class="{ 'capacity-full-text': isDayFull(selectedFullDate) }">
-                        {{ isDayFull(selectedFullDate) ? '🔴 คิวเต็มแล้ว' : `🟢 ${remainingLabel(selectedFullDate)}` }}
+                    <p v-if="!isClosedDay(selectedFullDate)" class="capacity-line">
+                        🏥 ห้องว่าง {{ availableRoomsCount(selectedFullDate) }}/20 ห้อง
                     </p>
                     <p v-else class="capacity-line capacity-closed-text">
                         🔒 ห้องผ่าตัดปิดทำการ
@@ -66,17 +66,37 @@
                         📌 วันนี้ไม่ใช่วันทำงานของคุณ{{ myWorkingDay ? ` (วันทำงาน: ${dayNameThai[myWorkingDay] || myWorkingDay})` : '' }}
                     </p>
 
+                    <!-- 📍 แสดงสถานะของห้องผ่าตัดทุกห้อง (OR-201 ถึง OR-220) พร้อมเวลาที่เหลือและสีบอกสถานะ -->
+                    <div v-if="!isClosedDay(selectedFullDate)" class="room-grid">
+                        <div
+                            v-for="r in orRooms"
+                            :key="r"
+                            class="room-chip"
+                            :class="{ 'room-full': isRoomFull(selectedFullDate, r), 'room-available': !isRoomFull(selectedFullDate, r) }"
+                        >
+                            <span class="room-num">OR-{{ r }}</span>
+                            <span class="room-time">{{ roomRemainingLabel(selectedFullDate, r) }}</span>
+                        </div>
+                    </div>
+
                     <div v-if="selectedDateBookings.length === 0" class="empty-state">
                         ยังไม่มีคิวที่จองในวันนี้
                     </div>
 
                     <div v-for="b in selectedDateBookings" :key="b.id" class="booking-item">
-                        <p><strong>Patient:</strong> {{ b.fullName }}</p>
-                        <p><strong>HN:</strong> {{ b.hn }}</p>
-                        <p><strong>Age / Gender:</strong> {{ b.age || '-' }} ปี · {{ b.gender === 'female' ? 'หญิง' : 'ชาย' }}</p>
-                        <p><strong>Procedure:</strong> {{ b.procedure }}</p>
-                        <p v-if="b.isNpoRisk">🍼 <strong>NPO Risk</strong></p>
-                        <p v-if="b.isInfected">🦠 <strong>Infection Risk</strong></p>
+                        <template v-if="b.doctorLicense === myLicense">
+                            <p><strong>Room:</strong> {{ b.room || '-' }}</p>
+                            <p><strong>Patient:</strong> {{ b.fullName }}</p>
+                            <p><strong>HN:</strong> {{ b.hn }}</p>
+                            <p><strong>Age / Gender:</strong> {{ b.age || '-' }} ปี · {{ b.gender === 'female' ? 'หญิง' : 'ชาย' }}</p>
+                            <p><strong>Procedure:</strong> {{ b.procedure }}</p>
+                            <p v-if="b.isNpoRisk">🍼 <strong>NPO Risk</strong></p>
+                            <p v-if="b.isInfected">🦠 <strong>Infection Risk</strong></p>
+                            <button class="btn-edit-booking" @click="goToEditBooking(b.id)">✏️ Edit (เพิ่ม/เปลี่ยนวันที่และห้อง)</button>
+                        </template>
+                        <template v-else>
+                            <p class="other-booking-line">🔒 ห้อง {{ b.room || '-' }} ถูกจองแล้ว (คิวของแพทย์ท่านอื่น)</p>
+                        </template>
                         <hr style="border-color:#eee; margin: 8px 0" />
                     </div>
                     <div class="actions">
@@ -113,27 +133,24 @@ const selectedDateBookings = ref([])
 
 const bookings = ref([])
 const officialHolidays = ref([])
-const capacityBookings = ref([])
-const MAX_MINUTES = 360
+const MAX_MINUTES = 420
 const myWorkingDay = ref('')
+// 📍 license ของแพทย์ที่ login อยู่ ใช้เทียบว่าคิวนี้เป็นของตัวเองไหม
+const myLicense = localStorage.getItem('userLicense')
+// 📍 เลขห้องผ่าตัด OR-201 ถึง OR-220
+const orRooms = Array.from({ length: 20 }, (_, i) => 201 + i)
 
 onMounted(async () => {
     const license = localStorage.getItem('userLicense')
-    
+
+    // 📍 ดึงคิวทั้งหมดของทุกแพทย์ (ไม่กรอง license) เพื่อใช้แสดงว่าห้องไหนถูกจองแล้วบ้าง
+    // ส่วนข้อมูลผู้ป่วยของคนอื่นจะถูกซ่อนตอนแสดงผล (เห็นแค่ว่าห้องถูกจองแล้ว)
     try {
-        const res = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/bookings?license=${license}`)
+        const res = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/bookings`)
         const data = await res.json()
         bookings.value = Array.isArray(data) ? data : []
     } catch (e) {
         console.error('ดึงคิวไม่สำเร็จ', e)
-    }
-
-    try {
-        const resAll = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/bookings`)
-        const dataAll = await resAll.json()
-        capacityBookings.value = Array.isArray(dataAll) ? dataAll : []
-    } catch (e) {
-        console.error('ดึงข้อมูลความจุห้องผ่าตัดไม่สำเร็จ', e)
     }
 
     try {
@@ -196,22 +213,24 @@ const sortByAgeThenFemaleFirst = (arr) => {
 const getBookingsForDate = (d) => sortByAgeThenFemaleFirst(bookings.value.filter(b => b.date === d && b.status !== 'Succeed'))
 const hasBooking = (d) => getBookingsForDate(d).length > 0
 
-const getUsedMinutesForDate = (d) => {
-    return capacityBookings.value
-        .filter(b => b.date === d && b.status !== 'Succeed' && b.status !== 'Cancelled')
+const getUsedMinutesForRoom = (d, roomNum) => {
+    return bookings.value
+        .filter(b => b.date === d && b.room === `OR-${roomNum}` && b.status !== 'Succeed' && b.status !== 'Cancelled')
         .reduce((sum, b) => {
             const match = b.procedure?.match(/(\d+)\s*min/)
             return sum + (match ? parseInt(match[1]) : 0)
         }, 0)
 }
-const isDayFull = (d) => getUsedMinutesForDate(d) >= MAX_MINUTES
-const remainingLabel = (d) => {
-    const remain = Math.max(MAX_MINUTES - getUsedMinutesForDate(d), 0)
+const isRoomFull = (d, roomNum) => getUsedMinutesForRoom(d, roomNum) >= MAX_MINUTES
+const roomRemainingLabel = (d, roomNum) => {
+    const remain = Math.max(MAX_MINUTES - getUsedMinutesForRoom(d, roomNum), 0)
     if (remain <= 0) return 'เต็ม'
     const hrs = Math.floor(remain / 60)
     const mins = remain % 60
-    return `ว่าง ${hrs}ชม${mins > 0 ? ' ' + mins + 'น' : ''}`
+    return `${hrs}ชม${mins > 0 ? ' ' + mins + 'น' : ''}`
 }
+// 📍 จำนวนห้องที่ยังว่างอยู่ในวันนั้น (จาก 20 ห้อง) ใช้แสดง badge สรุปในตารางปฏิทิน
+const availableRoomsCount = (d) => orRooms.filter(r => !isRoomFull(d, r)).length
 
 const urgencyColor = (urgency) => {
     if (urgency === 'Emergency') return '#e53935'
@@ -251,6 +270,11 @@ const goToBooking = (lockDate = null) => {
     } else {
         router.push('/booking')
     }
+}
+
+// 📍 ไปหน้าแก้ไขคิว (เฉพาะคิวของตัวเอง เปลี่ยนวันที่/ห้อง/ข้อมูลผู้ป่วยได้)
+const goToEditBooking = (bookingId) => {
+    router.push(`/booking/${bookingId}`)
 }
 
 // อัปเดตฟังก์ชันเพื่อแสดงผล วัน เดือน ปี (พ.ศ.) ในภาษาไทย
@@ -437,7 +461,6 @@ const formatDateThai = (d) => {
     color: #2e7d32;
     margin-bottom: 14px;
 }
-.capacity-full-text { color: #c62828; }
 .capacity-closed-text { color: #757575; }
 .empty-state {
     text-align: center;
@@ -445,6 +468,48 @@ const formatDateThai = (d) => {
     font-size: 13px;
     padding: 20px 0;
 }
+.room-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+    margin-bottom: 16px;
+}
+.room-chip {
+    border-radius: 8px;
+    padding: 6px 4px;
+    text-align: center;
+    color: white;
+}
+.room-chip.room-available { background: #43a047; }
+.room-chip.room-full { background: #e53935; }
+.room-num {
+    display: block;
+    font-size: 10px;
+    font-weight: 700;
+}
+.room-time {
+    display: block;
+    font-size: 9px;
+    opacity: 0.9;
+    margin-top: 1px;
+}
+.other-booking-line {
+    font-size: 13px;
+    color: #888;
+    font-style: italic;
+}
+.btn-edit-booking {
+    margin-top: 6px;
+    background: #e8f0fe;
+    color: #1a3a5f;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.btn-edit-booking:hover { background: #d6e4fb; }
 .booking-item { margin-bottom: 10px; }
 .booking-item p { font-size: 13px; color: #333; margin: 3px 0; }
 .actions {

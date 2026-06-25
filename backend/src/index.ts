@@ -193,7 +193,7 @@ app.get('/api/bookings', async (c) => {
 app.post('/api/bookings', async (c) => {
   const b = await c.req.json()
   try {
-    // อัปเดตคำสั่ง INSERT ให้รองรับข้อมูล cxr, ecg, lab, adm
+    // 📍 ใช้ห้องจริงที่ส่งมาจากฟอร์ม ไม่ hardcode 'OR-01' อีกต่อไป (เพื่อให้ระบบนับความจุแยกตามห้องได้จริง)
     await c.env.DB.prepare(`
       INSERT INTO bookings (
         hn, fullName, dob, age, gender, procedure, date, urgency, isNpoRisk, isInfected, underlying, 
@@ -205,12 +205,39 @@ app.post('/api/bookings', async (c) => {
       b.hn, b.fullName, b.dob, b.age, b.gender, b.procedure, 
       b.date, b.urgency, b.isNpoRisk ? 1 : 0, b.isInfected ? 1 : 0, b.underlying, 
       b.cxrDate, b.cxrNote, b.ecgDate, b.ecgNote, b.labDate, b.labNote, b.admDate, b.admNote, 
-      b.notes, 'Upcoming', 'OR-01', b.doctorLicense 
+      b.notes, 'Upcoming', b.room || 'OR-01', b.doctorLicense 
     ).run()
     return c.json({ success: true }, 201)
   } catch (e) {
     console.error("DB Insert Error:", e)
     return c.json({ error: 'DB Insert Error' }, 500)
+  }
+})
+
+// 🟢 แก้ไขคิวที่จองไว้ (Edit) — อัปเดตได้ทั้งวันที่ ห้อง และข้อมูลผู้ป่วย
+app.put('/api/bookings/:id', async (c) => {
+  const id = c.req.param('id')
+  const b = await c.req.json()
+  try {
+    const existing = await c.env.DB.prepare('SELECT id FROM bookings WHERE id = ?').bind(id).first()
+    if (!existing) return c.json({ error: 'ไม่พบคิวนี้ในระบบ' }, 404)
+
+    await c.env.DB.prepare(`
+      UPDATE bookings SET
+        hn = ?, fullName = ?, age = ?, gender = ?, procedure = ?, date = ?, room = ?, underlying = ?,
+        cxrDate = ?, cxrNote = ?, ecgDate = ?, ecgNote = ?, labDate = ?, labNote = ?, admDate = ?, admNote = ?,
+        notes = ?
+      WHERE id = ?
+    `).bind(
+      b.hn, b.fullName, b.age, b.gender, b.procedure, b.date, b.room || 'OR-01', b.underlying,
+      b.cxrDate, b.cxrNote, b.ecgDate, b.ecgNote, b.labDate, b.labNote, b.admDate, b.admNote,
+      b.notes, id
+    ).run()
+
+    return c.json({ success: true, message: 'อัปเดตคิวสำเร็จ' })
+  } catch (e) {
+    console.error("DB Update Error:", e)
+    return c.json({ error: 'DB Update Error' }, 500)
   }
 })
 
