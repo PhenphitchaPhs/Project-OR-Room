@@ -18,9 +18,9 @@
           <input type="password" placeholder="Secret Key" v-model="secretKey" class="form-input" />
 
           <div class="select-wrapper">
-            <select v-model="day" class="form-select" required>
-              <option disabled value="">Select Your Day</option>
-              <option v-for="d in days" :key="d" :value="d">{{ d }}</option>
+            <select v-model="orNumber" class="form-select" required>
+              <option disabled value="">Select Your OR Number</option>
+              <option v-for="n in orNumbers" :key="n" :value="n">OR-{{ n }}</option>
             </select>
           </div>
         </div>
@@ -48,13 +48,13 @@ const email = ref('') // 🟢 ตัวแปร Email
 const password = ref('')
 const confirmPassword = ref('')
 const secretKey = ref('')
-const day = ref('')
+const orNumber = ref('')
 const message = ref('')
 const isSuccess = ref(false)
 
 const submitForm = async () => {
   // 🟢 เช็ก Email ด้วย
-  if (!doctorName.value || !license.value || !email.value || !password.value || !confirmPassword.value || !day.value) {
+  if (!doctorName.value || !license.value || !email.value || !password.value || !confirmPassword.value || !orNumber.value) {
     message.value = "กรุณากรอกข้อมูลให้ครบ"
     isSuccess.value = false
     return
@@ -80,7 +80,7 @@ const submitForm = async () => {
         doctorName: doctorName.value,
         email: email.value, // 🟢 ส่ง Email ไป Backend
         password: password.value,
-        day: day.value
+        orNumber: orNumber.value
       })
     })
 
@@ -101,7 +101,8 @@ const submitForm = async () => {
 
 const goBack = () => { router.back() }
 
-const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+// 📍 เลขห้องผ่าตัดประจำ OR-201 ถึง OR-220
+const orNumbers = Array.from({ length: 20 }, (_, i) => 201 + i)
 </script>
 
 <style scoped>

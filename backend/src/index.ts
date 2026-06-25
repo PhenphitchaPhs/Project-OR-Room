@@ -23,12 +23,12 @@ app.use('/*', cors({
 // 🔐 1. AUTHENTICATION (ระบบยืนยันตัวตน)
 // ==========================================
 
-// 🟢 สมัครสมาชิก (Register) - อัปเดตเพิ่ม Email
+// 🟢 สมัครสมาชิก (Register) - อัปเดตเพิ่ม Email + เปลี่ยนจาก day เป็น orNumber
 app.post('/api/register', async (c) => {
   try {
-    const { license, doctorName, email, password, day } = await c.req.json()
+    const { license, doctorName, email, password, orNumber } = await c.req.json()
 
-    if (!license || !doctorName || !email || !password || !day) {
+    if (!license || !doctorName || !email || !password || !orNumber) {
       return c.json({ error: 'กรุณากรอกข้อมูลให้ครบถ้วน' }, 400)
     }
 
@@ -42,9 +42,9 @@ app.post('/api/register', async (c) => {
 
     // บันทึกข้อมูล (เพิ่ม role เริ่มต้นเป็น 'user')
     await c.env.DB.prepare(`
-      INSERT INTO users (license, doctorName, email, password, day, role) 
+      INSERT INTO users (license, doctorName, email, password, orNumber, role) 
       VALUES (?, ?, ?, ?, ?, 'user')
-    `).bind(license, doctorName, email, password, day).run()
+    `).bind(license, doctorName, email, password, orNumber).run()
 
     return c.json({ success: true, message: 'สมัครสมาชิกสำเร็จ' }, 201)
   } catch (e) {
@@ -123,7 +123,7 @@ app.post('/api/reset-password', async (c) => {
 // 🟢 ดึงรายชื่อผู้ใช้ทั้งหมด (สำหรับ Admin)
 app.get('/api/users', async (c) => {
   try {
-    const { results } = await c.env.DB.prepare('SELECT license, doctorName, day, role FROM users').all()
+    const { results } = await c.env.DB.prepare('SELECT license, doctorName, orNumber, role FROM users').all()
     return c.json(results)
   } catch (e) {
     return c.json({ error: 'DB Fetch Error' }, 500)
@@ -134,7 +134,7 @@ app.get('/api/users', async (c) => {
 app.get('/api/users/:license', async (c) => {
   const license = c.req.param('license')
   try {
-    const user = await c.env.DB.prepare('SELECT day FROM users WHERE license = ?').bind(license).first()
+    const user = await c.env.DB.prepare('SELECT orNumber FROM users WHERE license = ?').bind(license).first()
     if (user) return c.json(user)
     return c.json({ error: 'ไม่พบผู้ใช้' }, 404)
   } catch (e) {
@@ -142,12 +142,12 @@ app.get('/api/users/:license', async (c) => {
   }
 })
 
-// 🟢 เปลี่ยนวันทำงาน
-app.put('/api/users/:license/day', async (c) => {
-  const { day } = await c.req.json()
+// 🟢 เปลี่ยนเลขห้องผ่าตัดประจำ (OR Number)
+app.put('/api/users/:license/or-number', async (c) => {
+  const { orNumber } = await c.req.json()
   const license = c.req.param('license')
   try {
-    const info = await c.env.DB.prepare('UPDATE users SET day = ? WHERE license = ?').bind(day, license).run()
+    const info = await c.env.DB.prepare('UPDATE users SET orNumber = ? WHERE license = ?').bind(orNumber, license).run()
     if (info.meta.changes === 0) return c.json({ error: `หา License '${license}' ไม่เจอในระบบ` }, 404)
     return c.json({ success: true })
   } catch (e) {

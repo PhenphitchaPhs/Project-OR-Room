@@ -26,7 +26,7 @@
             </div>
             <div class="user-details">
               <span class="user-id">{{ userLicense }}</span>
-              <span class="user-day">{{ selectedDay }}</span>
+              <span class="user-day">OR-{{ orNumber }}</span>
             </div>
           </div>
           <button class="logout-btn" @click="handleLogout">
@@ -50,18 +50,14 @@
               </div>
             </li>
 
-            <li @click="openDayModal">
+            <li @click="openOrNumberModal">
               <div class="menu-item">
                 <span class="menu-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22"
-                    viewBox="0 0 48 48">
-                    <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
-                      stroke-width="4">
-                      <path d="M18 31h20V5" />
-                      <path d="M30 21H10v22m34-32l-6-6l-6 6" />
-                      <path d="m16 37l-6 6l-6-6" />
-                    </g>
+                    viewBox="0 0 24 24">
+                    <path fill="currentColor"
+                      d="M19 4h-3.17L14 2h-4L8.17 4H5c-1.1 0-2 .9-2 2v13c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2m0 15H5V6h3.05l.59-.65L9.88 4h4.24l1.24 1.35l.59.65H19zM12 8a4 4 0 1 0 0 8a4 4 0 0 0 0-8m0 6a2 2 0 1 1 0-4a2 2 0 0 1 0 4" />
                   </svg></span>
-                <span class="menu-text">Change days</span>
+                <span class="menu-text">Change OR Number</span>
               </div>
             </li>
 
@@ -89,20 +85,20 @@
     </transition>
 
     <Transition name="fade">
-      <div v-if="isDayModalOpen" class="modal-overlay-center" @click.self="isDayModalOpen = false">
+      <div v-if="isOrNumberModalOpen" class="modal-overlay-center" @click.self="isOrNumberModalOpen = false">
         <div class="day-modal-card">
-          <h2 class="day-modal-title">Choose your day</h2>
+          <h2 class="day-modal-title">Choose your OR Number</h2>
           <div class="days-list">
-            <div v-for="day in daysOfWeek" :key="day" class="day-option" @click="tempSelectedDay = day">
-              <span :class="{ 'active-day-text': tempSelectedDay === day }">{{ day }}</span>
+            <div v-for="n in orNumbers" :key="n" class="day-option" @click="tempOrNumber = n">
+              <span :class="{ 'active-day-text': tempOrNumber === n }">OR-{{ n }}</span>
               <div class="checkbox-box">
-                <span v-if="tempSelectedDay === day" class="material-icons check-icon">check</span>
+                <span v-if="tempOrNumber === n" class="material-icons check-icon">check</span>
               </div>
             </div>
           </div>
           <div class="day-modal-footer">
-            <button class="btn-cancel-day" @click="isDayModalOpen = false">Cancel</button>
-            <button class="btn-confirm-day" @click="confirmDayChange">Confirm</button>
+            <button class="btn-cancel-day" @click="isOrNumberModalOpen = false">Cancel</button>
+            <button class="btn-confirm-day" @click="confirmOrNumberChange">Confirm</button>
           </div>
         </div>
       </div>
@@ -119,7 +115,7 @@ import { ref, onMounted, computed, watch } from 'vue'
 import { RouterView, useRouter, useRoute } from 'vue-router'
 
 const isSidebarOpen = ref(false)
-const isDayModalOpen = ref(false) // สถานะเปิด/ปิด Pop-up เลือกวัน
+const isOrNumberModalOpen = ref(false) // สถานะเปิด/ปิด Pop-up เลือกเลขห้อง OR
 
 const router = useRouter()
 const route = useRoute()
@@ -128,11 +124,11 @@ const route = useRoute()
 // ทำให้พอ logout แล้ว login ด้วยบัญชีอื่น (เป็นแค่ client-side navigation ไม่ reload หน้า)
 // ค่าที่โชว์จะยังเป็นเลข license ของบัญชีเก่าอยู่
 const userLicense = ref(localStorage.getItem('userLicense') || '------')
-const selectedDay = ref(localStorage.getItem('selectedDay') || '...')
+const orNumber = ref(localStorage.getItem('orNumber') || '...')
 
-// สถานะการเลือกวัน
-const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
-const tempSelectedDay = ref('Monday')
+// 📍 เลขห้องผ่าตัดประจำ OR-201 ถึง OR-220
+const orNumbers = Array.from({ length: 20 }, (_, i) => 201 + i)
+const tempOrNumber = ref(201)
 
 // คำนวณว่าควรแสดงเลย์เอาต์ไหม
 const showLayout = computed(() => {
@@ -157,22 +153,22 @@ const syncUserFromStorage = async () => {
   const license = localStorage.getItem('userLicense')
   userLicense.value = license || '------'
 
-  const savedDay = localStorage.getItem('selectedDay')
+  const savedOrNumber = localStorage.getItem('orNumber')
 
-  if (savedDay) {
-    selectedDay.value = savedDay
-    tempSelectedDay.value = savedDay
+  if (savedOrNumber) {
+    orNumber.value = savedOrNumber
+    tempOrNumber.value = Number(savedOrNumber)
   } else if (license) {
     try {
       const res = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/users/${license}`)
       const data = await res.json()
-      if (data.day) {
-        selectedDay.value = data.day
-        tempSelectedDay.value = data.day
-        localStorage.setItem('selectedDay', data.day)
+      if (data.orNumber) {
+        orNumber.value = data.orNumber
+        tempOrNumber.value = Number(data.orNumber)
+        localStorage.setItem('orNumber', data.orNumber)
       }
     } catch (e) {
-      console.error('ดึงวันทำงานไม่สำเร็จ', e)
+      console.error('ดึงเลขห้อง OR ไม่สำเร็จ', e)
     }
   }
 }
@@ -186,28 +182,27 @@ watch(() => route.path, syncUserFromStorage)
 const toggleSidebar = () => { isSidebarOpen.value = !isSidebarOpen.value }
 const closeSidebar = () => { isSidebarOpen.value = false }
 
-// --- ฟังก์ชันของ Pop-up เลือกวัน ---
-const openDayModal = () => {
+// --- ฟังก์ชันของ Pop-up เลือกเลขห้อง OR ---
+const openOrNumberModal = () => {
   isSidebarOpen.value = false // ปิดเมนูข้างก่อน
-  tempSelectedDay.value = selectedDay.value // เซ็ตค่าเริ่มให้ตรงกับวันปัจจุบัน
-  isDayModalOpen.value = true // เปิดหน้าต่าง Pop-up
+  tempOrNumber.value = Number(orNumber.value) || 201 // เซ็ตค่าเริ่มให้ตรงกับห้องปัจจุบัน
+  isOrNumberModalOpen.value = true // เปิดหน้าต่าง Pop-up
 }
 
-// ✅ แก้ใน App.vue
-const confirmDayChange = async () => {
+const confirmOrNumberChange = async () => {
   try {
-    const response = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/users/${userLicense.value}/day`, {
+    const response = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/users/${userLicense.value}/or-number`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ day: tempSelectedDay.value })
+      body: JSON.stringify({ orNumber: tempOrNumber.value })
     })
 
     if (!response.ok) throw new Error("API Error")
 
-    selectedDay.value = tempSelectedDay.value
-    localStorage.setItem('selectedDay', tempSelectedDay.value)
-    isDayModalOpen.value = false
-    alert("✅ อัปเดตวันทำงานสำเร็จ!")
+    orNumber.value = tempOrNumber.value
+    localStorage.setItem('orNumber', tempOrNumber.value)
+    isOrNumberModalOpen.value = false
+    alert("✅ อัปเดตเลขห้อง OR สำเร็จ!")
 
   } catch (error) {
     console.error("❌ PUT Error:", error)
