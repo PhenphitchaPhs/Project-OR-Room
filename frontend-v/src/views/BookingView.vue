@@ -1,4 +1,5 @@
 <template>
+    <div class="section-group"></div>
     <div class="page-wrapper">
         <div class="card">
             <div v-if="tomorrowCount > 0" class="reminder-banner">
@@ -18,7 +19,10 @@
 
             <form @submit.prevent="submitForm">
                 <div class="section-group">
-                    <label class="group-label">Patient Information</label>
+                    <label class="group-label">
+                        Patient Information
+                        <span class="required">*</span>
+                    </label>
                     <div class="grid-2-col">
                         <div style="position: relative;">
                             <input type="text" v-model="form.hn" placeholder="HN" class="input-field green-theme"
@@ -44,7 +48,10 @@
                 </div>
 
                 <div class="section-group">
-                    <label class="group-label">Surgery Details</label>
+                    <label class="group-label">
+                        Surgery Details
+                        <span class="required">*</span>
+                    </label>
                     <div class="grid-2-col">
                         <select v-model="form.procedure" class="input-field green-theme" @change="checkValidDate"
                             required>
@@ -59,6 +66,7 @@
                         <div style="display: flex; flex-direction: column;">
                             <label class="date-label">
                                 📅 วันที่ผ่าตัด (กรุณากรอกเป็น ค.ศ. เท่านั้น)
+                                <span class="required">*</span>
                             </label>
 
                             <input type="date" v-model="form.date" :min="minDate" :max="maxDate" @blur="checkValidDate"
@@ -804,4 +812,11 @@ const goHome = () => router.push('/home')
     font-size: 12px;
     font-weight: 600;
 }
+
+.required {
+    color: #dc2626;
+    font-weight: 700;
+    margin-left: 4px;
+}
+
 </style>
