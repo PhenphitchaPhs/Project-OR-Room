@@ -57,9 +57,17 @@
                         </select>
 
                         <div style="display: flex; flex-direction: column;">
+                            <label class="date-label">
+                                📅 วันที่ผ่าตัด (กรุณากรอกเป็น ค.ศ. เท่านั้น)
+                            </label>
+
                             <input type="date" v-model="form.date" :min="minDate" :max="maxDate" @blur="checkValidDate"
                                 class="input-field green-theme" :readonly="isDateLocked && !!form.date"
                                 :class="{ 'locked-field': isDateLocked && form.date }" required />
+
+                            <span class="date-hint">
+                                ตัวอย่าง: 25-06-2026
+                            </span>
 
                             <span v-if="isDateLocked && form.date"
                                 style="color: #1a3a5f; font-size: 0.8rem; margin-top: 4px; font-weight: 600;">
@@ -763,5 +771,22 @@ const goHome = () => router.push('/home')
         transform: scale(1);
         opacity: 1;
     }
+}
+
+.date-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1e3a5f;
+    margin-bottom: 6px;
+}
+
+.date-hint {
+    margin-top: 5px;
+    padding: 6px 10px;
+    background: #fff3cd;
+    color: #856404;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
 }
 </style>
