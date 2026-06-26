@@ -535,10 +535,12 @@ const submitForm = async () => {
         })
 
         if (res.ok) {
-            showAlert(bookingId ? 'อัปเดตคิวสำเร็จ!' : 'จองคิวสำเร็จ!')
+            showAlert(bookingId ? 'อัปเดตและกู้คืนคิวสำเร็จ!' : 'จองคิวสำเร็จ!')
 
             setTimeout(() => {
-                if (isRestore) {
+                // ถ้าเป็นการกู้คืนคิว หรือตรวจพบสถานะที่เป็น Upcoming 
+                // ให้บังคับเด้งกลับไปที่หน้าโฮมพร้อมเปิดแท็บเปิดคิว Upcoming ทันที
+                if (isRestore || form.status === 'Upcoming') {
                     router.push('/home?tab=upcoming')
                 } else {
                     router.push('/home')
