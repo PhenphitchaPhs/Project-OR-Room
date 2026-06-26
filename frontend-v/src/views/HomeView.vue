@@ -366,7 +366,7 @@
                                                     item.underlying || '-' }}</div>
                                                 <div class="detail-row"><strong>Proposed Procedure:</strong> {{
                                                     item.procedure
-                                                    }}</div>
+                                                }}</div>
                                                 <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
 
                                                 <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }}
@@ -590,7 +590,7 @@
 
                                     <div class="case-grid">
 
-                                        <div class="grid-row">
+                                        <div class="case-grid">
                                             <div class="grid-row row-date-room">
                                                 <span><strong>Surgery Date:</strong> {{ item.date }}</span>
 
@@ -602,18 +602,18 @@
                                                 </span>
                                             </div>
 
-                                        </div>
-                                        <div class="grid-row">
-                                            <span><strong>HN:</strong> {{ item.hn }}</span>
-                                            <span><strong>Age:</strong> {{ item.age }} ปี</span>
-                                        </div>
+                                            <div class="grid-row">
+                                                <span><strong>HN:</strong> {{ item.hn }}</span>
+                                                <span><strong>Age:</strong> {{ item.age }} ปี</span>
+                                            </div>
 
-                                        <div class="grid-row">
-                                            <span><strong>Patient:</strong> {{ item.fullName }}</span>
-                                        </div>
+                                            <div class="grid-row">
+                                                <span><strong>Patient:</strong> {{ item.fullName }}</span>
+                                            </div>
 
-                                        <div class="grid-row single">
-                                            <span><strong>Procedure:</strong> {{ item.procedure }}</span>
+                                            <div class="grid-row single">
+                                                <span><strong>Procedure:</strong> {{ item.procedure }}</span>
+                                            </div>
                                         </div>
 
 
@@ -2504,12 +2504,6 @@ input[type="checkbox"] {
     flex-wrap: nowrap !important;
 }
 
-.room-number {
-    margin-left: auto;
-    font-weight: 600;
-    color: #1e3a8a;
-}
-
 /* แถม: สไตล์ปุ่มจับลากให้ดูน่ากด */
 .drag-handle {
     cursor: grab;
@@ -2539,5 +2533,12 @@ input[type="checkbox"] {
 .btn-edit:hover {
     background: #dec400;
     transform: translateY(-1px);
+}
+
+/* แก้ปัญหาช่องว่างระหว่างไอคอนกับชื่อห้องบนจอคอม */
+.grid-row span.material-icons {
+    min-width: unset !important;
+    flex: none !important;
+    width: auto !important;
 }
 </style>
