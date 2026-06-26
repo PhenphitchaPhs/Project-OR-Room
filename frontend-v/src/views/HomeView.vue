@@ -1612,9 +1612,7 @@ const markAsSucceed = async (id) => {
     border-color: #16a34a;
 }
 
-/* .case-card.succeed-item {
-    padding-bottom: 55px !important;
-} */
+
 
 /* CANCELLED TAB */
 .sub-filter button.cancelled-active {
@@ -1653,7 +1651,7 @@ const markAsSucceed = async (id) => {
 /* --- Succeed Style --- */
 .succeed-item {
     border-left: 5px solid #03c172;
-    background: #fdfdfd;
+    background: #ecfdf5;
 }
 
 .succeed-item:hover {
