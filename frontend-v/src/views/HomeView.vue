@@ -349,7 +349,7 @@
                                                     item.underlying || '-' }}</div>
                                                 <div class="detail-row"><strong>Proposed Procedure:</strong> {{
                                                     item.procedure
-                                                }}</div>
+                                                    }}</div>
                                                 <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
 
                                                 <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }}
@@ -750,7 +750,7 @@
                     Move Back to Upcoming
                 </h2>
 
-                <div style="margin: 20px 0; text-align: left;">
+                <!-- <div style="margin: 20px 0; text-align: left;">
 
                     <label>Surgery Date</label>
 
@@ -758,7 +758,7 @@
                         model-type="yyyy-MM-dd" format="yyyy-MM-dd" :year-range="[1900, 2700]" teleport="body"
                         :disabled-dates="disabledDates" :day-class="highlightHolidays" />
 
-                </div>
+                </div> -->
 
                 <div class="modal-button-group">
 
@@ -1083,51 +1083,13 @@ const restoreCase = (id) => {
 }
 
 
-const confirmRestoreCase = async () => {
+const confirmRestoreCase = () => {
 
-    try {
+    isRestoreModalOpen.value = false
 
-        const res = await fetch(
-            `https://or-room-backend.rockzee2018.workers.dev/api/bookings/${restoreData.value.id}/status`,
-            {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    status: FILTERS.UPCOMING
-                })
-            }
-        )
-
-        if (!res.ok) throw new Error()
-
-        const target = bookings.value.find(
-            item => item.id === restoreData.value.id
-        )
-
-        if (target) {
-
-            target.status = FILTERS.UPCOMING
-
-            target.date = restoreData.value.date
-
-            target.time = restoreData.value.time
-
-        }
-
-        saveRestoredCase(
-            restoreData.value.id
-        )
-
-        isRestoreModalOpen.value = false
-
-    } catch (e) {
-
-        console.error(e)
-
-    }
-
+    router.push(
+        `/booking/${restoreData.value.id}?restore=true`
+    )
 }
 
 const MAX_MINUTES = 420
@@ -1434,6 +1396,7 @@ const fetchBookings = async () => {
         bookings.value = Array.isArray(data) ? data : []
     } catch (error) { console.error("❌ ดึงคิวไม่สำเร็จ:", error) }
     finally { isLoading.value = false }
+
 }
 
 onMounted(() => {
