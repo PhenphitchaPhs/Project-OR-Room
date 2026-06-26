@@ -366,7 +366,7 @@
                                                     item.underlying || '-' }}</div>
                                                 <div class="detail-row"><strong>Proposed Procedure:</strong> {{
                                                     item.procedure
-                                                }}</div>
+                                                    }}</div>
                                                 <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
 
                                                 <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }}
@@ -601,14 +601,22 @@
                                                     {{ item.room }}
                                                 </span>
                                             </div>
+
+                                        </div>
+                                        <div class="grid-row">
                                             <span><strong>HN:</strong> {{ item.hn }}</span>
-                                            <span><strong>Patient:</strong> {{ item.fullName }}</span>
                                             <span><strong>Age:</strong> {{ item.age }} ปี</span>
                                         </div>
 
                                         <div class="grid-row">
+                                            <span><strong>Patient:</strong> {{ item.fullName }}</span>
+                                        </div>
+
+                                        <div class="grid-row single">
                                             <span><strong>Procedure:</strong> {{ item.procedure }}</span>
                                         </div>
+
+
                                         <!-- DETAIL -->
                                         <transition name="expand">
 
@@ -847,59 +855,7 @@ const saveRestoredCase = (id) => {
     }
 }
 
-const thaiHolidays = {
-    '2026-01-01': 'วันขึ้นปีใหม่',
-    '2026-01-02': 'วันหยุดพิเศษช่วงปีใหม่',
 
-    '2026-03-03': 'วันมาฆบูชา',
-
-    '2026-04-06': 'วันจักรี',
-
-    '2026-04-13': 'วันสงกรานต์',
-    '2026-04-14': 'วันสงกรานต์',
-    '2026-04-15': 'วันสงกรานต์',
-
-    '2026-05-01': 'วันแรงงานแห่งชาติ',
-    '2026-05-04': 'วันฉัตรมงคล',
-    '2026-05-13': 'วันพืชมงคล',
-
-    '2026-06-01': 'ชดเชยวันวิสาขบูชา',
-    '2026-06-03': 'วันเฉลิมพระชนมพรรษาสมเด็จพระราชินี',
-
-    '2026-07-28': 'วันเฉลิมพระชนมพรรษาพระบาทสมเด็จพระเจ้าอยู่หัว',
-    '2026-07-29': 'วันอาสาฬหบูชา',
-
-    '2026-08-12': 'วันแม่แห่งชาติ',
-
-    '2026-10-13': 'วันนวมินทรมหาราช',
-    '2026-10-23': 'วันปิยมหาราช',
-
-    '2026-12-05': 'วันพ่อแห่งชาติ',
-    '2026-12-07': 'ชดเชยวันพ่อแห่งชาติ',
-
-    '2026-12-10': 'วันรัฐธรรมนูญ',
-    '2026-12-31': 'วันสิ้นปี'
-}
-const highlightHolidays = (date) => {
-    const formatted = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-    if (formatted in thaiHolidays) {
-        return 'is-thai-holiday'
-    }
-    return ''
-}
-
-const disabledDates = (date) => {
-    const dayOfWeek = date.getDay()
-    if (dayOfWeek === 0 || dayOfWeek === 6) {
-        return true
-    }
-    console.log(date)
-
-    const formatted =
-        `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-
-    return formatted in thaiHolidays
-}
 const isConfirmModalOpen = ref(false)
 const confirmMessage = ref('')
 const confirmAction = ref(null)
@@ -1719,6 +1675,7 @@ const markAsSucceed = async (id) => {
 .icon-wrap .material-icons {
     font-size: 35px;
     color: #90a4ae;
+
 }
 
 .empty-state h3 {
@@ -2514,14 +2471,6 @@ input[type="checkbox"] {
 .dp__menu {
     border-radius: 20px;
 }
-</style>
-<style>
-/* CSS สำหรับปฏิทินที่ Teleport ไปที่ body */
-.is-thai-holiday {
-    color: #dc2626 !important;
-    font-weight: bold !important;
-}
-
 
 /* ---------- See More Toggle ---------- */
 .see-more-toggle {
