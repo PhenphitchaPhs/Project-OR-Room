@@ -159,15 +159,24 @@
                                         <div class="case-grid">
                                             <div class="drag-handle">
                                                 <span class="material-icons">more_horiz</span>
+
                                             </div>
 
-                                            <div class="grid-row">
+                                            <div class="grid-row row-date-room">
                                                 <span><strong>Surgery Date:</strong> {{ item.date }}</span>
+
+                                                <span v-if="item.room"
+                                                    style="color: #1e3a8a; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;">
+                                                    <span class="material-icons"
+                                                        style="font-size: 16px;">meeting_room</span>
+                                                    {{ item.room }}
+                                                </span>
                                             </div>
 
                                             <div class="grid-row">
                                                 <span><strong>HN:</strong> {{ item.hn }}</span>
                                                 <span><strong>Age:</strong> {{ item.age }} ปี</span>
+
                                             </div>
 
                                             <div class="grid-row">
@@ -178,7 +187,9 @@
                                                 <span><strong>Procedure:</strong> {{ item.procedure }}</span>
                                             </div>
 
+
                                         </div>
+
 
 
                                         <transition name="expand">
@@ -315,9 +326,15 @@
                                         <!-- เคสการ์ด -->
 
                                         <div class="case-grid">
-                                            <div class="grid-row">
+                                            <div class="grid-row row-date-room">
                                                 <span><strong>Surgery Date:</strong> {{ item.date }}</span>
 
+                                                <span v-if="item.room"
+                                                    style="color: #1e3a8a; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;">
+                                                    <span class="material-icons"
+                                                        style="font-size: 16px;">meeting_room</span>
+                                                    {{ item.room }}
+                                                </span>
                                             </div>
 
                                             <div class="grid-row">
@@ -349,7 +366,7 @@
                                                     item.underlying || '-' }}</div>
                                                 <div class="detail-row"><strong>Proposed Procedure:</strong> {{
                                                     item.procedure
-                                                    }}</div>
+                                                }}</div>
                                                 <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
 
                                                 <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }}
@@ -442,9 +459,15 @@
                                     @click="toggleDetail(item.id)">
 
                                     <div class="case-grid">
-                                        <div class="grid-row">
+                                        <div class="grid-row row-date-room">
                                             <span><strong>Surgery Date:</strong> {{ item.date }}</span>
 
+                                            <span v-if="item.room"
+                                                style="color: #1e3a8a; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;">
+                                                <span class="material-icons"
+                                                    style="font-size: 16px;">meeting_room</span>
+                                                {{ item.room }}
+                                            </span>
                                         </div>
 
                                         <div class="grid-row">
@@ -568,7 +591,16 @@
                                     <div class="case-grid">
 
                                         <div class="grid-row">
-                                            <span><strong>Date:</strong> {{ item.date }}</span>
+                                            <div class="grid-row row-date-room">
+                                                <span><strong>Surgery Date:</strong> {{ item.date }}</span>
+
+                                                <span v-if="item.room"
+                                                    style="color: #1e3a8a; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;">
+                                                    <span class="material-icons"
+                                                        style="font-size: 16px;">meeting_room</span>
+                                                    {{ item.room }}
+                                                </span>
+                                            </div>
                                             <span><strong>HN:</strong> {{ item.hn }}</span>
                                             <span><strong>Patient:</strong> {{ item.fullName }}</span>
                                             <span><strong>Age:</strong> {{ item.age }} ปี</span>
@@ -2400,9 +2432,27 @@ input[type="checkbox"] {
         min-width: unset;
     }
 
+    .grid-row.row-date-room {
+        flex-direction: row !important;
+        /* บังคับให้เป็นแนวนอนแม้อยู่บนมือถือ */
+        flex-wrap: nowrap !important;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .grid-row span {
+        width: 100%;
+        min-width: unset;
+    }
+
     .case-grid {
         gap: 8px;
         font-size: 13px;
+    }
+
+    .grid-row.row-date-room span {
+        width: auto !important;
+        flex: unset !important;
     }
 
 
@@ -2457,7 +2507,16 @@ input[type="checkbox"] {
     /* ดึงลูกศรให้ชิดตัวหนังสือมากขึ้น */
 }
 
-
+.grid-row.row-date-room {
+    flex-wrap: nowrap !important;
+    /* ห้ามขึ้นบรรทัดใหม่เด็ดขาด */
+    justify-content: space-between;
+    /* ดันวันที่ไปซ้ายสุด ดันเลขห้องไปขวาสุด */
+    align-items: center;
+    /* จัดให้อยู่ในระนาบส่วนกลางแนวตั้งเท่ากันเป๊ะ */
+    width: 100%;
+    /* ขยายให้เต็มการ์ด */
+}
 
 /* แถม: สไตล์ปุ่มจับลากให้ดูน่ากด */
 .drag-handle {
