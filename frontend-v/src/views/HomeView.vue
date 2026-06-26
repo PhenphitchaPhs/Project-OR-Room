@@ -366,7 +366,7 @@
                                                     item.underlying || '-' }}</div>
                                                 <div class="detail-row"><strong>Proposed Procedure:</strong> {{
                                                     item.procedure
-                                                }}</div>
+                                                    }}</div>
                                                 <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
 
                                                 <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }}
@@ -1513,24 +1513,27 @@ const markAsSucceed = async (id) => {
         showMessageDialog('❌ อัปเดต status ไม่สำเร็จ')
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 <style scoped>
 @import url('https://fonts.googleapis.com/icon?family=Material+Icons');
