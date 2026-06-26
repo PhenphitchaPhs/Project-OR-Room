@@ -147,7 +147,7 @@
     <Transition name="fade">
         <div v-if="showAlertModal" class="modal-overlay" @click="showAlertModal = false">
             <div class="alert-modal" @click.stop>
-                <div class="alert-icon">❌</div>
+                <div class="alert-icon">{{ isAlertSuccess ? '✅' : '❌' }}</div>
                 <div class="alert-message">
                     {{ alertMessage }}
                 </div>
@@ -171,6 +171,7 @@ const tomorrowCount = ref(0)
 const hnStatus = ref('')
 const showAlertModal = ref(false)
 const alertMessage = ref('')
+const isAlertSuccess = ref(false)
 const remainingTimeMsg = ref('')
 const isOverCapacity = ref(false)
 const isDateLocked = ref(false)
@@ -178,8 +179,10 @@ const isDateLocked = ref(false)
 
 const apiHolidays = ref({})
 
-const showAlert = (message) => {
+// 📍 ใส่ isSuccess = true เวลาแจ้งความสำเร็จ จะได้โชว์ไอคอน ✅ แทน ❌
+const showAlert = (message, isSuccess = false) => {
     alertMessage.value = message
+    isAlertSuccess.value = isSuccess
     showAlertModal.value = true
 }
 
@@ -524,7 +527,7 @@ const submitForm = async () => {
         })
 
         if (res.ok) {
-            showAlert(bookingId ? 'อัปเดตคิวสำเร็จ!' : 'จองคิวสำเร็จ!')
+            showAlert(bookingId ? 'อัปเดตคิวสำเร็จ!' : 'จองคิวสำเร็จ!', true)
             setTimeout(() => {
                 // 📍 ถ้ามาจากการกดกู้คืนคิว (Back to Upcoming) ให้กลับไปเปิดแท็บ Upcoming ให้เลย
                 router.push(route.query.restore === 'true' ? '/home?tab=upcoming' : '/home')
