@@ -272,6 +272,7 @@ onMounted(async () => {
                     form.date = booking.date || ''
                     form.room = booking.room || ''
                     form.notes = booking.notes || ''
+                    form.status = booking.status || 'Upcoming'
 
                     form.cxrDate = booking.cxrDate || ''
                     form.cxrNote = booking.cxrNote || ''
@@ -498,7 +499,7 @@ const submitForm = async () => {
         date: form.date,
         room: form.room,
 
-        status: isRestore ? 'Upcoming' : undefined,
+        status: isRestore ? 'Upcoming' : (form.status || 'Upcoming'),
 
         underlying: form.disease || '',
         notes: form.notes,
@@ -517,6 +518,7 @@ const submitForm = async () => {
         doctorLicense: localStorage.getItem('userLicense')
     }
 
+
     try {
         // 🌟 แยก URL และ Method ให้ถูกต้อง
         const url = bookingId
@@ -524,6 +526,7 @@ const submitForm = async () => {
             : 'https://or-room-backend.rockzee2018.workers.dev/api/bookings'
 
         const method = bookingId ? 'PUT' : 'POST'
+        console.log(payload)
 
         const res = await fetch(url, {
             method: method,
@@ -533,8 +536,13 @@ const submitForm = async () => {
 
         if (res.ok) {
             showAlert(bookingId ? 'อัปเดตคิวสำเร็จ!' : 'จองคิวสำเร็จ!')
+
             setTimeout(() => {
-                router.push('/home')
+                if (isRestore) {
+                    router.push('/home?tab=upcoming')
+                } else {
+                    router.push('/home')
+                }
             }, 1500)
         } else {
             const errData = await res.json().catch(() => ({}))
