@@ -147,7 +147,7 @@
     <Transition name="fade">
         <div v-if="showAlertModal" class="modal-overlay" @click="showAlertModal = false">
             <div class="alert-modal" @click.stop>
-                <div class="alert-icon">✔️</div>
+                <div class="alert-icon">❌</div>
                 <div class="alert-message">
                     {{ alertMessage }}
                 </div>
@@ -167,7 +167,6 @@ import { createRouter, createWebHistory } from 'vue-router'
 const router = useRouter()
 const route = useRoute()
 const bookingId = route.params.id
-const isRestore = route.query.restore === 'true'
 const tomorrowCount = ref(0)
 const hnStatus = ref('')
 const showAlertModal = ref(false)
@@ -186,7 +185,7 @@ const showAlert = (message) => {
 
 const form = reactive({
     hn: '', fullName: '', age: '', gender: '', disease: '',
-    procedure: '', date: '', room: '', status: 'Upcoming', // ⭐ เพิ่ม notes: '',
+    procedure: '', date: '', room: '', notes: '',
     cxrDate: '', cxrNote: '',
     ecgDate: '', ecgNote: '',
     labDate: '', labNote: '',
@@ -272,7 +271,6 @@ onMounted(async () => {
                     form.date = booking.date || ''
                     form.room = booking.room || ''
                     form.notes = booking.notes || ''
-                    form.status = booking.status || 'Upcoming'
 
                     form.cxrDate = booking.cxrDate || ''
                     form.cxrNote = booking.cxrNote || ''
@@ -498,25 +496,18 @@ const submitForm = async () => {
         procedure: form.procedure,
         date: form.date,
         room: form.room,
-
-        status: isRestore ? 'Upcoming' : form.status,
         underlying: form.disease || '',
         notes: form.notes,
-        cxrDate: form.cxrDate,
-        cxrNote: form.cxrNote,
-        ecgDate: form.ecgDate,
-        ecgNote: form.ecgNote,
-        labDate: form.labDate,
-        labNote: form.labNote,
-        admDate: form.admDate,
-        admNote: form.admNote,
+        cxrDate: form.cxrDate, cxrNote: form.cxrNote,
+        ecgDate: form.ecgDate, ecgNote: form.ecgNote,
+        labDate: form.labDate, labNote: form.labNote,
+        admDate: form.admDate, admNote: form.admNote,
         dob: null,
         urgency: 'Normal',
         isNpoRisk: false,
         isInfected: false,
         doctorLicense: localStorage.getItem('userLicense')
     }
-
 
     try {
         // 🌟 แยก URL และ Method ให้ถูกต้อง
@@ -525,7 +516,6 @@ const submitForm = async () => {
             : 'https://or-room-backend.rockzee2018.workers.dev/api/bookings'
 
         const method = bookingId ? 'PUT' : 'POST'
-        console.log(payload)
 
         const res = await fetch(url, {
             method: method,
@@ -534,19 +524,10 @@ const submitForm = async () => {
         })
 
         if (res.ok) {
-            showAlert(bookingId ? 'อัปเดตและกู้คืนคิวสำเร็จ!' : 'จองคิวสำเร็จ!')
-
+            showAlert(bookingId ? 'อัปเดตคิวสำเร็จ!' : 'จองคิวสำเร็จ!')
             setTimeout(() => {
-                if (isRestore) {
-
-                    // กลับหน้า home พร้อมเปิดแท็บ upcoming
-                    router.push('/home?tab=upcoming')
-
-                } else {
-
-                    router.push('/home')
-
-                }
+                // 📍 ถ้ามาจากการกดกู้คืนคิว (Back to Upcoming) ให้กลับไปเปิดแท็บ Upcoming ให้เลย
+                router.push(route.query.restore === 'true' ? '/home?tab=upcoming' : '/home')
             }, 1500)
         } else {
             const errData = await res.json().catch(() => ({}))
@@ -844,4 +825,5 @@ const goHome = () => router.push('/home')
     font-weight: 700;
     margin-left: 4px;
 }
+
 </style>
