@@ -186,7 +186,7 @@ const showAlert = (message) => {
 
 const form = reactive({
     hn: '', fullName: '', age: '', gender: '', disease: '',
-    procedure: '', date: '', room: '', notes: '',
+    procedure: '', date: '', room: '', status: 'Upcoming', // ⭐ เพิ่ม notes: '',
     cxrDate: '', cxrNote: '',
     ecgDate: '', ecgNote: '',
     labDate: '', labNote: '',
@@ -499,8 +499,7 @@ const submitForm = async () => {
         date: form.date,
         room: form.room,
 
-        status: isRestore ? 'Upcoming' : (form.status || 'Upcoming'),
-
+        status: isRestore ? 'Upcoming' : form.status,
         underlying: form.disease || '',
         notes: form.notes,
         cxrDate: form.cxrDate,
@@ -538,12 +537,15 @@ const submitForm = async () => {
             showAlert(bookingId ? 'อัปเดตและกู้คืนคิวสำเร็จ!' : 'จองคิวสำเร็จ!')
 
             setTimeout(() => {
-                // ถ้าเป็นการกู้คืนคิว หรือตรวจพบสถานะที่เป็น Upcoming 
-                // ให้บังคับเด้งกลับไปที่หน้าโฮมพร้อมเปิดแท็บเปิดคิว Upcoming ทันที
-                if (isRestore || form.status === 'Upcoming') {
+                if (isRestore) {
+
+                    // กลับหน้า home พร้อมเปิดแท็บ upcoming
                     router.push('/home?tab=upcoming')
+
                 } else {
+
                     router.push('/home')
+
                 }
             }, 1500)
         } else {
