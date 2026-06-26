@@ -213,9 +213,15 @@ const sortByAgeThenFemaleFirst = (arr) => {
 const getBookingsForDate = (d) => sortByAgeThenFemaleFirst(bookings.value.filter(b => b.date === d && b.status !== 'Succeed'))
 const hasBooking = (d) => getBookingsForDate(d).length > 0
 
+// 📍 ดึงเฉพาะตัวเลขห้องออกมาเทียบ กันกรณีข้อมูลเก่า/รูปแบบไม่ตรงเป๊ะ เช่น "OR-201", "OR201", "201"
+const getRoomNumber = (roomStr) => {
+    const match = String(roomStr || '').match(/(\d+)/)
+    return match ? parseInt(match[1]) : null
+}
+
 const getUsedMinutesForRoom = (d, roomNum) => {
     return bookings.value
-        .filter(b => b.date === d && b.room === `OR-${roomNum}` && b.status !== 'Succeed' && b.status !== 'Cancelled')
+        .filter(b => b.date === d && getRoomNumber(b.room) === roomNum && b.status !== 'Succeed' && b.status !== 'Cancelled')
         .reduce((sum, b) => {
             const match = b.procedure?.match(/(\d+)\s*min/)
             return sum + (match ? parseInt(match[1]) : 0)
