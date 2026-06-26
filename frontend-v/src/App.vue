@@ -486,4 +486,40 @@ body {
   padding: 0 !important;
   margin: 0 !important;
 }
+
+/* --- Pop-up: เลือกเลขห้อง OR --- */
+.day-modal-card {
+  background-color: #e3f2fd;
+  width: 90%;
+  max-width: 340px;
+
+  max-height: 85vh;
+  /* สำคัญ */
+  overflow: hidden;
+  /* สำคัญ */
+
+  padding: 20px;
+  border-radius: 24px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+
+  display: flex;
+  flex-direction: column;
+}
+
+.days-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+
+  overflow-y: auto;
+  /* สำคัญ */
+  max-height: 55vh;
+  /* สำคัญ */
+
+  padding-right: 4px;
+}
+
+.days-list {
+  -webkit-overflow-scrolling: touch;
+}
 </style>
