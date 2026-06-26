@@ -366,7 +366,7 @@
                                                     item.underlying || '-' }}</div>
                                                 <div class="detail-row"><strong>Proposed Procedure:</strong> {{
                                                     item.procedure
-                                                }}</div>
+                                                    }}</div>
                                                 <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
 
                                                 <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }}
@@ -617,6 +617,7 @@
                                         </div>
 
 
+
                                         <!-- DETAIL -->
                                         <transition name="expand">
 
@@ -702,6 +703,14 @@
 
                                         </button>
 
+                                    </div>
+                                    <div class="see-more-toggle">
+                                        <span class="see-more-text">
+                                            {{ expandedId === item.id ? 'See less' : 'See more' }}
+                                        </span>
+                                        <span class="material-icons see-more-icon">
+                                            {{ expandedId === item.id ? 'expand_less' : 'expand_more' }}
+                                        </span>
                                     </div>
 
                                 </div>
