@@ -366,7 +366,7 @@
                                                     item.underlying || '-' }}</div>
                                                 <div class="detail-row"><strong>Proposed Procedure:</strong> {{
                                                     item.procedure
-                                                    }}</div>
+                                                }}</div>
                                                 <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
 
                                                 <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }}
@@ -814,10 +814,13 @@
 <script setup>
 
 import { ref, onMounted, watch, computed, nextTick } from 'vue'
-import { useRouter } from 'vue-router'
+// 🌟 แก้ไข: อิมพอร์ต useRoute เพิ่มเข้ามาเพื่อใช้อ่าน Query Parameterจาก URL
+import { useRouter, useRoute } from 'vue-router'
 import VueDatePicker from '@vuepic/vue-datepicker'
 import draggable from 'vuedraggable'
 import '@vuepic/vue-datepicker/dist/main.css'
+
+const route = useRoute() // 🌟 ประกาศใช้งาน
 
 const editCase = (id) => {
     router.push(`/booking/${id}`)
@@ -1115,13 +1118,48 @@ const restoreCase = (id) => {
 }
 
 
-const confirmRestoreCase = () => {
-
+const confirmRestoreCase = async () => {
     isRestoreModalOpen.value = false
 
-    router.push(
-        `/booking/${restoreData.value.id}?restore=true`
-    )
+    const targetId = restoreData.value.id
+    if (!targetId) return
+
+    try {
+        // 1. ยิง API อัปเดตสถานะเป็น Upcoming ทันที
+        const res = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/bookings/${targetId}/status`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: FILTERS.UPCOMING }) // เปลี่ยนสถานะเป็น Upcoming
+        })
+
+        if (!res.ok) throw new Error('เปลี่ยนสถานะไม่สำเร็จ')
+
+        // 2. อัปเดตข้อมูลใน UI หน้าโฮมทันที เคสนี้จะได้หลุดออกจากแท็บเดิม
+        const targetObj = bookings.value.find(item => item.id === targetId)
+        if (targetObj) {
+            targetObj.status = FILTERS.UPCOMING
+        }
+
+        // 3. ลบออกจากประวัติใน LocalStorage (ถ้ามี) เพื่อไม่ให้แสดงซ้ำซ้อน
+        const restoredCases = getRestoredCases()
+        const index = restoredCases.indexOf(targetId)
+        if (index > -1) {
+            restoredCases.splice(index, 1)
+            localStorage.setItem('restoredCases', JSON.stringify(restoredCases))
+        }
+
+        // 4. ตั้งค่าแท็บหลักรอไว้ที่ 'Upcoming' เผื่อเวลาผู้ใช้กดเสร็จและกลับมา
+        filter.value = FILTERS.UPCOMING
+
+        // 5. วิ่งไปหน้า Edit พร้อมส่ง Query Parameter บอกว่านี่คือการกู้คืนคิว
+        router.push(`/booking/${targetId}?restore=true`)
+
+    } catch (e) {
+        console.error("❌ ไม่สามารถกู้คืนคิวได้:", e)
+        if (typeof showMessageDialog === 'function') {
+            showMessageDialog('❌ กู้คืนคิวไม่สำเร็จ กรุณาลองใหม่อีกครั้ง')
+        }
+    }
 }
 
 const MAX_MINUTES = 420
@@ -1350,7 +1388,6 @@ const notCompleteCases = computed(() =>
     )
 )
 
-// ================= ระบบ Drag & Drop เลื่อนคิว =================
 
 
 // ================= ฟังก์ชันรีเซ็ตคิว =================
@@ -1435,10 +1472,17 @@ onMounted(() => {
     const savedLicense = localStorage.getItem('userLicense')
     const savedName = localStorage.getItem('doctorName')
 
-    if (savedLicense) {
-        userLicense.value = savedLicense
-    }
+    if (savedLicense) userLicense.value = savedLicense
     if (savedName) doctorName.value = savedName
+
+    // ดักจับ Query Parameter เพื่อสลับแท็บอัตโนมัติ
+    const searchParams = new URLSearchParams(window.location.search)
+    const tabParam = searchParams.get('tab')
+
+    if (tabParam === 'upcoming') {
+        filter.value = FILTERS.UPCOMING
+    }
+
     fetchBookings()
 })
 
