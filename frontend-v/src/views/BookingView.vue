@@ -147,7 +147,7 @@
     <Transition name="fade">
         <div v-if="showAlertModal" class="modal-overlay" @click="showAlertModal = false">
             <div class="alert-modal" @click.stop>
-                <div class="alert-icon">❌</div>
+                <div class="alert-icon">✔️</div>
                 <div class="alert-message">
                     {{ alertMessage }}
                 </div>
@@ -167,6 +167,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 const router = useRouter()
 const route = useRoute()
 const bookingId = route.params.id
+const isRestore = route.query.restore === 'true'
 const tomorrowCount = ref(0)
 const hnStatus = ref('')
 const showAlertModal = ref(false)
@@ -496,12 +497,19 @@ const submitForm = async () => {
         procedure: form.procedure,
         date: form.date,
         room: form.room,
+
+        status: isRestore ? 'Upcoming' : undefined,
+
         underlying: form.disease || '',
         notes: form.notes,
-        cxrDate: form.cxrDate, cxrNote: form.cxrNote,
-        ecgDate: form.ecgDate, ecgNote: form.ecgNote,
-        labDate: form.labDate, labNote: form.labNote,
-        admDate: form.admDate, admNote: form.admNote,
+        cxrDate: form.cxrDate,
+        cxrNote: form.cxrNote,
+        ecgDate: form.ecgDate,
+        ecgNote: form.ecgNote,
+        labDate: form.labDate,
+        labNote: form.labNote,
+        admDate: form.admDate,
+        admNote: form.admNote,
         dob: null,
         urgency: 'Normal',
         isNpoRisk: false,
@@ -824,5 +832,4 @@ const goHome = () => router.push('/home')
     font-weight: 700;
     margin-left: 4px;
 }
-
 </style>
