@@ -103,6 +103,29 @@
         </div>
       </div>
     </Transition>
+    <Transition name="fade">
+      <div v-if="isDialogOpen" class="dialog-overlay" @click.self="isDialogOpen = false">
+        <div class="dialog-card">
+
+          <div class="dialog-icon">
+            <span class="material-icons">
+              {{ dialogType === 'success' ? 'check_circle' : 'error' }}
+            </span>
+          </div>
+
+          <h3>
+            {{ dialogType === 'success' ? 'Success' : 'Error' }}
+          </h3>
+
+          <p>{{ dialogMessage }}</p>
+
+          <button class="dialog-btn" @click="isDialogOpen = false">
+            OK
+          </button>
+
+        </div>
+      </div>
+    </Transition>
 
     <main class="content-area">
       <RouterView />
@@ -113,6 +136,11 @@
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue'
 import { RouterView, useRouter, useRoute } from 'vue-router'
+
+// แสดงผลเป็น dialog
+const isDialogOpen = ref(false)
+const dialogMessage = ref('')
+const dialogType = ref('success')
 
 const isSidebarOpen = ref(false)
 const isOrNumberModalOpen = ref(false) // สถานะเปิด/ปิด Pop-up เลือกเลขห้อง OR
@@ -202,11 +230,15 @@ const confirmOrNumberChange = async () => {
     orNumber.value = tempOrNumber.value
     localStorage.setItem('orNumber', tempOrNumber.value)
     isOrNumberModalOpen.value = false
-    alert("✅ อัปเดตเลขห้อง OR สำเร็จ!")
+    dialogMessage.value = 'อัปเดตเลขห้อง OR สำเร็จ!'
+    dialogType.value = 'success'
+    isDialogOpen.value = true
 
   } catch (error) {
     console.error("❌ PUT Error:", error)
-    alert("❌ ล้มเหลว!")
+    dialogMessage.value = 'เกิดข้อผิดพลาด!'
+    dialogType.value = 'error'
+    isDialogOpen.value = true
   }
 }
 
@@ -521,5 +553,70 @@ body {
 
 .days-list {
   -webkit-overflow-scrolling: touch;
+}
+
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  z-index: 5000;
+}
+
+.dialog-card {
+  width: 85%;
+  max-width: 320px;
+
+  background: white;
+  border-radius: 24px;
+
+  padding: 28px 24px;
+  text-align: center;
+
+  animation: popup 0.25s ease;
+}
+
+.dialog-icon .material-icons {
+  font-size: 52px;
+  color: #2c4c87;
+}
+
+.dialog-card h3 {
+  margin-top: 10px;
+  margin-bottom: 8px;
+  color: #1e3a5f;
+}
+
+.dialog-card p {
+  color: #666;
+  margin-bottom: 22px;
+}
+
+.dialog-btn {
+  border: none;
+  background: #2c4c87;
+  color: white;
+
+  padding: 10px 24px;
+  border-radius: 12px;
+
+  font-weight: bold;
+  cursor: pointer;
+}
+
+@keyframes popup {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 </style>
