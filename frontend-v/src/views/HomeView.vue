@@ -790,16 +790,6 @@
                     Move Back to Upcoming
                 </h2>
 
-                <!-- <div style="margin: 20px 0; text-align: left;">
-
-                    <label>Surgery Date</label>
-
-                    <VueDatePicker v-model="restoreData.date" :enable-time-picker="false" auto-apply text-input
-                        model-type="yyyy-MM-dd" format="yyyy-MM-dd" :year-range="[1900, 2700]" teleport="body"
-                        :disabled-dates="disabledDates" :day-class="highlightHolidays" />
-
-                </div> -->
-
                 <div class="modal-button-group">
 
                     <button class="btn-cancel-gray" @click="isRestoreModalOpen = false">
@@ -2505,14 +2495,19 @@ input[type="checkbox"] {
 }
 
 .grid-row.row-date-room {
-    flex-wrap: nowrap !important;
-    /* ห้ามขึ้นบรรทัดใหม่เด็ดขาด */
-    justify-content: space-between;
-    /* ดันวันที่ไปซ้ายสุด ดันเลขห้องไปขวาสุด */
+    display: flex;
     align-items: center;
-    /* จัดให้อยู่ในระนาบส่วนกลางแนวตั้งเท่ากันเป๊ะ */
-    width: 100%;
-    /* ขยายให้เต็มการ์ด */
+
+    gap: 12px;
+    /* ระยะห่าง */
+
+    flex-wrap: nowrap !important;
+}
+
+.room-number {
+    margin-left: auto;
+    font-weight: 600;
+    color: #1e3a8a;
 }
 
 /* แถม: สไตล์ปุ่มจับลากให้ดูน่ากด */
