@@ -1123,43 +1123,44 @@ const confirmRestoreCase = async () => {
 
     const targetId = restoreData.value.id
     if (!targetId) return
+    // router.push(`/booking/${targetId}?restore=true`)
 
-    try {
-        // 1. ยิง API อัปเดตสถานะเป็น Upcoming ทันที
-        const res = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/bookings/${targetId}/status`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: FILTERS.UPCOMING }) // เปลี่ยนสถานะเป็น Upcoming
-        })
+    // try {
+    //     // 1. ยิง API อัปเดตสถานะเป็น Upcoming ทันที
+    //     const res = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/bookings/${targetId}/status`, {
+    //         method: 'PATCH',
+    //         headers: { 'Content-Type': 'application/json' },
+    //         body: JSON.stringify({ status: FILTERS.UPCOMING }) // เปลี่ยนสถานะเป็น Upcoming
+    //     })
 
-        if (!res.ok) throw new Error('เปลี่ยนสถานะไม่สำเร็จ')
+    //     if (!res.ok) throw new Error('เปลี่ยนสถานะไม่สำเร็จ')
 
-        // 2. อัปเดตข้อมูลใน UI หน้าโฮมทันที เคสนี้จะได้หลุดออกจากแท็บเดิม
-        const targetObj = bookings.value.find(item => item.id === targetId)
-        if (targetObj) {
-            targetObj.status = FILTERS.UPCOMING
-        }
+    //     // 2. อัปเดตข้อมูลใน UI หน้าโฮมทันที เคสนี้จะได้หลุดออกจากแท็บเดิม
+    //     const targetObj = bookings.value.find(item => item.id === targetId)
+    //     if (targetObj) {
+    //         targetObj.status = FILTERS.UPCOMING
+    //     }
 
-        // 3. ลบออกจากประวัติใน LocalStorage (ถ้ามี) เพื่อไม่ให้แสดงซ้ำซ้อน
-        const restoredCases = getRestoredCases()
-        const index = restoredCases.indexOf(targetId)
-        if (index > -1) {
-            restoredCases.splice(index, 1)
-            localStorage.setItem('restoredCases', JSON.stringify(restoredCases))
-        }
+    //     // 3. ลบออกจากประวัติใน LocalStorage (ถ้ามี) เพื่อไม่ให้แสดงซ้ำซ้อน
+    //     const restoredCases = getRestoredCases()
+    //     const index = restoredCases.indexOf(targetId)
+    //     if (index > -1) {
+    //         restoredCases.splice(index, 1)
+    //         localStorage.setItem('restoredCases', JSON.stringify(restoredCases))
+    //     }
 
-        // 4. ตั้งค่าแท็บหลักรอไว้ที่ 'Upcoming' เผื่อเวลาผู้ใช้กดเสร็จและกลับมา
-        filter.value = FILTERS.UPCOMING
+    //     // 4. ตั้งค่าแท็บหลักรอไว้ที่ 'Upcoming' เผื่อเวลาผู้ใช้กดเสร็จและกลับมา
+    //     filter.value = FILTERS.UPCOMING
 
-        // 5. วิ่งไปหน้า Edit พร้อมส่ง Query Parameter บอกว่านี่คือการกู้คืนคิว
-        router.push(`/booking/${targetId}?restore=true`)
+    // 5. วิ่งไปหน้า Edit พร้อมส่ง Query Parameter บอกว่านี่คือการกู้คืนคิว
+    router.push(`/booking/${targetId}?restore=true`)
 
-    } catch (e) {
-        console.error("❌ ไม่สามารถกู้คืนคิวได้:", e)
-        if (typeof showMessageDialog === 'function') {
-            showMessageDialog('❌ กู้คืนคิวไม่สำเร็จ กรุณาลองใหม่อีกครั้ง')
-        }
-    }
+    // } catch (e) {
+    //     console.error("❌ ไม่สามารถกู้คืนคิวได้:", e)
+    //     if (typeof showMessageDialog === 'function') {
+    //         showMessageDialog('❌ กู้คืนคิวไม่สำเร็จ กรุณาลองใหม่อีกครั้ง')
+    //     }
+    // }
 }
 
 const MAX_MINUTES = 420
