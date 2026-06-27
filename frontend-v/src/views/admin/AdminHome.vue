@@ -22,7 +22,7 @@
         <Transition name="fade">
             <div v-if="isLogoutModalOpen" class="modal-overlay-center">
                 <div class="white-modal-card">
-                    <h2 class="modal-msg-title">Are you sure you want to log out?</h2>
+                    <h2 class="modal-msg-title">Confirm Logout?</h2>
                     <div class="modal-button-group">
                         <button class="btn-cancel-blue" @click="isLogoutModalOpen = false">Cancel</button>
                         <button class="btn-confirm-green" @click="handleLogout">Confirm</button>
@@ -142,8 +142,17 @@
                                 @drop="onDrop(index)" @click="toggleDetail(item.id)">
                                 <div class="case-grid">
                                     <div class="grid-row">
-                                        <span><strong>HN:</strong> {{ item.hn }}</span>
+
                                         <span><strong>Date:</strong> {{ item.date }}</span>
+                                        <span v-if="item.room"
+                                            style="color: #1e3a8a; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;">
+                                            <span class="material-icons" style="font-size: 16px;">meeting_room</span>
+                                            {{ item.room }}
+                                        </span>
+
+                                    </div>
+                                    <div class="grid-row">
+                                        <span><strong>HN:</strong> {{ item.hn }}</span>
 
                                     </div>
 
@@ -175,7 +184,7 @@
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                            }}</div>
+                                        }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
                                             item.cxrNote || '-' }}</div>
@@ -229,8 +238,17 @@
                                 @drop="onDrop(index)" @click="toggleDetail(item.id)">
                                 <div class="case-grid">
                                     <div class="grid-row">
-                                        <span><strong>HN:</strong> {{ item.hn }}</span>
+
                                         <span><strong>Date:</strong> {{ item.date }}</span>
+                                        <span v-if="item.room"
+                                            style="color: #1e3a8a; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;">
+                                            <span class="material-icons" style="font-size: 16px;">meeting_room</span>
+                                            {{ item.room }}
+                                        </span>
+
+                                    </div>
+                                    <div class="grid-row">
+                                        <span><strong>HN:</strong> {{ item.hn }}</span>
 
                                     </div>
 
@@ -262,7 +280,7 @@
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                            }}</div>
+                                        }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
                                             item.cxrNote || '-' }}</div>
@@ -311,17 +329,37 @@
                                 @click="toggleDetail(item.id)">
                                 <div class="case-grid">
                                     <div class="grid-row">
-                                        <span><strong>Surgery Date:</strong> {{ item.date }}</span>
-                                        <span><strong>Room:</strong> {{ item.room }}</span>
+
+                                        <span><strong>Date:</strong> {{ item.date }}</span>
+                                        <span v-if="item.room"
+                                            style="color: #1e3a8a; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;">
+                                            <span class="material-icons" style="font-size: 16px;">meeting_room</span>
+                                            {{ item.room }}
+                                        </span>
+
                                     </div>
                                     <div class="grid-row">
-                                        <span><strong>Patient:</strong> {{ item.fullName }} ({{ item.hn }})</span>
-                                        <span><strong>Doctor:</strong> {{ doctorMap[item.doctorLicense] ||
-                                            item.doctorLicense || '-' }}</span>
+                                        <span><strong>HN:</strong> {{ item.hn }}</span>
+
                                     </div>
+
+                                    <div class="grid-row">
+                                        <span><strong>Patient:</strong> {{ item.fullName }}</span>
+                                        <span><strong>Age:</strong> {{ item.age }}</span>
+
+                                    </div>
+
                                     <div class="grid-row single">
                                         <span><strong>Procedure:</strong> {{ item.procedure }}</span>
                                     </div>
+                                    <div class="grid-row single">
+                                        <span>
+                                            <strong>Doctor:</strong>
+                                            {{ doctorMap[item.doctorLicense] || item.doctorLicense || '-' }}
+                                        </span>
+                                    </div>
+
+
                                 </div>
                                 <transition name="expand">
                                     <div v-if="expandedId === item.id" class="case-detail">
@@ -364,8 +402,17 @@
                                 @drop="onDrop(index)" @click="toggleDetail(item.id)">
                                 <div class="case-grid">
                                     <div class="grid-row">
-                                        <span><strong>HN:</strong> {{ item.hn }}</span>
+
                                         <span><strong>Date:</strong> {{ item.date }}</span>
+                                        <span v-if="item.room"
+                                            style="color: #1e3a8a; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;">
+                                            <span class="material-icons" style="font-size: 16px;">meeting_room</span>
+                                            {{ item.room }}
+                                        </span>
+
+                                    </div>
+                                    <div class="grid-row">
+                                        <span><strong>HN:</strong> {{ item.hn }}</span>
 
                                     </div>
 
@@ -397,7 +444,7 @@
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                            }}</div>
+                                        }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
                                             item.cxrNote || '-' }}</div>
