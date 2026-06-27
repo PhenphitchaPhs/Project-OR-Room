@@ -145,7 +145,7 @@
 
                                         <span><strong>Date:</strong> {{ item.date }}</span>
                                         <span v-if="item.room"
-                                            style="color: #1e3a8a; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;">
+                                            style="color: #1e3a8a; font-weight: bold; display: inline-flex; align-items: center; gap: 4px; justify-self: end;">
                                             <span class="material-icons" style="font-size: 16px;">meeting_room</span>
                                             {{ item.room }}
                                         </span>
@@ -184,7 +184,7 @@
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                        }}</div>
+                                            }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
                                             item.cxrNote || '-' }}</div>
@@ -280,7 +280,7 @@
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                        }}</div>
+                                            }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
                                             item.cxrNote || '-' }}</div>
@@ -371,7 +371,7 @@
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                        }}</div>
+                                            }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
                                             item.cxrNote || '-' }}</div>
@@ -456,7 +456,7 @@
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                            }}</div>
+                                        }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
                                             item.cxrNote || '-' }}</div>
@@ -1651,5 +1651,11 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
     font-size: 24px;
     margin-top: -2px;
     /* ดึงลูกศรให้ชิดตัวหนังสือมากขึ้น */
+}
+
+.icon-wrap .material-icons {
+    font-size: 35px;
+    color: #90a4ae;
+
 }
 </style>
