@@ -43,6 +43,6 @@ npm run dev
 | Role | License | Password |
 |------|---------|----------|
 | User | `12345` | `123456**` |
-| Admin | `admin01` | `24680@` |
+| Admin | `admin007` | `123456` |
 
 > **Signup Secret Key:** `OR-UP01`
