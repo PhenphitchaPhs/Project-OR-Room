@@ -167,13 +167,15 @@ const login = async () => {
 }
 
 .logo {
-  width: 90px;
-  margin-bottom: 10px;
+  width: 120px;
+  margin-bottom: 0px;
+
 }
 
 .title {
   color: #001F5B;
   margin-bottom: 28px;
+  margin-top: 0px;
   font-weight: 700;
 }
 
