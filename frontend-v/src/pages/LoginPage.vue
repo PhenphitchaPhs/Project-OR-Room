@@ -8,7 +8,26 @@
       <input v-model="license" type="text" inputmode="numeric" maxlength="5" placeholder="License" class="input"
         @input="handleLicenseInput" />
 
-      <input v-model="password" type="password" placeholder="Password" class="input" />
+      <!-- อันนี้เป็นดวงตาเปิด/ปิดพาสเวิส -->
+
+      <div class="input-wrapper">
+        <input v-model="password" :type="showPassword ? 'text' : 'password'" placeholder="Password"
+          class="input password-input" />
+        <div class="eye-icon" @click="showPassword = !showPassword">
+          <svg v-if="showPassword" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+          <svg v-else xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path
+              d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24">
+            </path>
+            <line x1="1" y1="1" x2="23" y2="23"></line>
+          </svg>
+        </div>
+      </div>
 
       <div class="links">
         <router-link to="/admin-login">
@@ -30,7 +49,7 @@
       <button class="btn" @click="login">Log in</button>
     </div>
   </div>
-  <!-- Dialog -->
+
   <div v-if="showDialog" class="dialog-overlay">
     <div class="dialog-box">
       <div class="dialog-icon">
@@ -45,14 +64,12 @@
         {{ dialogMessage }}
       </p>
 
-
       <button class="dialog-btn" @click="showDialog = false">
         OK
       </button>
     </div>
   </div>
 </template>
-
 
 <script setup>
 import { ref, onMounted } from "vue";
@@ -61,6 +78,7 @@ import { useRouter } from "vue-router";
 const router = useRouter();
 const license = ref("");
 const password = ref("");
+const showPassword = ref(false); // เพิ่มตัวแปรจัดการสถานะรหัสผ่าน
 const showDialog = ref(false);
 const dialogMessage = ref("");
 
@@ -169,7 +187,6 @@ const login = async () => {
 .logo {
   width: 120px;
   margin-bottom: 0px;
-
 }
 
 .title {
@@ -179,7 +196,15 @@ const login = async () => {
   font-weight: 700;
 }
 
-/* กล่องกรอกข้อมูลให้เหมือนหน้า Sign up */
+/* ------------------------------------- 
+   ส่วนปรับปรุงการครอบช่อง Input 
+-------------------------------------- */
+.input-wrapper {
+  position: relative;
+  width: 100%;
+  margin-bottom: 16px;
+}
+
 .input {
   width: 100%;
   height: 50px;
@@ -192,6 +217,31 @@ const login = async () => {
   outline: none;
   transition: all 0.2s ease;
 }
+
+/* ลบ margin ล่างของกล่อง password เพื่อให้ wrapper เป็นตัวดันระยะแทน และเพิ่มที่ว่างฝั่งขวา */
+.input-wrapper .password-input {
+  margin-bottom: 0;
+  padding-right: 48px;
+}
+
+.eye-icon {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: #999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+}
+
+.eye-icon:hover {
+  color: #001F5B;
+}
+
+/* ------------------------------------- */
 
 .input:focus {
   border: 1.5px solid #001F5B;
