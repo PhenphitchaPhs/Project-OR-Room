@@ -41,7 +41,7 @@
         </header>
 
         <div class="dashboard-container">
-            <h1 class="main-title">ระบบบริหารจัดการคิวห้องผ่าตัด</h1>
+            <h1 class="main-title">ORchestrator</h1>
             <!-- OR Capacity Card -->
             <div class="or-capacity-card">
 

@@ -6,7 +6,7 @@
       <div class="content-wrapper">
         <div class="logo-section">
           <img src="../assets/logo.png" alt="Hospital Logo" class="main-logo" />
-          <h1 class="title">Hospital Management</h1>
+          <h1 class="title">ORchestrator</h1>
         </div>
 
         <div class="form-group">
