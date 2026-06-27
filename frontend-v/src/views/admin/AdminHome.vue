@@ -368,10 +368,22 @@
                                         <div class="detail-row"><strong>Age:</strong> {{ item.age }}</div>
                                         <div><strong>Gender:</strong> {{ item.gender === 'male' ? 'ชาย' : 'หญิง' }}
                                         </div>
-                                        <div class="detail-row"><strong>Procedure:</strong> {{ item.procedure }}</div>
+                                        <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
+                                            item.underlying || '-' }}</div>
+                                        <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
+                                        }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
+                                        <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
+                                            item.cxrNote || '-' }}</div>
+                                        <div class="detail-row"><strong>ECG:</strong> {{ item.ecgDate || '-' }} | {{
+                                            item.ecgNote || '-' }}</div>
+                                        <div class="detail-row"><strong>Lab:</strong> {{ item.labDate || '-' }} | {{
+                                            item.labNote || '-' }}</div>
+                                        <div class="detail-row"><strong>Admission:</strong> {{ item.admDate || '-' }} |
+                                            {{ item.admNote || '-' }}</div>
                                         <div class="detail-row"><strong>Notes:</strong> {{ item.notes || '-' }}</div>
                                     </div>
+
                                 </transition>
 
                                 <div class="see-more-toggle">
@@ -444,7 +456,7 @@
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                        }}</div>
+                                            }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
                                             item.cxrNote || '-' }}</div>
@@ -456,6 +468,7 @@
                                             {{ item.admNote || '-' }}</div>
                                         <div class="detail-row"><strong>Notes:</strong> {{ item.notes || '-' }}</div>
                                     </div>
+
                                 </transition>
 
                                 <div class="case-actions">
