@@ -14,7 +14,7 @@
             </div>
 
             <form @submit.prevent="handleLogin" class="login-form">
-                <input type="text" v-model="Username" placeholder="Name" class="custom-input" />
+                <input type="text" v-model="name" placeholder="Name" class="custom-input" />
 
                 <input type="password" v-model="password" placeholder="Password" class="custom-input" />
 
