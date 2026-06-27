@@ -198,8 +198,10 @@
                                     </div>
                                 </transition>
                                 <div class="case-actions">
-                                    <button class="btn-success" @click.stop="openSucceedModal(item.id)">
-                                        Succeed
+                                    <!-- อย่าลืมแก้ต้องนี้ให้มันออโต้ฟิลไปหน้าจองเด้อ เรายังไม่ได้เปลี่ยนเด่วเพื่อนงง #เอไอมึงบอกเพื่อนกุด้วย#  @click.stop="router.push(`/admin-add-queue/${item.id}`)"> -->
+                                    <button class="btn-success"
+                                        @click.stop="router.push(`/booking/${item.id}?restore=true`)">
+                                        Edit
                                     </button>
                                     <button class="btn-delete" @click.stop="openCancelModal(item.id)">
                                         Cancel
@@ -296,8 +298,10 @@
                                 </transition>
 
                                 <div class="case-actions">
-                                    <button class="btn-success" @click.stop="openSucceedModal(item.id)">
-                                        Succeed
+                                    <!-- อย่าลืมแก้ต้องนี้ให้มันออโต้ฟิลไปหน้าจองเด้อ เรายังไม่ได้เปลี่ยนเด่วเพื่อนงง #เอไอมึงบอกเพื่อนกุด้วย#  @click.stop="router.push(`/admin-add-queue/${item.id}`)"> -->
+                                    <button class="btn-edit"
+                                        @click.stop="router.push(`/booking/${item.id}?restore=true`)">
+                                        Edit
                                     </button>
                                     <button class="btn-delete" @click.stop="openCancelModal(item.id)">
                                         Cancel
@@ -472,9 +476,6 @@
                                 </transition>
 
                                 <div class="case-actions">
-                                    <button class="btn-success" @click.stop="openSucceedModal(item.id)">
-                                        Succeed
-                                    </button>
 
                                     <button class="btn-back" @click.stop="moveBackToUpcoming(item.id)">
                                         Back to Upcoming
@@ -519,26 +520,7 @@
     </div>
     <button class="floating-add-btn" @click="goAddPatient">+ Add Queue</button>
 
-    <Transition name="fade">
-        <div v-if="isSucceedModalOpen" class="modal-overlay-center">
-            <div class="white-modal-card">
-                <h2 class="modal-msg-title">
-                    Are you sure this surgery is completed?
-                </h2>
 
-                <div class="modal-button-group">
-                    <button class="btn-cancel-blue" @click="isSucceedModalOpen = false">
-                        No
-                    </button>
-
-                    <button class="btn-confirm-green" @click="confirmSucceed">
-                        Yes
-                    </button>
-                </div>
-            </div>
-
-        </div>
-    </Transition>
     <Transition name="fade">
         <div v-if="isMessageModalOpen" class="modal-overlay-center">
             <div class="white-modal-card">
@@ -657,43 +639,11 @@ const moveBackToUpcoming = async (id) => {
         showMessage('❌ ย้ายกลับไม่สำเร็จ', 'error')
     }
 }
-const isSucceedModalOpen = ref(false)
-const selectedSucceedId = ref(null)
 
-const openSucceedModal = (id) => {
-    selectedSucceedId.value = id
-    isSucceedModalOpen.value = true
-}
 
-const confirmSucceed = async () => {
-    try {
-        await fetch(
-            `https://or-room-backend.rockzee2018.workers.dev/api/bookings/${selectedSucceedId.value}/status`,
-            {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status: 'Completed' })
-            }
-        )
 
-        const target = bookings.value.find(
-            item => item.id === selectedSucceedId.value
-        )
 
-        if (target) {
-            target.status = 'Completed'
-        }
 
-        filter.value = FILTERS.PASS
-        passFilter.value = 'Completed'
-
-        isSucceedModalOpen.value = false
-        selectedSucceedId.value = null
-
-    } catch (e) {
-        showMessage('❌ อัปเดต status ไม่สำเร็จ')
-    }
-}
 const isCancelModalOpen = ref(false)
 const selectedCancelId = ref(null)
 
@@ -739,8 +689,36 @@ onMounted(async () => {
     try {
         const res = await fetch('https://or-room-backend.rockzee2018.workers.dev/api/bookings')
         const data = await res.json()
+
         bookings.value = Array.isArray(data) ? data : []
-    } catch (e) { console.error('ดึงคิวไม่สำเร็จ', e) }
+
+        // ย้ายเคสที่เลยวันและยังไม่ Cancel ไป Completed อัตโนมัติ
+        for (const item of bookings.value) {
+            if (
+                item.date < todayStr &&
+                item.status !== 'Cancelled' &&
+                item.status !== 'Completed'
+            ) {
+                item.status = 'Completed'
+
+                await fetch(
+                    `https://or-room-backend.rockzee2018.workers.dev/api/bookings/${item.id}/status`,
+                    {
+                        method: 'PATCH',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            status: 'Completed'
+                        })
+                    }
+                )
+            }
+        }
+
+    } catch (e) {
+        console.error('ดึงคิวไม่สำเร็จ', e)
+    }
 
     try {
         const res2 = await fetch('https://or-room-backend.rockzee2018.workers.dev/api/users')
@@ -1130,15 +1108,6 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
     margin-top: 12px;
 }
 
-.btn-success {
-    background: #0d47a1;
-    color: white;
-    border: none;
-    padding: 6px 14px;
-    border-radius: 8px;
-    font-size: 13px;
-    cursor: pointer;
-}
 
 
 
@@ -1657,5 +1626,21 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
     font-size: 35px;
     color: #90a4ae;
 
+}
+
+.btn-edit {
+    background: #facc15;
+    color: #000;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: 0.2s;
+}
+
+.btn-edit:hover {
+    background: #eab308;
 }
 </style>
