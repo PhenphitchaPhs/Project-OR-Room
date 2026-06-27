@@ -10,11 +10,11 @@
         <div class="login-card">
             <div class="logo-section">
                 <img :src="logo" alt="Hospital Logo" class="logo-img" />
-                <h1 class="logo-text">Hospital</h1>
+                <h1 class="logo-text">ORchestrator</h1>
             </div>
 
             <form @submit.prevent="handleLogin" class="login-form">
-                <input type="text" v-model="name" placeholder="Name" class="custom-input" />
+                <input type="text" v-model="Username" placeholder="Name" class="custom-input" />
 
                 <input type="password" v-model="password" placeholder="Password" class="custom-input" />
 
