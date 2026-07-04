@@ -25,8 +25,6 @@
                 'weekend-cell': date.isCurrentMonth && (date.dayOfWeek === 0 || date.dayOfWeek === 6),
                 'holiday-cell': date.isCurrentMonth && isOfficialHoliday(date.fullDate),
                 'has-booking': date.isCurrentMonth && hasBooking(date.fullDate),
-                'not-working-day': date.isCurrentMonth && !isClosedDay(date.fullDate) && !is
-                    (date.fullDate)
             }" @click="date.isCurrentMonth && handleDateClick(date)">
                 <span class="day-number" :class="{ 'today-circle': date.fullDate === todayStr }">{{ date.dayNumber
                     }}</span>
@@ -54,11 +52,7 @@
                     <p v-else class="capacity-line capacity-closed-text">
                         🔒 ห้องผ่าตัดปิดทำการ
                     </p>
-                    <p v-if="!isClosedDay(selectedFullDate) && !isMyWorkingDay(selectedFullDate)"
-                        class="capacity-line capacity-closed-text">
-                        📌 วันนี้ไม่ใช่วันทำงานของคุณ{{ myWorkingDay ? ` (วันทำงาน: ${dayNameThai[myWorkingDay] ||
-                        myWorkingDay})` : '' }}
-                    </p>
+
 
                     <!-- 📍 แสดงสถานะของห้องผ่าตัดทุกห้อง (OR-201 ถึง OR-220) พร้อมเวลาที่เหลือและสีบอกสถานะ -->
                     <div v-if="!isClosedDay(selectedFullDate)" class="room-grid">
@@ -114,7 +108,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Icon } from '@iconify/vue'
+
 
 const router = useRouter()
 const now = new Date()
@@ -129,7 +123,6 @@ const selectedDateBookings = ref([])
 const bookings = ref([])
 const officialHolidays = ref([])
 const MAX_MINUTES = 420
-const myWorkingDay = ref('')
 // 📍 license ของแพทย์ที่ login อยู่ ใช้เทียบว่าคิวนี้เป็นของตัวเองไหม
 const myLicense = localStorage.getItem('userLicense')
 // 📍 เลขห้องผ่าตัด OR-201 ถึง OR-220
@@ -148,15 +141,6 @@ onMounted(async () => {
         console.error('ดึงคิวไม่สำเร็จ', e)
     }
 
-    try {
-        const resUser = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/users/${license}`)
-        if (resUser.ok) {
-            const userData = await resUser.json()
-            myWorkingDay.value = userData.day || ''
-        }
-    } catch (e) {
-        console.error('ดึงวันทำงานของแพทย์ไม่สำเร็จ', e)
-    }
 
     try {
         const resHoliday = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/holidays`)
@@ -185,14 +169,9 @@ const isWeekend = (d) => {
 }
 const isClosedDay = (d) => isWeekend(d) || isOfficialHoliday(d)
 
-const dayMap = { 'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4, 'Friday': 5 }
-const dayNameThai = { 'Monday': 'วันจันทร์', 'Tuesday': 'วันอังคาร', 'Wednesday': 'วันพุธ', 'Thursday': 'วันพฤหัสบดี', 'Friday': 'วันศุกร์' }
-const isMyWorkingDay = (d) => {
-    if (!myWorkingDay.value) return true
-    const dow = new Date(d + 'T00:00:00').getDay()
-    return dayMap[myWorkingDay.value] === dow
-}
-const canBookOnDate = (d) => !isClosedDay(d) && isMyWorkingDay(d)
+
+const canBookOnDate = (d) =>
+    !isClosedDay(d)
 
 const sortByAgeThenFemaleFirst = (arr) => {
     return [...arr].sort((a, b) => {
@@ -431,9 +410,7 @@ const formatDateThai = (d) => {
     border-top: 3px solid #4a6fa5;
 }
 
-.not-working-day {
-    opacity: 0.55;
-}
+
 
 .day-number {
     font-size: 13px;
