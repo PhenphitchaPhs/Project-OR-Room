@@ -38,6 +38,7 @@ const routes = [
   { path: '/choose-doctor', name: 'choose-doctor', component: ChooseDoctorAdmin, meta: { requiresAuth: true, role: 'admin' } },
   { path: '/admin-add-patient', name: 'admin-add-patient', component: AddPatientByAdmin, meta: { requiresAuth: true, role: 'admin' } },
   { path: '/admin-calendar', name: 'admin-calendar', component: AdminCalendarView, meta: { requiresAuth: true, role: 'admin' } }
+  
 ]
 
 const router = createRouter({
