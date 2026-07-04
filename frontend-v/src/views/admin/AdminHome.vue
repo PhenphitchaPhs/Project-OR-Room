@@ -573,12 +573,12 @@ const filter = ref(FILTERS.TODAY)
 const passFilter = ref('Completed')
 const bookings = ref([])
 const matchSearch = (item) => {
-    console.log('search =', searchQuery.value)
+
 
     if (!searchQuery.value.trim()) return true
 
     const q = searchQuery.value.toLowerCase().trim()
-    if (!searchQuery.value.trim()) return true
+
 
 
     const doctorName =

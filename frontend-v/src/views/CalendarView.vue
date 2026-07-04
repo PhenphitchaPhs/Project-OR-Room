@@ -14,40 +14,32 @@
         </header>
 
         <div class="weekday-row">
-            <div v-for="d in ['อา.','จ.','อ.','พ.','พฤ.','ศ.','ส.']" :key="d" class="weekday-cell"
+            <div v-for="d in ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.']" :key="d" class="weekday-cell"
                 :class="{ 'weekend-label': d === 'อา.' || d === 'ส.' }">{{ d }}</div>
         </div>
 
         <div class="calendar-grid">
-            <div
-                v-for="(date, i) in calendarDays"
-                :key="i"
-                class="day-cell"
-                :class="{
-                    'empty-cell': !date.isCurrentMonth,
-                    'today-cell': date.fullDate === todayStr,
-                    'weekend-cell': date.isCurrentMonth && (date.dayOfWeek === 0 || date.dayOfWeek === 6),
-                    'holiday-cell': date.isCurrentMonth && isOfficialHoliday(date.fullDate),
-                    'has-booking': date.isCurrentMonth && hasBooking(date.fullDate),
-                    'not-working-day': date.isCurrentMonth && !isClosedDay(date.fullDate) && !isMyWorkingDay(date.fullDate)
-                }"
-                @click="date.isCurrentMonth && handleDateClick(date)"
-            >
-                <span class="day-number" :class="{ 'today-circle': date.fullDate === todayStr }">{{ date.dayNumber }}</span>
-                <span v-if="date.isCurrentMonth && isOfficialHoliday(date.fullDate)" class="holiday-tag">{{ getHolidayName(date.fullDate) }}</span>
-                <span
-                    v-if="date.isCurrentMonth && !isClosedDay(date.fullDate)"
-                    class="capacity-badge"
-                    :class="{ 'badge-full': availableRoomsCount(date.fullDate) === 0, 'badge-available': availableRoomsCount(date.fullDate) > 0 }"
-                >{{ availableRoomsCount(date.fullDate) }}/20 ห้องว่าง</span>
+            <div v-for="(date, i) in calendarDays" :key="i" class="day-cell" :class="{
+                'empty-cell': !date.isCurrentMonth,
+                'today-cell': date.fullDate === todayStr,
+                'weekend-cell': date.isCurrentMonth && (date.dayOfWeek === 0 || date.dayOfWeek === 6),
+                'holiday-cell': date.isCurrentMonth && isOfficialHoliday(date.fullDate),
+                'has-booking': date.isCurrentMonth && hasBooking(date.fullDate),
+                'not-working-day': date.isCurrentMonth && !isClosedDay(date.fullDate) && !is
+                    (date.fullDate)
+            }" @click="date.isCurrentMonth && handleDateClick(date)">
+                <span class="day-number" :class="{ 'today-circle': date.fullDate === todayStr }">{{ date.dayNumber
+                    }}</span>
+                <span v-if="date.isCurrentMonth && isOfficialHoliday(date.fullDate)" class="holiday-tag">{{
+                    getHolidayName(date.fullDate) }}</span>
+                <span v-if="date.isCurrentMonth && !isClosedDay(date.fullDate)" class="capacity-badge"
+                    :class="{ 'badge-full': availableRoomsCount(date.fullDate) === 0, 'badge-available': availableRoomsCount(date.fullDate) > 0 }">{{
+                        availableRoomsCount(date.fullDate) }}/20 ห้องว่าง</span>
                 <div class="dot-row">
-                    <span
-                        v-for="b in getBookingsForDate(date.fullDate).slice(0,3)"
-                        :key="b.id"
-                        class="dot"
-                        :style="{ background: b.doctorLicense === myLicense ? urgencyColor(b.urgency) : '#b0b8c1' }"
-                    ></span>
-                    <span v-if="getBookingsForDate(date.fullDate).length > 3" class="more-count">+{{ getBookingsForDate(date.fullDate).length - 3 }}</span>
+                    <span v-for="b in getBookingsForDate(date.fullDate).slice(0, 3)" :key="b.id" class="dot"
+                        :style="{ background: b.doctorLicense === myLicense ? urgencyColor(b.urgency) : '#b0b8c1' }"></span>
+                    <span v-if="getBookingsForDate(date.fullDate).length > 3" class="more-count">+{{
+                        getBookingsForDate(date.fullDate).length - 3 }}</span>
                 </div>
             </div>
         </div>
@@ -62,18 +54,16 @@
                     <p v-else class="capacity-line capacity-closed-text">
                         🔒 ห้องผ่าตัดปิดทำการ
                     </p>
-                    <p v-if="!isClosedDay(selectedFullDate) && !isMyWorkingDay(selectedFullDate)" class="capacity-line capacity-closed-text">
-                        📌 วันนี้ไม่ใช่วันทำงานของคุณ{{ myWorkingDay ? ` (วันทำงาน: ${dayNameThai[myWorkingDay] || myWorkingDay})` : '' }}
+                    <p v-if="!isClosedDay(selectedFullDate) && !isMyWorkingDay(selectedFullDate)"
+                        class="capacity-line capacity-closed-text">
+                        📌 วันนี้ไม่ใช่วันทำงานของคุณ{{ myWorkingDay ? ` (วันทำงาน: ${dayNameThai[myWorkingDay] ||
+                        myWorkingDay})` : '' }}
                     </p>
 
                     <!-- 📍 แสดงสถานะของห้องผ่าตัดทุกห้อง (OR-201 ถึง OR-220) พร้อมเวลาที่เหลือและสีบอกสถานะ -->
                     <div v-if="!isClosedDay(selectedFullDate)" class="room-grid">
-                        <div
-                            v-for="r in orRooms"
-                            :key="r"
-                            class="room-chip"
-                            :class="{ 'room-full': isRoomFull(selectedFullDate, r), 'room-available': !isRoomFull(selectedFullDate, r) }"
-                        >
+                        <div v-for="r in orRooms" :key="r" class="room-chip"
+                            :class="{ 'room-full': isRoomFull(selectedFullDate, r), 'room-available': !isRoomFull(selectedFullDate, r) }">
                             <span class="room-num">OR-{{ r }}</span>
                             <span class="room-time">{{ roomRemainingLabel(selectedFullDate, r) }}</span>
                         </div>
@@ -88,19 +78,24 @@
                             <p><strong>Room:</strong> {{ b.room || '-' }}</p>
                             <p><strong>Patient:</strong> {{ b.fullName }}</p>
                             <p><strong>HN:</strong> {{ b.hn }}</p>
-                            <p><strong>Age / Gender:</strong> {{ b.age || '-' }} ปี · {{ b.gender === 'female' ? 'หญิง' : 'ชาย' }}</p>
+                            <p><strong>Age / Gender:</strong> {{ b.age || '-' }} ปี · {{ b.gender === 'female' ? 'หญิง'
+                                : 'ชาย' }}</p>
                             <p><strong>Procedure:</strong> {{ b.procedure }}</p>
                             <p v-if="b.isNpoRisk">🍼 <strong>NPO Risk</strong></p>
                             <p v-if="b.isInfected">🦠 <strong>Infection Risk</strong></p>
-                            <button class="btn-edit-booking" @click="goToEditBooking(b.id)">✏️ Edit (เพิ่ม/เปลี่ยนวันที่และห้อง)</button>
+                            <button class="btn-edit-booking" @click="goToEditBooking(b.id)">✏️ Edit
+                                (เพิ่ม/เปลี่ยนวันที่และห้อง)</button>
                         </template>
                         <template v-else>
-                            <p class="other-booking-line">🔒 ห้อง {{ b.room || '-' }} ถูกจองแล้ว (คิวของแพทย์ท่านอื่น)</p>
+                            <p class="other-booking-line">🔒 ห้อง {{ b.room || '-' }} ถูกจองแล้ว (คิวของแพทย์ท่านอื่น)
+                            </p>
                         </template>
                         <hr style="border-color:#eee; margin: 8px 0" />
                     </div>
                     <div class="actions">
-                        <button v-if="canBookOnDate(selectedFullDate)" @click="goToBooking(selectedFullDate)" class="btn-fill">+ Add Queue</button>
+                        <button v-if="canBookOnDate(selectedFullDate)" @click="goToBooking(selectedFullDate)"
+                            class="btn-fill">+ Add
+                            Queue</button>
                         <button @click="isDetailPopupOpen = false" class="btn-clear">Close</button>
                     </div>
                 </div>
@@ -109,7 +104,7 @@
 
         <button class="fab-btn" @click="goToBooking()">
             <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24">
-                <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6z"/>
+                <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6z" />
             </svg>
         </button>
 
@@ -166,10 +161,10 @@ onMounted(async () => {
     try {
         const resHoliday = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/holidays`)
         const dataHoliday = await resHoliday.json()
-        
+
         if (dataHoliday.items) {
             officialHolidays.value = dataHoliday.items.map(item => ({
-                date: item.start.date, 
+                date: item.start.date,
                 name: item.summary
             }))
         }
@@ -292,7 +287,11 @@ const formatDateThai = (d) => {
 </script>
 
 <style scoped>
-* { box-sizing: border-box; margin: 0; padding: 0; }
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
 
 .calendar-page {
     min-height: 100vh;
@@ -311,12 +310,27 @@ const formatDateThai = (d) => {
     align-items: center;
     justify-content: space-between;
 }
-.nav-left { width: 40px; }
-.nav-center { display: flex; align-items: center; gap: 12px; flex: 1; justify-content: center; }
-.nav-right { width: 80px; display: flex; justify-content: flex-end; }
+
+.nav-left {
+    width: 40px;
+}
+
+.nav-center {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    justify-content: center;
+}
+
+.nav-right {
+    width: 80px;
+    display: flex;
+    justify-content: flex-end;
+}
 
 .ctrl-btn {
-    background: rgba(255,255,255,0.2);
+    background: rgba(255, 255, 255, 0.2);
     border: none;
     width: 34px;
     height: 34px;
@@ -329,19 +343,31 @@ const formatDateThai = (d) => {
     justify-content: center;
     line-height: 1;
 }
-.ctrl-btn:hover { background: rgba(255,255,255,0.3); }
-.month-label { font-weight: 700; font-size: 1rem; color: white; }
-.today-btn {
-    background: rgba(255,255,255,0.2);
+
+.ctrl-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.month-label {
+    font-weight: 700;
+    font-size: 1rem;
     color: white;
-    border: 1.5px solid rgba(255,255,255,0.4);
+}
+
+.today-btn {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 1.5px solid rgba(255, 255, 255, 0.4);
     padding: 6px 14px;
     border-radius: 8px;
     font-size: 13px;
     cursor: pointer;
     font-weight: 600;
 }
-.today-btn:hover { background: rgba(255,255,255,0.3); }
+
+.today-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
 
 /* WEEKDAY */
 .weekday-row {
@@ -350,13 +376,17 @@ const formatDateThai = (d) => {
     background: #e8edf5;
     padding: 6px 0;
 }
+
 .weekday-cell {
     text-align: center;
     font-size: 11px;
     font-weight: 700;
     color: #4a6fa5;
 }
-.weekend-label { color: #c0392b; }
+
+.weekend-label {
+    color: #c0392b;
+}
 
 /* GRID */
 .calendar-grid {
@@ -366,6 +396,7 @@ const formatDateThai = (d) => {
     gap: 1px;
     background: #dde3ea;
 }
+
 .day-cell {
     background: white;
     min-height: 80px;
@@ -374,13 +405,35 @@ const formatDateThai = (d) => {
     position: relative;
     transition: background 0.15s;
 }
-.day-cell:hover { background: #f0f5fb; }
-.empty-cell { background: #f8f9fb; cursor: default; }
-.today-cell { background: #e8f0fe; }
-.weekend-cell { background: #fdf8f0; }
-.holiday-cell { background: #fff3e0; }
-.has-booking { border-top: 3px solid #4a6fa5; }
-.not-working-day { opacity: 0.55; }
+
+.day-cell:hover {
+    background: #f0f5fb;
+}
+
+.empty-cell {
+    background: #f8f9fb;
+    cursor: default;
+}
+
+.today-cell {
+    background: #e8f0fe;
+}
+
+.weekend-cell {
+    background: #fdf8f0;
+}
+
+.holiday-cell {
+    background: #fff3e0;
+}
+
+.has-booking {
+    border-top: 3px solid #4a6fa5;
+}
+
+.not-working-day {
+    opacity: 0.55;
+}
 
 .day-number {
     font-size: 13px;
@@ -388,6 +441,7 @@ const formatDateThai = (d) => {
     color: #333;
     display: block;
 }
+
 .today-circle {
     background: #1a3a5f;
     color: white;
@@ -399,6 +453,7 @@ const formatDateThai = (d) => {
     justify-content: center;
     font-size: 11px;
 }
+
 .holiday-tag {
     display: block;
     font-size: 9px;
@@ -406,6 +461,7 @@ const formatDateThai = (d) => {
     margin-top: 2px;
     line-height: 1.2;
 }
+
 .capacity-badge {
     display: inline-block;
     font-size: 8.5px;
@@ -415,8 +471,15 @@ const formatDateThai = (d) => {
     margin-top: 3px;
     color: white;
 }
-.badge-available { background: #43a047; }
-.badge-full { background: #e53935; }
+
+.badge-available {
+    background: #43a047;
+}
+
+.badge-full {
+    background: #e53935;
+}
+
 .dot-row {
     display: flex;
     gap: 3px;
@@ -424,11 +487,13 @@ const formatDateThai = (d) => {
     flex-wrap: wrap;
     align-items: center;
 }
+
 .dot {
     width: 7px;
     height: 7px;
     border-radius: 50%;
 }
+
 .more-count {
     font-size: 9px;
     color: #666;
@@ -439,13 +504,14 @@ const formatDateThai = (d) => {
 .overlay-modal {
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.45);
+    background: rgba(0, 0, 0, 0.45);
     display: flex;
     justify-content: center;
     align-items: flex-end;
     z-index: 2000;
     padding-bottom: 20px;
 }
+
 .card-modal {
     background: white;
     width: 100%;
@@ -455,55 +521,73 @@ const formatDateThai = (d) => {
     max-height: 75vh;
     overflow-y: auto;
 }
+
 .modal-title {
     font-size: 1rem;
     font-weight: 700;
     color: #1a3a5f;
     margin-bottom: 12px;
 }
+
 .capacity-line {
     font-size: 12.5px;
     font-weight: 600;
     color: #2e7d32;
     margin-bottom: 14px;
 }
-.capacity-closed-text { color: #757575; }
+
+.capacity-closed-text {
+    color: #757575;
+}
+
 .empty-state {
     text-align: center;
     color: #888;
     font-size: 13px;
     padding: 20px 0;
 }
+
 .room-grid {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
     gap: 6px;
     margin-bottom: 16px;
 }
+
 .room-chip {
     border-radius: 8px;
     padding: 6px 4px;
     text-align: center;
     color: white;
 }
-.room-chip.room-available { background: #43a047; }
-.room-chip.room-full { background: #e53935; }
+
+.room-chip.room-available {
+    background: #43a047;
+}
+
+.room-chip.room-full {
+    background: #e53935;
+}
+
 .room-num {
     display: block;
     font-size: 10px;
     font-weight: 700;
 }
+
 .room-time {
     display: block;
     font-size: 9px;
     opacity: 0.9;
     margin-top: 1px;
 }
+
 .other-booking-line {
     font-size: 13px;
     color: #888;
     font-style: italic;
 }
+
 .btn-edit-booking {
     margin-top: 6px;
     background: #e8f0fe;
@@ -515,14 +599,27 @@ const formatDateThai = (d) => {
     font-weight: 600;
     cursor: pointer;
 }
-.btn-edit-booking:hover { background: #d6e4fb; }
-.booking-item { margin-bottom: 10px; }
-.booking-item p { font-size: 13px; color: #333; margin: 3px 0; }
+
+.btn-edit-booking:hover {
+    background: #d6e4fb;
+}
+
+.booking-item {
+    margin-bottom: 10px;
+}
+
+.booking-item p {
+    font-size: 13px;
+    color: #333;
+    margin: 3px 0;
+}
+
 .actions {
     display: flex;
     gap: 10px;
     margin-top: 16px;
 }
+
 .btn-fill {
     flex: 1;
     background: #1a3a5f;
@@ -534,6 +631,7 @@ const formatDateThai = (d) => {
     cursor: pointer;
     font-size: 14px;
 }
+
 .btn-clear {
     flex: 1;
     background: #f0f4f8;
@@ -561,12 +659,23 @@ const formatDateThai = (d) => {
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
     z-index: 100;
     transition: 0.2s;
 }
-.fab-btn:hover { background: #244b7a; transform: scale(1.08); }
 
-.fade-enter-active, .fade-leave-active { transition: opacity 0.25s; }
-.fade-enter-from, .fade-leave-to { opacity: 0; }
+.fab-btn:hover {
+    background: #244b7a;
+    transform: scale(1.08);
+}
+
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 0.25s;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
+}
 </style>
