@@ -184,7 +184,7 @@
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                        }}</div>
+                                            }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
                                             item.cxrNote || '-' }}</div>
@@ -282,7 +282,7 @@
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                        }}</div>
+                                            }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
                                             item.cxrNote || '-' }}</div>
@@ -374,7 +374,7 @@
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                        }}</div>
+                                            }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
                                             item.cxrNote || '-' }}</div>
@@ -459,7 +459,7 @@
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                            }}</div>
+                                        }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
                                             item.cxrNote || '-' }}</div>
@@ -577,7 +577,10 @@ const matchSearch = (item) => {
 
     if (!searchQuery.value.trim()) return true
 
-    const q = searchQuery.value.toLowerCase().trim()
+    const q = searchQuery.value
+        .toLowerCase()
+        .replace(/[-\s]/g, '')
+        .trim()
 
 
 
@@ -599,12 +602,17 @@ const matchSearch = (item) => {
             `${dd}-${mm}-${yyyy}`
         )
     }
+    const roomText = item.room
+        ? item.room.toLowerCase().replace(/[-\s]/g, '')
+        : ''
 
     const searchableText = [
         item.hn,
         item.fullName,
         item.procedure,
         item.age,
+        item.room,
+        roomText,
         item.gender === 'male'
             ? 'male ชาย เพศชาย'
             : 'female หญิง เพศหญิง',
@@ -614,6 +622,7 @@ const matchSearch = (item) => {
     ]
         .join(' ')
         .toLowerCase()
+        .replace(/[-\s]/g, '')
 
     return searchableText.includes(q)
 }
@@ -638,10 +647,6 @@ const moveBackToUpcoming = async (id) => {
         showMessage('❌ ย้ายกลับไม่สำเร็จ', 'error')
     }
 }
-
-
-
-
 
 const isCancelModalOpen = ref(false)
 const selectedCancelId = ref(null)
