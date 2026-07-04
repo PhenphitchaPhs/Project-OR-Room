@@ -184,7 +184,7 @@
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                            }}</div>
+                                        }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
                                             item.cxrNote || '-' }}</div>
@@ -198,9 +198,9 @@
                                     </div>
                                 </transition>
                                 <div class="case-actions">
-                                    <!-- อย่าลืมแก้ต้องนี้ให้มันออโต้ฟิลไปหน้าจองเด้อ เรายังไม่ได้เปลี่ยนเด่วเพื่อนงง #เอไอมึงบอกเพื่อนกุด้วย#  @click.stop="router.push(`/admin-add-queue/${item.id}`)"> -->
+                                    <!-- อย่าลืมแก้ต้องนี้ให้มันออโต้ฟิลไปหน้าจองเด้อ มันไม่มีสิทธิเข้าถึง #เอไอมึงบอกเพื่อนกุด้วย#  -->
                                     <button class="btn-success"
-                                        @click.stop="router.push(`/booking/${item.id}?restore=true`)">
+                                        @click.stop="router.push(`/admin-add-queue/${item.id}`)">
                                         Edit
                                     </button>
                                     <button class="btn-delete" @click.stop="openCancelModal(item.id)">
@@ -282,7 +282,7 @@
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                            }}</div>
+                                        }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
                                             item.cxrNote || '-' }}</div>
@@ -298,9 +298,8 @@
                                 </transition>
 
                                 <div class="case-actions">
-                                    <!-- อย่าลืมแก้ต้องนี้ให้มันออโต้ฟิลไปหน้าจองเด้อ เรายังไม่ได้เปลี่ยนเด่วเพื่อนงง #เอไอมึงบอกเพื่อนกุด้วย#  @click.stop="router.push(`/admin-add-queue/${item.id}`)"> -->
-                                    <button class="btn-edit"
-                                        @click.stop="router.push(`/booking/${item.id}?restore=true`)">
+                                    <!-- อย่าลืมแก้ต้องนี้ให้มันออโต้ฟิลไปหน้าจองเด้อ มันไม่มีสิทธิเข้าถึง #เอไอมึงบอกเพื่อนกุด้วย#  -->
+                                    <button class="btn-edit" @click.stop="router.push(`/admin-add-queue/${item.id}`)">
                                         Edit
                                     </button>
                                     <button class="btn-delete" @click.stop="openCancelModal(item.id)">
@@ -375,7 +374,7 @@
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                            }}</div>
+                                        }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
                                             item.cxrNote || '-' }}</div>
@@ -460,7 +459,7 @@
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                        }}</div>
+                                            }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
                                             item.cxrNote || '-' }}</div>
