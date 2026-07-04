@@ -91,20 +91,14 @@
                         <div class="stat-label">Completed</div>
                     </div>
                 </div>
-                <div class="stat-card purple">
+                <!-- <div class="stat-card purple">
                     <div class="stat-icon">👨‍⚕️</div>
                     <div class="stat-info">
                         <div class="stat-number">{{ doctorList.length }}</div>
                         <div class="stat-label">Doctors</div>
                     </div>
-                </div>
-                <div class="stat-card orange">
-                    <div class="stat-icon">📅</div>
-                    <div class="stat-info">
-                        <div class="stat-number">{{ todayCount }}</div>
-                        <div class="stat-label">Today's Queues</div>
-                    </div>
-                </div>
+                </div> -->
+
                 <div class="stat-card red">
                     <div class="stat-icon">❌</div>
                     <div class="stat-info">
@@ -131,7 +125,6 @@
                             <tr>
                                 <th>License</th>
                                 <th>Name</th>
-                                <th>Working Day</th>
                                 <th>Role</th>
                                 <th>Action</th>
                             </tr>
@@ -140,10 +133,9 @@
                             <tr v-for="doc in doctorList" :key="doc.license">
                                 <td>{{ doc.license }}</td>
                                 <td>{{ doc.doctorName }}</td>
-                                <td>{{ doc.day }}</td>
                                 <td>
-                                    <span class="role-badge" :class="doc.role === 'admin' ? 'admin' : 'user'">
-                                        {{ doc.role === 'admin' ? '🛡️ Admin' : '👤 User' }}
+                                    <span class="role-badge" :class="getRoleClass(doc.role)">
+                                        {{ getRoleLabel(doc.role) }}
                                     </span>
                                 </td>
                                 <td>
@@ -214,7 +206,7 @@ onMounted(async () => {
             userArray = uData.results
         }
 
-        doctorList.value = userArray.filter(u => u.role === 'user')
+        doctorList.value = userArray
     } catch (e) {
         console.error('โหลดข้อมูลไม่สำเร็จ', e)
     } finally {
@@ -233,19 +225,7 @@ const showDialog = (title, message, callback = null) => {
     dialogOpen.value = true
 }
 
-// const deleteDoctor = async (license, name) => {
-//     if (!confirm(`ลบบัญชี "${name}" ออกจากระบบ?\n(ข้อมูลคิวผ่าตัดของหมอยังคงอยู่)`)) return
-//     try {
-//         const res = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/users/${license}`, { method: 'DELETE' })
-//         const data = await res.json()
-//         if (res.ok) {
-//             doctorList.value = doctorList.value.filter(d => d.license !== license)
-//             alert('✅ ลบบัญชีสำเร็จ')
-//         } else {
-//             alert('❌ ' + (data.error || 'ลบไม่สำเร็จ'))
-//         }
-//     } catch (e) { alert('❌ เกิดข้อผิดพลาด') }
-// }
+
 const deleteDoctor = (license, name) => {
     showDialog(
         'Delete Doctor',
@@ -286,6 +266,37 @@ const deleteDoctor = (license, name) => {
 
 
 const handleLogout = () => { localStorage.clear(); router.push('/login') }
+const getRoleLabel = (role) => {
+    if (!role) return '👤 User'
+
+    const roleText = role.toLowerCase()
+
+    if (roleText.includes('admin') && roleText.includes('user')) {
+        return '🛡️👤 Admin + User'
+    }
+
+    if (roleText.includes('admin')) {
+        return '🛡️ Admin'
+    }
+
+    return '👤 User'
+}
+
+const getRoleClass = (role) => {
+    if (!role) return 'user'
+
+    const roleText = role.toLowerCase()
+
+    if (roleText.includes('admin') && roleText.includes('user')) {
+        return 'multi-role'
+    }
+
+    if (roleText.includes('admin')) {
+        return 'admin'
+    }
+
+    return 'user'
+}
 </script>
 
 <style scoped>
@@ -383,7 +394,7 @@ const handleLogout = () => { localStorage.clear(); router.push('/login') }
 
 @media (min-width: 900px) {
     .stats-row {
-        grid-template-columns: repeat(5, 1fr);
+        grid-template-columns: repeat(3, 1fr);
     }
 }
 
@@ -410,10 +421,7 @@ const handleLogout = () => { localStorage.clear(); router.push('/login') }
     border-left-color: #7b5ea7;
 }
 
-.stat-card.orange {
-    border-left-color: #f0a500;
 
-}
 
 .stat-card.red {
     border-left-color: #dc3545;
@@ -592,5 +600,10 @@ const handleLogout = () => { localStorage.clear(); router.push('/login') }
 .fade-enter-from,
 .fade-leave-to {
     opacity: 0;
+}
+
+.role-badge.multi-role {
+    background: #ede9fe;
+    color: #6b21a8;
 }
 </style>
