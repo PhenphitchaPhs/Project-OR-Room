@@ -73,7 +73,11 @@
                             v-for="r in orRooms"
                             :key="r"
                             class="room-chip"
-                            :class="{ 'room-full': isRoomFull(selectedFullDate, r), 'room-available': !isRoomFull(selectedFullDate, r) }"
+                            :class="{
+                                'room-full': isRoomFull(selectedFullDate, r),
+                                'room-partial': isRoomPartial(selectedFullDate, r),
+                                'room-available': isRoomEmpty(selectedFullDate, r)
+                            }"
                         >
                             <span class="room-num">OR-{{ r }}</span>
                             <span class="room-time">{{ roomRemainingLabel(selectedFullDate, r) }}</span>
@@ -196,6 +200,11 @@ const getUsedMinutesForRoom = (d, roomNum) => {
         }, 0)
 }
 const isRoomFull = (d, roomNum) => getUsedMinutesForRoom(d, roomNum) >= MAX_MINUTES
+const isRoomEmpty = (d, roomNum) => getUsedMinutesForRoom(d, roomNum) === 0
+const isRoomPartial = (d, roomNum) => {
+    const used = getUsedMinutesForRoom(d, roomNum)
+    return used > 0 && used < MAX_MINUTES
+}
 const roomRemainingLabel = (d, roomNum) => {
     const remain = Math.max(MAX_MINUTES - getUsedMinutesForRoom(d, roomNum), 0)
     if (remain <= 0) return 'เต็ม'
@@ -521,6 +530,7 @@ const formatDateThai = (d) => {
     color: white;
 }
 .room-chip.room-available { background: #43a047; }
+.room-chip.room-partial { background: #f59e0b; }
 .room-chip.room-full { background: #e53935; }
 .room-num {
     display: block;
