@@ -264,7 +264,8 @@ onMounted(async () => {
                     const isAdmin = myRole === 'admin'
                     if (!isAdmin && booking.doctorLicense !== myLicense) {
                         showAlert('คุณไม่มีสิทธิ์แก้ไขคิวนี้ เพราะไม่ใช่คิวของคุณครับ')
-                        setTimeout(() => { router.push('/home') }, 1500)
+                        const isAdminReject = localStorage.getItem('userRole') === 'admin'
+                        setTimeout(() => { router.push(isAdminReject ? '/admin-home' : '/home') }, 1500)
                         return
                     }
 
@@ -550,7 +551,10 @@ const submitForm = async () => {
     }
 }
 
-const goHome = () => router.push('/home')
+const goHome = () => {
+    const isAdmin = localStorage.getItem('userRole') === 'admin'
+    router.push(isAdmin ? '/admin-home' : '/home')
+}
 </script>
 
 <style scoped>
