@@ -35,7 +35,7 @@
                         availableRoomsCount(date.fullDate) }}/20 ห้องว่าง</span>
                 <div class="dot-row">
                     <span v-for="b in getBookingsForDate(date.fullDate).slice(0, 3)" :key="b.id" class="dot"
-                        :style="{ background: b.doctorLicense === myLicense ? urgencyColor(b.urgency) : '#b0b8c1' }"></span>
+                        :style="{ background: roomStatusColor(date.fullDate, b.room) }"></span>
                     <span v-if="getBookingsForDate(date.fullDate).length > 3" class="more-count">+{{
                         getBookingsForDate(date.fullDate).length - 3 }}</span>
                 </div>
@@ -221,6 +221,15 @@ const roomRemainingLabel = (d, roomNum) => {
 }
 // 📍 จำนวนห้องที่ยังว่างอยู่ในวันนั้น (จาก 20 ห้อง) ใช้แสดง badge สรุปในตารางปฏิทิน
 const availableRoomsCount = (d) => orRooms.filter(r => !isRoomFull(d, r)).length
+
+// 📍 สีจุดบนปฏิทินให้ตรงกับสีห้องในป๊อปอัป (เขียว/เหลือง/แดง) แทนสี urgency เดิม
+const roomStatusColor = (d, roomStr) => {
+    const roomNum = getRoomNumber(roomStr)
+    if (roomNum === null) return '#b0b8c1' // ไม่มีข้อมูลห้อง ใช้สีเทา
+    if (isRoomFull(d, roomNum)) return '#e53935'      // แดง = เต็ม
+    if (isRoomPartial(d, roomNum)) return '#f59e0b'   // เหลือง = บางส่วน
+    return '#43a047'                                    // เขียว = ว่าง
+}
 
 const urgencyColor = (urgency) => {
     if (urgency === 'Emergency') return '#e53935'

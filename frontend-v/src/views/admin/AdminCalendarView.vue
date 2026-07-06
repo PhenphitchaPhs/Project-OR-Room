@@ -48,7 +48,7 @@
                 >{{ availableRoomsCount(date.fullDate) }}/20 ห้องว่าง</span>
                 <div class="dot-row">
                     <span v-for="b in getBookingsForDate(date.fullDate).slice(0, 3)" :key="b.id" class="dot"
-                        :style="{ background: urgencyColor(b.urgency) }"></span>
+                        :style="{ background: roomStatusColor(date.fullDate, b.room) }"></span>
                     <span v-if="getBookingsForDate(date.fullDate).length > 3" class="more-count">+{{
                         getBookingsForDate(date.fullDate).length - 3 }}</span>
                 </div>
@@ -191,9 +191,15 @@ const hasBooking = (d) => getBookingsForDate(d).length > 0
 // 📍 เลขห้องผ่าตัด OR-201 ถึง OR-220 และฟังก์ชันคำนวณความจุต่อห้อง (เหมือนฝั่งแพทย์ทุกอย่าง)
 const orRooms = Array.from({ length: 20 }, (_, i) => 201 + i)
 const MAX_MINUTES = 420
+// 📍 ดึงเฉพาะตัวเลขห้องออกมาเทียบ กันกรณีข้อมูลเก่า/รูปแบบไม่ตรงเป๊ะ เช่น "OR-201", "OR201", "201"
+const getRoomNumber = (roomStr) => {
+    const match = String(roomStr || '').match(/(\d+)/)
+    return match ? parseInt(match[1]) : null
+}
+
 const getUsedMinutesForRoom = (d, roomNum) => {
     return bookings.value
-        .filter(b => b.date === d && b.room === `OR-${roomNum}` && b.status !== 'Succeed' && b.status !== 'Cancelled')
+        .filter(b => b.date === d && getRoomNumber(b.room) === roomNum && b.status !== 'Succeed' && b.status !== 'Cancelled')
         .reduce((sum, b) => {
             const match = b.procedure?.match(/(\d+)\s*min/)
             return sum + (match ? parseInt(match[1]) : 0)
@@ -213,6 +219,15 @@ const roomRemainingLabel = (d, roomNum) => {
     return `${hrs}ชม${mins > 0 ? ' ' + mins + 'น' : ''}`
 }
 const availableRoomsCount = (d) => orRooms.filter(r => !isRoomFull(d, r)).length
+
+// 📍 สีจุดบนปฏิทินให้ตรงกับสีห้องในป๊อปอัป (เขียว/เหลือง/แดง) แทนสี urgency เดิม
+const roomStatusColor = (d, roomStr) => {
+    const roomNum = getRoomNumber(roomStr)
+    if (roomNum === null) return '#b0b8c1' // ไม่มีข้อมูลห้อง ใช้สีเทา
+    if (isRoomFull(d, roomNum)) return '#e53935'      // แดง = เต็ม
+    if (isRoomPartial(d, roomNum)) return '#f59e0b'   // เหลือง = บางส่วน
+    return '#43a047'                                    // เขียว = ว่าง
+}
 
 const urgencyColor = (urgency) => {
     if (urgency === 'Emergency') return '#e53935'
