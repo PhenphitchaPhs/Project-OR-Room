@@ -20,6 +20,27 @@ app.use('/*', cors({
 
 
 // ==========================================
+// 🛡️ ROLE-BASED ACCESS CONTROL (RBAC)
+// ==========================================
+// 📍 ระบบสิทธิ์รองรับ 3 ระดับ: 'user' (แพทย์ทั่วไป), 'admin' (แอดมินล้วน), 'user_admin' (แพทย์ + แอดมิน)
+// ⚠️ หมายเหตุด้านความปลอดภัย: ระบบนี้ยังไม่มี JWT/Session token จริง จึงใช้วิธีให้ frontend
+// ส่ง header 'x-user-license' แนบมาทุกครั้งที่เรียก endpoint ที่ต้องเช็คสิทธิ์ แล้ว backend
+// จะ query สิทธิ์ล่าสุดจากฐานข้อมูลเสมอ (ไม่เชื่อค่าที่ frontend อ้างว่าตัวเองเป็นอะไร)
+// วิธีนี้ป้องกัน "ผู้ใช้ทั่วไปแก้ localStorage แล้วเข้าหน้า Admin ได้" แต่ยังไม่ป้องกันการปลอม header
+// ระดับ production ควรอัปเกรดเป็นระบบ JWT ที่เซ็นชื่อด้วย secret key ฝั่ง backend ต่อไป
+
+const hasAdminAccess = (role: string | undefined) => role === 'admin' || role === 'user_admin'
+
+// ดึง role ของผู้เรียก API จาก header x-user-license โดย query สดจากฐานข้อมูลทุกครั้ง
+const getRequesterRole = async (c: any): Promise<string | null> => {
+  const requesterLicense = c.req.header('x-user-license')
+  if (!requesterLicense) return null
+  const requester = await c.env.DB.prepare('SELECT role FROM users WHERE license = ?').bind(requesterLicense).first()
+  return requester ? String(requester.role) : null
+}
+
+
+// ==========================================
 // 🔐 1. AUTHENTICATION (ระบบยืนยันตัวตน)
 // ==========================================
 
@@ -120,8 +141,11 @@ app.post('/api/reset-password', async (c) => {
 // 👤 2. USERS MANAGEMENT (จัดการผู้ใช้งาน)
 // ==========================================
 
-// 🟢 ดึงรายชื่อผู้ใช้ทั้งหมด (สำหรับ Admin)
+// 🟢 ดึงรายชื่อผู้ใช้ทั้งหมด (สำหรับ Admin เท่านั้น)
 app.get('/api/users', async (c) => {
+  const role = await getRequesterRole(c)
+  if (!hasAdminAccess(role)) return c.json({ error: 'ไม่มีสิทธิ์เข้าถึงข้อมูลนี้' }, 403)
+
   try {
     const { results } = await c.env.DB.prepare('SELECT license, doctorName, orNumber, role FROM users').all()
     return c.json(results)
@@ -142,10 +166,17 @@ app.get('/api/users/:license', async (c) => {
   }
 })
 
-// 🟢 เปลี่ยนเลขห้องผ่าตัดประจำ (OR Number)
+// 🟢 เปลี่ยนเลขห้องผ่าตัดประจำ (OR Number) — เฉพาะเจ้าของบัญชี หรือ Admin เท่านั้น
 app.put('/api/users/:license/or-number', async (c) => {
   const { orNumber } = await c.req.json()
   const license = c.req.param('license')
+
+  const requesterLicense = c.req.header('x-user-license')
+  const role = await getRequesterRole(c)
+  if (requesterLicense !== license && !hasAdminAccess(role)) {
+    return c.json({ error: 'ไม่มีสิทธิ์แก้ไขข้อมูลบัญชีนี้' }, 403)
+  }
+
   try {
     const info = await c.env.DB.prepare('UPDATE users SET orNumber = ? WHERE license = ?').bind(orNumber, license).run()
     if (info.meta.changes === 0) return c.json({ error: `หา License '${license}' ไม่เจอในระบบ` }, 404)
@@ -155,9 +186,34 @@ app.put('/api/users/:license/or-number', async (c) => {
   }
 })
 
+// 🟢 เปลี่ยน Role ของผู้ใช้ (Admin เท่านั้น) — รองรับ 'user' | 'admin' | 'user_admin'
+app.put('/api/users/:license/role', async (c) => {
+  const role = await getRequesterRole(c)
+  if (!hasAdminAccess(role)) return c.json({ error: 'ไม่มีสิทธิ์เปลี่ยน Role ผู้ใช้' }, 403)
 
-// 🔴 ลบบัญชีผู้ใช้ (ห้ามลบ Admin และไม่ลบข้อมูลคิวผ่าตัด)
+  const { newRole } = await c.req.json()
+  const license = c.req.param('license')
+  const allowedRoles = ['user', 'admin', 'user_admin']
+
+  if (!allowedRoles.includes(newRole)) {
+    return c.json({ error: `Role ไม่ถูกต้อง ต้องเป็นหนึ่งใน ${allowedRoles.join(', ')}` }, 400)
+  }
+
+  try {
+    const info = await c.env.DB.prepare('UPDATE users SET role = ? WHERE license = ?').bind(newRole, license).run()
+    if (info.meta.changes === 0) return c.json({ error: `หา License '${license}' ไม่เจอในระบบ` }, 404)
+    return c.json({ success: true, message: `เปลี่ยน Role เป็น '${newRole}' สำเร็จ` })
+  } catch (e) {
+    return c.json({ error: 'Update Role Failed' }, 500)
+  }
+})
+
+
+// 🔴 ลบบัญชีผู้ใช้ (Admin เท่านั้น — ห้ามลบ Admin และไม่ลบข้อมูลคิวผ่าตัด)
 app.delete('/api/users/:license', async (c) => {
+  const requesterRole = await getRequesterRole(c)
+  if (!hasAdminAccess(requesterRole)) return c.json({ error: 'ไม่มีสิทธิ์ลบบัญชีผู้ใช้' }, 403)
+
   const license = c.req.param('license')
   try {
     const user = await c.env.DB.prepare('SELECT role FROM users WHERE license = ?').bind(license).first()
@@ -192,6 +248,16 @@ app.get('/api/bookings', async (c) => {
 // 🟢 เพิ่มคิวใหม่
 app.post('/api/bookings', async (c) => {
   const b = await c.req.json()
+
+  // 📍 ถ้าจองให้แพทย์คนอื่น (ไม่ใช่ตัวเอง) ต้องเป็น Admin เท่านั้น
+  const requesterLicense = c.req.header('x-user-license')
+  if (b.doctorLicense && requesterLicense && b.doctorLicense !== requesterLicense) {
+    const role = await getRequesterRole(c)
+    if (!hasAdminAccess(role)) {
+      return c.json({ error: 'ไม่มีสิทธิ์จองคิวแทนแพทย์ท่านอื่น' }, 403)
+    }
+  }
+
   try {
     // 📍 ใช้ห้องจริงที่ส่งมาจากฟอร์ม ไม่ hardcode 'OR-01' อีกต่อไป (เพื่อให้ระบบนับความจุแยกตามห้องได้จริง)
     await c.env.DB.prepare(`
@@ -214,13 +280,19 @@ app.post('/api/bookings', async (c) => {
   }
 })
 
-// 🟢 แก้ไขคิวที่จองไว้ (Edit) — อัปเดตได้ทั้งวันที่ ห้อง และข้อมูลผู้ป่วย
+// 🟢 แก้ไขคิวที่จองไว้ (Edit) — เฉพาะแพทย์เจ้าของคิว หรือ Admin เท่านั้น
 app.put('/api/bookings/:id', async (c) => {
   const id = c.req.param('id')
   const b = await c.req.json()
   try {
-    const existing = await c.env.DB.prepare('SELECT id FROM bookings WHERE id = ?').bind(id).first()
+    const existing = await c.env.DB.prepare('SELECT id, doctorLicense FROM bookings WHERE id = ?').bind(id).first()
     if (!existing) return c.json({ error: 'ไม่พบคิวนี้ในระบบ' }, 404)
+
+    const requesterLicense = c.req.header('x-user-license')
+    if (requesterLicense && existing.doctorLicense !== requesterLicense) {
+      const role = await getRequesterRole(c)
+      if (!hasAdminAccess(role)) return c.json({ error: 'ไม่มีสิทธิ์แก้ไขคิวนี้' }, 403)
+    }
 
     await c.env.DB.prepare(`
       UPDATE bookings SET
@@ -241,11 +313,20 @@ app.put('/api/bookings/:id', async (c) => {
   }
 })
 
-// 🟢 อัปเดตสถานะคิว (เช่น Upcoming -> Succeed)
+// 🟢 อัปเดตสถานะคิว (เช่น Upcoming -> Succeed) — เฉพาะเจ้าของคิว หรือ Admin
 app.patch('/api/bookings/:id/status', async (c) => {
   const id = c.req.param('id')
   const { status } = await c.req.json()
   try {
+    const existing = await c.env.DB.prepare('SELECT doctorLicense FROM bookings WHERE id = ?').bind(id).first()
+    if (!existing) return c.json({ error: 'ไม่พบคิวนี้ในระบบ' }, 404)
+
+    const requesterLicense = c.req.header('x-user-license')
+    if (requesterLicense && existing.doctorLicense !== requesterLicense) {
+      const role = await getRequesterRole(c)
+      if (!hasAdminAccess(role)) return c.json({ error: 'ไม่มีสิทธิ์เปลี่ยนสถานะคิวนี้' }, 403)
+    }
+
     await c.env.DB.prepare('UPDATE bookings SET status = ? WHERE id = ?').bind(status, id).run()
     return c.json({ success: true })
   } catch (e) {
@@ -265,10 +346,19 @@ app.put('/api/bookings/reorder', async (c) => {
   }
 })
 
-// 🔴 ลบคิวผ่าตัด
+// 🔴 ลบคิวผ่าตัด — เฉพาะเจ้าของคิว หรือ Admin
 app.delete('/api/bookings/:id', async (c) => {
   const id = c.req.param('id')
   try {
+    const existing = await c.env.DB.prepare('SELECT doctorLicense FROM bookings WHERE id = ?').bind(id).first()
+    if (!existing) return c.json({ error: 'ไม่พบคิวนี้ในระบบ' }, 404)
+
+    const requesterLicense = c.req.header('x-user-license')
+    if (requesterLicense && existing.doctorLicense !== requesterLicense) {
+      const role = await getRequesterRole(c)
+      if (!hasAdminAccess(role)) return c.json({ error: 'ไม่มีสิทธิ์ลบคิวนี้' }, 403)
+    }
+
     await c.env.DB.prepare('DELETE FROM bookings WHERE id = ?').bind(id).run()
     return c.json({ success: true })
   } catch (e) {
