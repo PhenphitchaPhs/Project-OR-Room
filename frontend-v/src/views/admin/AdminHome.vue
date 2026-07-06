@@ -82,6 +82,13 @@
                 </svg>
                 <span>Calendar</span>
             </button>
+            <!-- 📍 แสดงเฉพาะบัญชีที่มีสิทธิ์ทั้ง User และ Admin (role: user_admin) ให้สลับกลับไปมุมมองแพทย์ได้ -->
+            <button v-if="userRole === 'user_admin'" class="nav-calendar-btn" @click="router.push('/home')">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24">
+                    <path fill="white" d="M10 20v-6h4v6h5v-8h3L12 3L2 12h3v8z" />
+                </svg>
+                <span>My Queue</span>
+            </button>
             <button class="logout-btn" @click="isLogoutModalOpen = true">
                 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24">
                     <path fill="white"
@@ -594,6 +601,8 @@ const toggleDetail = (id) => { expandedId.value = expandedId.value === id ? null
 
 const router = useRouter()
 const userLicense = ref('Admin')
+// 📍 role ปัจจุบัน ใช้เช็คว่าจะโชว์ปุ่ม "My Queue" (สลับกลับมุมมองแพทย์) ไหม
+const userRole = ref(localStorage.getItem('userRole') || 'admin')
 
 const FILTERS = {
     TODAY: 'Today',
@@ -694,7 +703,7 @@ const moveBackToUpcoming = async (id) => {
     try {
         await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/bookings/${id}/status`, {
             method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'x-user-license': localStorage.getItem('userLicense') || '' },
             body: JSON.stringify({ status: 'Upcoming' })
         })
 
@@ -725,7 +734,7 @@ const confirmCancelCase = async () => {
             `https://or-room-backend.rockzee2018.workers.dev/api/bookings/${selectedCancelId.value}/status`,
             {
                 method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'x-user-license': localStorage.getItem('userLicense') || '' },
                 body: JSON.stringify({ status: 'Cancelled' })
             }
         )
@@ -866,7 +875,10 @@ const cancelledCases = computed(() =>
 const deleteDoctor = async (license, name) => {
     if (!confirm(`ลบบัญชี "${name}" ออกจากระบบ?\n(ข้อมูลคิวผ่าตัดของหมอยังคงอยู่)`)) return
     try {
-        const res = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/users/${license}`, { method: 'DELETE' })
+        const res = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/users/${license}`, {
+            method: 'DELETE',
+            headers: { 'x-user-license': localStorage.getItem('userLicense') || '' }
+        })
         const data = await res.json()
         if (res.ok) {
             doctorList.value = doctorList.value.filter(d => d.license !== license)

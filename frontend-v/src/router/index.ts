@@ -15,6 +15,7 @@ import NewPassword from '../pages/newpassword.vue'
 import LoginAdmin from '../views/admin/loginAdmin.vue'
 import AdminHome from '../views/admin/AdminHome.vue'
 import AdminDashboard from '../views/admin/AdminDashboard.vue'
+import ChooseDoctorAdmin from '../views/admin/ChooseDoctorAdmin.vue'
 import AddPatientByAdmin from '../views/admin/AddPatientByAdmin.vue'
 import AdminCalendarView from '../views/admin/AdminCalendarView.vue'
 
@@ -34,9 +35,9 @@ const routes = [
   { path: '/admin-login', name: 'admin-login', component: LoginAdmin },
   { path: '/admin-home', name: 'admin-home', component: AdminHome, meta: { requiresAuth: true, role: 'admin' } },
   { path: '/admin-dashboard', name: 'admin-dashboard', component: AdminDashboard, meta: { requiresAuth: true, role: 'admin' } },
+  { path: '/choose-doctor', name: 'choose-doctor', component: ChooseDoctorAdmin, meta: { requiresAuth: true, role: 'admin' } },
   { path: '/admin-add-patient', name: 'admin-add-patient', component: AddPatientByAdmin, meta: { requiresAuth: true, role: 'admin' } },
   { path: '/admin-calendar', name: 'admin-calendar', component: AdminCalendarView, meta: { requiresAuth: true, role: 'admin' } }
-  
 ]
 
 const router = createRouter({
@@ -44,25 +45,39 @@ const router = createRouter({
   routes
 })
 
-/* 🔐 Navigation Guard */
+// 📍 Navigation Guard — รองรับ 3 role: 'user', 'admin', 'user_admin'
+// - 'user': เข้าได้เฉพาะหน้า user เท่านั้น
+// - 'admin': เข้าได้เฉพาะหน้า admin เท่านั้น (redirect ไป /admin-home ถ้าพยายามเข้าหน้า user)
+// - 'user_admin': เข้าได้ทั้งหน้า user และ admin (สลับไปมาได้เสรี)
+const hasAdminAccess = (role) => role === 'admin' || role === 'user_admin'
+
 router.beforeEach((to, from, next) => {
   const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true'
-  const userRole = localStorage.getItem('userRole') 
+  const userRole = localStorage.getItem('userRole')
 
-  const publicAuthPages = ['/login', '/signup', '/admin-login', '/newpassword']
+  const publicAuthPages = ['/login', '/signup', '/admin-login', '/newpassword', '/forgot-password']
+
+  // ถ้า login แล้วแต่พยายามเข้าหน้า auth (เช่น /login) → redirect ไปหน้าที่เหมาะสม
   if (publicAuthPages.includes(to.path) && isLoggedIn) {
-    return next(userRole === 'admin' ? '/admin-home' : '/home')
+    if (userRole === 'admin') {
+      return next('/admin-home')
+    } else {
+      // 'user' และ 'user_admin' ให้ไปหน้า /home ก่อน (user_admin จะมีปุ่มสลับไป admin เองในเมนู)
+      return next('/home')
+    }
   }
 
+  // ถ้าต้อง login แต่ยังไม่ได้ login → ไปหน้า login
   if (to.meta.requiresAuth && !isLoggedIn) {
     return next('/login')
-  } 
-  
-  if (to.meta.role === 'admin' && userRole !== 'admin') {
+  }
+
+  // ถ้าหน้าต้องการสิทธิ์ admin แต่ role ไม่มีสิทธิ์ admin
+  if (to.meta.role === 'admin' && !hasAdminAccess(userRole)) {
     alert('❌ คุณไม่มีสิทธิ์เข้าถึงหน้า Admin!')
     return next('/home')
-  } 
-  
+  }
+
   next()
 })
 

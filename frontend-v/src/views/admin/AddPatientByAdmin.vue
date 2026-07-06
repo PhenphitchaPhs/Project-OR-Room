@@ -259,10 +259,12 @@ const showAlert = (message, isSuccess = false) => {
 onMounted(async () => {
     // 1. ดึงรายชื่อแพทย์ทั้งหมดเพื่อใส่ใน Dropdown ให้แอดมินเลือก
     try {
-        const res = await fetch('https://or-room-backend.rockzee2018.workers.dev/api/users')
+        const res = await fetch('https://or-room-backend.rockzee2018.workers.dev/api/users', {
+            headers: { 'x-user-license': localStorage.getItem('userLicense') || '' }
+        })
         if (res.ok) {
             const data = await res.json()
-            // กรองเอาเฉพาะแพทย์ ไม่เอา admin
+            // กรองเอาเฉพาะบัญชีที่มีสิทธิ์แพทย์ (user และ user_admin) ไม่เอา admin ล้วน
             doctors.value = Array.isArray(data) ? data.filter(u => u.role !== 'admin') : []
         }
     } catch (e) {
@@ -459,7 +461,10 @@ const submitForm = async () => {
         const url = 'https://or-room-backend.rockzee2018.workers.dev/api/bookings'
         const res = await fetch(url, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'x-user-license': localStorage.getItem('userLicense') || ''
+            },
             body: JSON.stringify(payload)
         })
 

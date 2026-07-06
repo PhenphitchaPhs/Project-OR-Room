@@ -74,10 +74,12 @@ const handleLogin = async () => {
             body: JSON.stringify({ license: name.value, password: password.value })
         })
         const data = await res.json()
-        if (res.ok && data.user?.role === 'admin') {
+        // 📍 อนุญาตทั้ง role 'admin' (แอดมินล้วน) และ 'user_admin' (มีสิทธิ์ทั้งแพทย์+แอดมิน) ให้ล็อกอินเข้าฝั่งแอดมินได้
+        const allowedRoles = ['admin', 'user_admin']
+        if (res.ok && allowedRoles.includes(data.user?.role)) {
             localStorage.setItem('isLoggedIn', 'true')
             localStorage.setItem('userLicense', data.user.license)
-            localStorage.setItem('userRole', 'admin')
+            localStorage.setItem('userRole', data.user.role) // เก็บ role จริง ไม่ hardcode 'admin' เผื่อเป็น user_admin
             router.push({ name: 'admin-home' })
         } else {
             errorMessage.value = '❌ ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง หรือไม่มีสิทธิ์ Admin'

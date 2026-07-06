@@ -137,6 +137,12 @@
                                     <span class="role-badge" :class="getRoleClass(doc.role)">
                                         {{ getRoleLabel(doc.role) }}
                                     </span>
+                                    <select class="role-select" :value="doc.role || 'user'"
+                                        @change="changeRole(doc.license, $event.target.value)">
+                                        <option value="user">User</option>
+                                        <option value="admin">Admin</option>
+                                        <option value="user_admin">User + Admin</option>
+                                    </select>
                                 </td>
                                 <td>
                                     <button v-if="doc.role !== 'admin'" class="btn-delete-doc"
@@ -188,7 +194,9 @@ onMounted(async () => {
     try {
         const [resBookings, resUsers] = await Promise.all([
             fetch('https://or-room-backend.rockzee2018.workers.dev/api/bookings'),
-            fetch('https://or-room-backend.rockzee2018.workers.dev/api/users')
+            fetch('https://or-room-backend.rockzee2018.workers.dev/api/users', {
+                headers: { 'x-user-license': savedLicense || '' } // 📍 endpoint นี้ต้องมีสิทธิ์ Admin ฝั่ง backend
+            })
         ])
         const bData = await resBookings.json()
         const uData = await resUsers.json()
@@ -234,7 +242,10 @@ const deleteDoctor = (license, name) => {
             try {
                 const res = await fetch(
                     `https://or-room-backend.rockzee2018.workers.dev/api/users/${license}`,
-                    { method: 'DELETE' }
+                    {
+                        method: 'DELETE',
+                        headers: { 'x-user-license': localStorage.getItem('userLicense') || '' }
+                    }
                 )
 
                 const data = await res.json()
@@ -296,6 +307,33 @@ const getRoleClass = (role) => {
     }
 
     return 'user'
+}
+
+// 📍 เปลี่ยน Role ของบัญชี (user / admin / user_admin) — เรียก endpoint ที่เพิ่มใหม่ฝั่ง backend
+const changeRole = async (license, newRole) => {
+    try {
+        const res = await fetch(
+            `https://or-room-backend.rockzee2018.workers.dev/api/users/${license}/role`,
+            {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-user-license': localStorage.getItem('userLicense') || ''
+                },
+                body: JSON.stringify({ newRole })
+            }
+        )
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || 'เปลี่ยน Role ไม่สำเร็จ')
+
+        // อัปเดตค่าใน UI ทันทีโดยไม่ต้องโหลดหน้าใหม่
+        const target = doctorList.value.find(d => d.license === license)
+        if (target) target.role = newRole
+
+        showDialog('สำเร็จ', `เปลี่ยน Role ของ ${license} เป็น "${newRole}" เรียบร้อยแล้ว`)
+    } catch (e) {
+        showDialog('ผิดพลาด', e.message || 'เปลี่ยน Role ไม่สำเร็จ')
+    }
 }
 </script>
 
@@ -507,6 +545,18 @@ const getRoleClass = (role) => {
 .role-badge.user {
     background: #e8f4fd;
     color: #1a6fa5;
+}
+
+.role-select {
+    display: block;
+    margin-top: 6px;
+    font-size: 11px;
+    padding: 3px 6px;
+    border-radius: 6px;
+    border: 1px solid #d1d5db;
+    color: #374151;
+    background: white;
+    cursor: pointer;
 }
 
 .btn-delete-doc {
