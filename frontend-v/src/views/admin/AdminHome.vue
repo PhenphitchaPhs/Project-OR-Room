@@ -100,44 +100,35 @@
 
             <h1 class="main-title">Surgery Queue Management</h1>
 
-            <!-- OR Capacity Card (Admin: รวมคิวทุกแพทย์) -->
+            <!-- OR Capacity Card (Admin: แสดงจำนวนห้องว่าง/เต็มจาก 20 ห้อง) -->
             <div class="or-capacity-card">
                 <div class="capacity-header">
                     <div class="capacity-title">
                         <span class="material-icons">monitor_heart</span>
-                        <span>OR Usage Today (All Doctors)</span>
+                        <span>OR Room Status Today</span>
                     </div>
-                    <span>{{ Math.round((adminUsedMinutes / 60) * 10) / 10 }}/7 hrs.</span>
+                    <span>{{ adminAvailableRooms }}/20 ห้องว่าง</span>
                 </div>
+
+                <!-- แถบสัดส่วนห้องที่ใช้ไปแล้ว -->
                 <div class="capacity-bar">
                     <div class="capacity-fill" :style="{
-                        width: adminUsagePercent + '%',
-                        background: adminProgressColor
+                        width: ((20 - adminAvailableRooms) / 20 * 100) + '%',
+                        background: adminAvailableRooms === 0 ? '#dc2626' : adminAvailableRooms <= 5 ? '#f59e0b' : '#1e3a8a'
                     }"></div>
                 </div>
-                <div class="capacity-detail">
-                    <div class="remaining-time" :style="{ color: adminRemainingMinutes <= 0 ? '#dc2626' : '' }">
-                        <span class="material-icons small-icon">
-                            {{ adminRemainingMinutes <= 0 ? 'warning' : 'schedule' }}
-                        </span>
-                        <span v-if="adminRemainingMinutes > 0">
-                            {{ Math.floor(adminRemainingMinutes / 60) }}h {{ adminRemainingMinutes % 60 }}m left
-                        </span>
-                        <span v-else>
-                            Exceeded by {{ Math.floor(Math.abs(adminRemainingMinutes) / 60) }}h {{ Math.abs(adminRemainingMinutes) % 60 }}m
-                        </span>
-                    </div>
-                    <div class="capacity-status" :class="{
-                        warning: adminUsagePercent >= 70 && adminUsagePercent < 90,
-                        danger: adminUsagePercent >= 90 || adminRemainingMinutes <= 0
-                    }">
-                        <span class="material-icons small-icon">
-                            {{ adminUsagePercent >= 90 ? 'warning' : 'check_circle' }}
-                        </span>
-                        <span>
-                            {{ adminRemainingMinutes <= 0 ? 'Exceeded 7-hour limit' : adminUsagePercent >= 90 ? 'OR almost full' : 'OR available' }}
-                        </span>
-                    </div>
+
+                <!-- สรุป 3 ระดับ: ว่าง / บางส่วน / เต็ม -->
+                <div class="room-status-row">
+                    <span class="room-chip available">
+                        🟢 ว่าง {{ adminRoomStats.available }} ห้อง
+                    </span>
+                    <span class="room-chip partial">
+                        🟡 จองบางส่วน {{ adminRoomStats.partial }} ห้อง
+                    </span>
+                    <span class="room-chip full">
+                        🔴 เต็ม {{ adminRoomStats.full }} ห้อง
+                    </span>
                 </div>
             </div>
 
@@ -613,24 +604,37 @@ const filter = ref(FILTERS.TODAY)
 const passFilter = ref('Completed')
 const bookings = ref([])
 
-// 📍 OR Capacity คำนวณจากคิวทั้งหมดของวันนี้ (ทุกแพทย์รวมกัน) — Admin เห็นภาพรวม
-const ADMIN_MAX_MINUTES = 420 // 7 ชั่วโมง
-const adminUsedMinutes = computed(() => {
-    const todayStr = new Date().toISOString().slice(0, 10)
+// 📍 OR Capacity — แสดงสถานะรายห้อง (ว่าง/บางส่วน/เต็ม) จาก 20 ห้อง OR-201 ถึง OR-220
+const OR_ROOMS = Array.from({ length: 20 }, (_, i) => 201 + i)
+const OR_MAX_MINUTES = 420 // 7 ชม. ต่อห้อง
+
+const getUsedMinutesForRoom = (todayStr, roomNum) => {
     return bookings.value
-        .filter(b => b.date === todayStr && b.status !== 'Succeed' && b.status !== 'Cancelled')
+        .filter(b => {
+            const rNum = String(b.room || '').match(/(\d+)/)?.[1]
+            return b.date === todayStr && Number(rNum) === roomNum &&
+                b.status !== 'Succeed' && b.status !== 'Cancelled'
+        })
         .reduce((sum, b) => {
             const match = b.procedure?.match(/(\d+)\s*min/)
             return sum + (match ? parseInt(match[1]) : 0)
         }, 0)
+}
+
+// สรุปจำนวนห้องแต่ละสถานะ
+const adminRoomStats = computed(() => {
+    const todayStr = new Date().toISOString().slice(0, 10)
+    let available = 0, partial = 0, full = 0
+    OR_ROOMS.forEach(r => {
+        const used = getUsedMinutesForRoom(todayStr, r)
+        if (used === 0) available++
+        else if (used < OR_MAX_MINUTES) partial++
+        else full++
+    })
+    return { available, partial, full }
 })
-const adminUsagePercent = computed(() => Math.min((adminUsedMinutes.value / ADMIN_MAX_MINUTES) * 100, 100))
-const adminRemainingMinutes = computed(() => ADMIN_MAX_MINUTES - adminUsedMinutes.value)
-const adminProgressColor = computed(() => {
-    if (adminUsagePercent.value >= 90) return '#dc2626'
-    if (adminUsagePercent.value >= 70) return '#f59e0b'
-    return '#1e3a8a'
-})
+
+const adminAvailableRooms = computed(() => adminRoomStats.value.available)
 const matchSearch = (item) => {
 
 
@@ -1113,6 +1117,20 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
 }
 .capacity-status.warning { color: #f59e0b; }
 .capacity-status.danger { color: #dc2626; }
+.room-status-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+}
+.room-chip {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 20px;
+    background: #f1f5f9;
+    color: #334155;
+}
 .small-icon { font-size: 16px; }
 
 .queue-card {
