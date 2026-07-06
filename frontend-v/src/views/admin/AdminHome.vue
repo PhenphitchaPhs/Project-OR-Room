@@ -100,6 +100,47 @@
 
             <h1 class="main-title">Surgery Queue Management</h1>
 
+            <!-- OR Capacity Card (Admin: รวมคิวทุกแพทย์) -->
+            <div class="or-capacity-card">
+                <div class="capacity-header">
+                    <div class="capacity-title">
+                        <span class="material-icons">monitor_heart</span>
+                        <span>OR Usage Today (All Doctors)</span>
+                    </div>
+                    <span>{{ Math.round((adminUsedMinutes / 60) * 10) / 10 }}/7 hrs.</span>
+                </div>
+                <div class="capacity-bar">
+                    <div class="capacity-fill" :style="{
+                        width: adminUsagePercent + '%',
+                        background: adminProgressColor
+                    }"></div>
+                </div>
+                <div class="capacity-detail">
+                    <div class="remaining-time" :style="{ color: adminRemainingMinutes <= 0 ? '#dc2626' : '' }">
+                        <span class="material-icons small-icon">
+                            {{ adminRemainingMinutes <= 0 ? 'warning' : 'schedule' }}
+                        </span>
+                        <span v-if="adminRemainingMinutes > 0">
+                            {{ Math.floor(adminRemainingMinutes / 60) }}h {{ adminRemainingMinutes % 60 }}m left
+                        </span>
+                        <span v-else>
+                            Exceeded by {{ Math.floor(Math.abs(adminRemainingMinutes) / 60) }}h {{ Math.abs(adminRemainingMinutes) % 60 }}m
+                        </span>
+                    </div>
+                    <div class="capacity-status" :class="{
+                        warning: adminUsagePercent >= 70 && adminUsagePercent < 90,
+                        danger: adminUsagePercent >= 90 || adminRemainingMinutes <= 0
+                    }">
+                        <span class="material-icons small-icon">
+                            {{ adminUsagePercent >= 90 ? 'warning' : 'check_circle' }}
+                        </span>
+                        <span>
+                            {{ adminRemainingMinutes <= 0 ? 'Exceeded 7-hour limit' : adminUsagePercent >= 90 ? 'OR almost full' : 'OR available' }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
             <div class="queue-card">
                 <div class="queue-filter">
                     <button :class="{ active: filter === FILTERS.TODAY }" @click="filter = FILTERS.TODAY">
@@ -198,15 +239,14 @@
                                     </div>
                                 </transition>
                                 <div class="case-actions">
-                                    <!-- อย่าลืมแก้ต้องนี้ให้มันออโต้ฟิลไปหน้าจองเด้อ มันไม่มีสิทธิเข้าถึง #เอไอมึงบอกเพื่อนกุด้วย#  -->
-                                    <button class="btn-success"
-                                        @click.stop="router.push(`/admin-add-queue/${item.id}`)">
+                                    <!-- 📍 แอดมินใช้หน้าจองเดียวกับแพทย์ได้ เพราะ BookingView เช็ค userRole === 'admin' ให้แล้ว -->
+                                    <button class="btn-edit"
+                                        @click.stop="router.push(`/booking/${item.id}`)">
                                         Edit
                                     </button>
                                     <button class="btn-delete" @click.stop="openCancelModal(item.id)">
                                         Cancel
                                     </button>
-
                                 </div>
                                 <div class="see-more-toggle">
                                     <span class="see-more-text">
@@ -299,7 +339,7 @@
 
                                 <div class="case-actions">
                                     <!-- อย่าลืมแก้ต้องนี้ให้มันออโต้ฟิลไปหน้าจองเด้อ มันไม่มีสิทธิเข้าถึง #เอไอมึงบอกเพื่อนกุด้วย#  -->
-                                    <button class="btn-edit" @click.stop="router.push(`/admin-add-queue/${item.id}`)">
+                                    <button class="btn-edit" @click.stop="router.push(`/booking/${item.id}`)">
                                         Edit
                                     </button>
                                     <button class="btn-delete" @click.stop="openCancelModal(item.id)">
@@ -572,6 +612,25 @@ const FILTERS = {
 const filter = ref(FILTERS.TODAY)
 const passFilter = ref('Completed')
 const bookings = ref([])
+
+// 📍 OR Capacity คำนวณจากคิวทั้งหมดของวันนี้ (ทุกแพทย์รวมกัน) — Admin เห็นภาพรวม
+const ADMIN_MAX_MINUTES = 420 // 7 ชั่วโมง
+const adminUsedMinutes = computed(() => {
+    const todayStr = new Date().toISOString().slice(0, 10)
+    return bookings.value
+        .filter(b => b.date === todayStr && b.status !== 'Succeed' && b.status !== 'Cancelled')
+        .reduce((sum, b) => {
+            const match = b.procedure?.match(/(\d+)\s*min/)
+            return sum + (match ? parseInt(match[1]) : 0)
+        }, 0)
+})
+const adminUsagePercent = computed(() => Math.min((adminUsedMinutes.value / ADMIN_MAX_MINUTES) * 100, 100))
+const adminRemainingMinutes = computed(() => ADMIN_MAX_MINUTES - adminUsedMinutes.value)
+const adminProgressColor = computed(() => {
+    if (adminUsagePercent.value >= 90) return '#dc2626'
+    if (adminUsagePercent.value >= 70) return '#f59e0b'
+    return '#1e3a8a'
+})
 const matchSearch = (item) => {
 
 
@@ -994,6 +1053,67 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
     font-weight: bold;
     margin: 30px 0;
 }
+
+/* OR Capacity Card — copied from HomeView for consistency */
+.or-capacity-card {
+    width: 90%;
+    max-width: 600px;
+    margin: 0 auto 20px auto;
+    background: white;
+    border-radius: 16px;
+    padding: 16px 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+.capacity-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+    font-weight: 600;
+    color: #1a3a5f;
+    margin-bottom: 10px;
+}
+.capacity-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.capacity-bar {
+    width: 100%;
+    height: 10px;
+    background: #e5e7eb;
+    border-radius: 999px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+.capacity-fill {
+    height: 100%;
+    border-radius: 999px;
+    transition: 0.3s ease;
+}
+.capacity-detail {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+}
+.remaining-time {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: #374151;
+    font-weight: 500;
+}
+.capacity-status {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: #22c55e;
+    font-weight: 600;
+}
+.capacity-status.warning { color: #f59e0b; }
+.capacity-status.danger { color: #dc2626; }
+.small-icon { font-size: 16px; }
 
 .queue-card {
     width: 90%;

@@ -247,6 +247,8 @@ const maxDate = ref(max.toISOString().split('T')[0])
 
 onMounted(async () => {
     const myLicense = localStorage.getItem('userLicense')
+    // 📍 เช็ค role จาก localStorage — ถ้าเป็น admin ให้ข้ามการตรวจสอบสิทธิ์เจ้าของคิว
+    const myRole = localStorage.getItem('userRole')
 
     // 🌟 ดึงข้อมูลเก่ามาใส่ฟอร์มถ้าเป็นการ Edit (มี bookingId)
     if (bookingId) {
@@ -258,8 +260,9 @@ onMounted(async () => {
                 const booking = allBookings.find(b => String(b.id) === String(bookingId))
 
                 if (booking) {
-                    // 📍 เช็คก่อนว่าเป็นคิวของตัวเองจริงไหม ห้ามแก้คิวของแพทย์คนอื่น
-                    if (booking.doctorLicense !== myLicense) {
+                    // 📍 เช็คสิทธิ์: แอดมินแก้ได้ทุกคิว, แพทย์ทั่วไปแก้ได้เฉพาะคิวของตัวเอง
+                    const isAdmin = myRole === 'admin'
+                    if (!isAdmin && booking.doctorLicense !== myLicense) {
                         showAlert('คุณไม่มีสิทธิ์แก้ไขคิวนี้ เพราะไม่ใช่คิวของคุณครับ')
                         setTimeout(() => { router.push('/home') }, 1500)
                         return
@@ -529,8 +532,13 @@ const submitForm = async () => {
         if (res.ok) {
             showAlert(bookingId ? 'อัปเดตคิวสำเร็จ!' : 'จองคิวสำเร็จ!', true)
             setTimeout(() => {
-                // 📍 ถ้ามาจากการกดกู้คืนคิว (Back to Upcoming) ให้กลับไปเปิดแท็บ Upcoming ให้เลย
-                router.push(route.query.restore === 'true' ? '/home?tab=upcoming' : '/home')
+                // 📍 แอดมินกลับไปหน้า Admin Home, แพทย์ทั่วไปกลับหน้า Home
+                const isAdmin = localStorage.getItem('userRole') === 'admin'
+                if (isAdmin) {
+                    router.push('/admin-home')
+                } else {
+                    router.push(route.query.restore === 'true' ? '/home?tab=upcoming' : '/home')
+                }
             }, 1500)
         } else {
             const errData = await res.json().catch(() => ({}))
