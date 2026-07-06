@@ -15,7 +15,6 @@ import NewPassword from '../pages/newpassword.vue'
 import LoginAdmin from '../views/admin/loginAdmin.vue'
 import AdminHome from '../views/admin/AdminHome.vue'
 import AdminDashboard from '../views/admin/AdminDashboard.vue'
-import ChooseDoctorAdmin from '../views/admin/ChooseDoctorAdmin.vue'
 import AddPatientByAdmin from '../views/admin/AddPatientByAdmin.vue'
 import AdminCalendarView from '../views/admin/AdminCalendarView.vue'
 
@@ -35,7 +34,6 @@ const routes = [
   { path: '/admin-login', name: 'admin-login', component: LoginAdmin },
   { path: '/admin-home', name: 'admin-home', component: AdminHome, meta: { requiresAuth: true, role: 'admin' } },
   { path: '/admin-dashboard', name: 'admin-dashboard', component: AdminDashboard, meta: { requiresAuth: true, role: 'admin' } },
-  { path: '/choose-doctor', name: 'choose-doctor', component: ChooseDoctorAdmin, meta: { requiresAuth: true, role: 'admin' } },
   { path: '/admin-add-patient', name: 'admin-add-patient', component: AddPatientByAdmin, meta: { requiresAuth: true, role: 'admin' } },
   { path: '/admin-calendar', name: 'admin-calendar', component: AdminCalendarView, meta: { requiresAuth: true, role: 'admin' } }
   
