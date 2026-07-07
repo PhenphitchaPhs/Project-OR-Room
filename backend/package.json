@@ -5,14 +5,16 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "deploy": "wrangler deploy" 
+    "deploy": "wrangler deploy"
   },
   "dependencies": {
     "@hono/node-server": "^1.19.9",
+    "bcryptjs": "^3.0.3",
     "better-sqlite3": "^12.6.2",
     "hono": "^4.11.4"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^20.11.17",
     "tsx": "^4.7.1",

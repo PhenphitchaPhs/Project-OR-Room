@@ -5,11 +5,10 @@
 
       <h2 class="title">ORchestrator</h2>
 
-      <input v-model="license" type="text" inputmode="numeric" maxlength="5" placeholder="License" class="input"
-        @input="handleLicenseInput" />
+      <!-- 🟢 เปลี่ยนจาก License เป็น Email -->
+      <input v-model="email" type="email" placeholder="Email Address" class="input" />
 
       <!-- อันนี้เป็นดวงตาเปิด/ปิดพาสเวิส -->
-
       <div class="input-wrapper">
         <input v-model="password" :type="showPassword ? 'text' : 'password'" placeholder="Password"
           class="input password-input" />
@@ -76,22 +75,21 @@ import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 
 const router = useRouter();
-const license = ref("");
+const email = ref(""); // 🟢 ใช้ email แทน license
 const password = ref("");
-const showPassword = ref(false); // เพิ่มตัวแปรจัดการสถานะรหัสผ่าน
+const showPassword = ref(false);
 const showDialog = ref(false);
 const dialogMessage = ref("");
 
-// ถ้า login อยู่แล้ว ให้เด้งไปหน้าที่ถูกต้องตาม Role
 onMounted(() => {
   const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
   const userRole = localStorage.getItem("userRole");
 
   if (isLoggedIn) {
     if (userRole === 'admin') {
-      router.push("/admin-home"); // ถ้าเป็นแอดมิน ให้ไปหน้าแอดมิน
+      router.push("/admin-home");
     } else {
-      router.push("/home"); // ถ้าเป็นหมอ/พยาบาล ให้ไปหน้าโฮม
+      router.push("/home");
     }
   }
 });
@@ -99,14 +97,10 @@ onMounted(() => {
 const goForgot = () => router.push("/forgot-password");
 const goSignup = () => router.push("/signup");
 
-const handleLicenseInput = () => {
-  license.value = license.value.replace(/\D/g, "").slice(0, 5);
-};
-
-// เปลี่ยนเป็น async เพื่อต่อ API
 const login = async () => {
-  if (license.value.length !== 5) {
-    dialogMessage.value = "License ต้องเป็นตัวเลข 5 หลัก";
+  // 🟢 ตรวจสอบรูปแบบ Email
+  if (!email.value || !email.value.includes('@')) {
+    dialogMessage.value = "กรุณากรอกรูปแบบอีเมลให้ถูกต้อง";
     showDialog.value = true;
     return;
   }
@@ -118,12 +112,11 @@ const login = async () => {
   }
 
   try {
-    // 🟢 ส่งข้อมูลไปให้ Backend (Cloudflare) ตรวจสอบ
     const response = await fetch('https://or-room-backend.rockzee2018.workers.dev/api/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        license: license.value,
+        email: email.value, // 🟢 ส่ง email ไปที่ Backend
         password: password.value
       })
     });
@@ -131,7 +124,6 @@ const login = async () => {
     const data = await response.json();
 
     if (response.ok && data.success) {
-      // ✅ ถ้าฐานข้อมูลตอบกลับมาว่ารหัสถูก ค่อยเซฟสถานะลงเครื่องเพื่อให้เว็บจำได้
       localStorage.setItem("isLoggedIn", "true");
       localStorage.setItem("userLicense", data.user.license);
       localStorage.setItem("doctorName", data.user.doctorName);
@@ -159,29 +151,20 @@ const login = async () => {
 .page {
   height: 100dvh;
   width: 100%;
-
   display: flex;
   justify-content: center;
   align-items: center;
-  /* กลางจริง ๆ */
-
   background: #ffffff;
-  /* เทาอ่อนเรียบ */
 }
 
 .card {
   width: 100%;
   max-width: 390px;
   padding: 0 24px;
-  /* เอา padding ใหญ่ ๆ ออก */
   text-align: center;
-
   background: transparent;
-  /* ไม่มีพื้นขาว */
   border-radius: 0;
-  /* ไม่ต้องโค้ง */
   box-shadow: none;
-  /* ไม่มีเงา */
 }
 
 .logo {
@@ -196,9 +179,6 @@ const login = async () => {
   font-weight: 700;
 }
 
-/* ------------------------------------- 
-   ส่วนปรับปรุงการครอบช่อง Input 
--------------------------------------- */
 .input-wrapper {
   position: relative;
   width: 100%;
@@ -218,7 +198,6 @@ const login = async () => {
   transition: all 0.2s ease;
 }
 
-/* ลบ margin ล่างของกล่อง password เพื่อให้ wrapper เป็นตัวดันระยะแทน และเพิ่มที่ว่างฝั่งขวา */
 .input-wrapper .password-input {
   margin-bottom: 0;
   padding-right: 48px;
@@ -241,14 +220,11 @@ const login = async () => {
   color: #001F5B;
 }
 
-/* ------------------------------------- */
-
 .input:focus {
   border: 1.5px solid #001F5B;
   box-shadow: 0 0 8px rgba(0, 31, 91, 0.1);
 }
 
-/* Links */
 .links {
   font-size: 13px;
   color: #001F5B;
@@ -260,14 +236,11 @@ const login = async () => {
   cursor: pointer;
   font-weight: 500;
   text-decoration: none;
-  /* 🔥 เอาเส้นใต้ออก */
 }
 
 .link:hover {
   text-decoration: none;
-  /* 🔥 ไม่ให้มีตอน hover */
   opacity: 0.7;
-  /* เปลี่ยนเป็นจางแทน */
 }
 
 a {
@@ -280,7 +253,6 @@ a {
   color: #bbb;
 }
 
-/* ปุ่ม */
 .btn {
   width: 100%;
   padding: 14px;
@@ -292,7 +264,6 @@ a {
   font-weight: 600;
   cursor: pointer;
   transition: 0.2s ease;
-
   display: block;
   margin: 0 auto;
 }
@@ -365,7 +336,6 @@ a {
     transform: scale(0.9);
     opacity: 0;
   }
-
   to {
     transform: scale(1);
     opacity: 1;

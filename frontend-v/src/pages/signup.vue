@@ -12,10 +12,20 @@
         <div class="form-group">
           <input type="text" placeholder="Full Name" v-model="doctorName" class="form-input" />
           <input type="text" placeholder="License Number" v-model="license" class="form-input" />
-          <input type="email" placeholder="Email Address" v-model="email" class="form-input" />
+          
+          <!-- 🟢 ช่อง Email และปุ่มกดส่ง OTP -->
+          <div class="email-group">
+            <input type="email" placeholder="Email Address" v-model="email" class="form-input" style="margin-bottom: 0;" />
+            <button @click="sendOtp" :disabled="isSendingOtp || countdown > 0" class="otp-btn" type="button">
+              {{ countdown > 0 ? `รอ ${countdown}s` : 'Send OTP' }}
+            </button>
+          </div>
+
           <input type="password" placeholder="Password" v-model="password" class="form-input" />
           <input type="password" placeholder="Confirm Password" v-model="confirmPassword" class="form-input" />
-          <input type="password" placeholder="Secret Key" v-model="secretKey" class="form-input" />
+          
+          <!-- 🟢 เปลี่ยนจาก Secret Key เป็นกรอก OTP -->
+          <input type="text" placeholder="Enter 6-digit OTP from Email" v-model="otp" class="form-input" maxlength="6" />
 
           <div class="select-wrapper">
             <select v-model="orNumber" class="form-select" required>
@@ -44,29 +54,66 @@ const router = useRouter()
 
 const doctorName = ref('')
 const license = ref('')
-const email = ref('') // 🟢 ตัวแปร Email
+const email = ref('')
 const password = ref('')
 const confirmPassword = ref('')
-const secretKey = ref('')
+const otp = ref('') // 🟢 ตัวแปร OTP
 const orNumber = ref('')
 const message = ref('')
 const isSuccess = ref(false)
 
+// 🟢 ตัวจัดการสถานะปุ่ม OTP
+const isSendingOtp = ref(false)
+const countdown = ref(0)
+
+const sendOtp = async () => {
+  if (!email.value || !email.value.includes('@')) {
+    message.value = "กรุณากรอกรูปแบบอีเมลให้ถูกต้องก่อน"
+    isSuccess.value = false
+    return
+  }
+
+  isSendingOtp.value = true
+  message.value = "กำลังส่งรหัส OTP..."
+  isSuccess.value = true 
+
+  try {
+    const response = await fetch('https://or-room-backend.rockzee2018.workers.dev/api/send-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email.value })
+    })
+    
+    const data = await response.json()
+
+    if (!response.ok) throw new Error(data.error || 'ส่งอีเมลไม่สำเร็จ')
+
+    message.value = "ส่งรหัส OTP ไปยังอีเมลแล้ว (หมดอายุใน 5 นาที)"
+    isSuccess.value = true
+    
+    countdown.value = 60
+    const timer = setInterval(() => {
+      countdown.value--
+      if (countdown.value <= 0) clearInterval(timer)
+    }, 1000)
+
+  } catch (error) {
+    message.value = "❌ " + error.message
+    isSuccess.value = false
+  } finally {
+    isSendingOtp.value = false
+  }
+}
+
 const submitForm = async () => {
-  // 🟢 เช็ก Email ด้วย
-  if (!doctorName.value || !license.value || !email.value || !password.value || !confirmPassword.value || !orNumber.value) {
-    message.value = "กรุณากรอกข้อมูลให้ครบ"
+  if (!doctorName.value || !license.value || !email.value || !password.value || !confirmPassword.value || !orNumber.value || !otp.value) {
+    message.value = "กรุณากรอกข้อมูลและรหัส OTP ให้ครบ"
     isSuccess.value = false
     return
   }
 
   if (password.value !== confirmPassword.value) {
     message.value = "รหัสผ่านไม่ตรงกัน"
-    isSuccess.value = false
-    return
-  }
-  if (secretKey.value !== 'OR-UP01') {
-    message.value = '❌ Secret Key ไม่ถูกต้อง'
     isSuccess.value = false
     return
   }
@@ -78,9 +125,10 @@ const submitForm = async () => {
       body: JSON.stringify({
         license: license.value,
         doctorName: doctorName.value,
-        email: email.value, // 🟢 ส่ง Email ไป Backend
+        email: email.value,
         password: password.value,
-        orNumber: orNumber.value
+        orNumber: orNumber.value,
+        otp: otp.value // 🟢 ส่ง OTP ไปเช็ค
       })
     })
 
@@ -101,7 +149,6 @@ const submitForm = async () => {
 
 const goBack = () => { router.back() }
 
-// 📍 เลขห้องผ่าตัดประจำ OR-201 ถึง OR-220
 const orNumbers = Array.from({ length: 20 }, (_, i) => 201 + i)
 </script>
 
@@ -198,6 +245,35 @@ const orNumbers = Array.from({ length: 20 }, (_, i) => 201 + i)
 .form-select:focus {
   border: 1.5px solid #001F5B;
   box-shadow: 0 0 8px rgba(0, 31, 91, 0.1);
+}
+
+/* 🟢 สไตล์ใหม่สำหรับปุ่มกดรับ OTP */
+.email-group {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.otp-btn {
+  white-space: nowrap;
+  padding: 0 16px;
+  background: #e8f0fe;
+  color: #001F5B;
+  border: 1px solid #cce0ff;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.otp-btn:hover:not(:disabled) {
+  background: #cce0ff;
+}
+
+.otp-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .submit-btn {
