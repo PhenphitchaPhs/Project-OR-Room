@@ -798,7 +798,9 @@ onMounted(async () => {
     }
 
     try {
-        const res2 = await fetch('https://or-room-backend.rockzee2018.workers.dev/api/users')
+        const res2 = await fetch('https://or-room-backend.rockzee2018.workers.dev/api/users', {
+            headers: { 'x-user-license': localStorage.getItem('userLicense') || '' } // 🔒 endpoint นี้ต้องมีสิทธิ์แอดมิน
+        })
         const users = await res2.json()
         if (Array.isArray(users)) {
             doctorList.value = users
