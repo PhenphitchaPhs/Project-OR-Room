@@ -1083,7 +1083,7 @@ const confirmRestoreCase = async () => {
         // 1. ยิง API อัปเดตสถานะเป็น Upcoming ทันที
         const res = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/bookings/${targetId}/status`, {
             method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'x-user-license': localStorage.getItem('userLicense') || '' },
             body: JSON.stringify({ status: FILTERS.UPCOMING }) // เปลี่ยนสถานะเป็น Upcoming
         })
 
@@ -1291,7 +1291,8 @@ const saveOrder = async (event) => {
             {
                 method: 'PUT',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'x-user-license': localStorage.getItem('userLicense') || ''
                 },
                 body: JSON.stringify({ updates })
             }
@@ -1369,7 +1370,8 @@ const resetQueue = async () => {
                         {
                             method: 'PUT',
                             headers: {
-                                'Content-Type': 'application/json'
+                                'Content-Type': 'application/json',
+                                'x-user-license': localStorage.getItem('userLicense') || ''
                             },
                             body: JSON.stringify({ updates })
                         }
@@ -1398,7 +1400,7 @@ const resetQueue = async () => {
     try {
         await fetch('https://or-room-backend.rockzee2018.workers.dev/api/bookings/reorder', {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'x-user-license': localStorage.getItem('userLicense') || '' },
             body: JSON.stringify({ updates })
         })
         showMessageDialog('✅ รีเซ็ตการจัดคิวเรียบร้อย')
@@ -1468,7 +1470,8 @@ const deleteCase = (id) => {
                     {
                         method: 'PATCH',
                         headers: {
-                            'Content-Type': 'application/json'
+                            'Content-Type': 'application/json',
+                            'x-user-license': localStorage.getItem('userLicense') || ''
                         },
                         body: JSON.stringify({
                             status: FILTERS.NOT_COMPLETE
@@ -1498,7 +1501,7 @@ const markAsSucceed = async (id) => {
     try {
         const res = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/bookings/${id}/status`, {
             method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'x-user-license': localStorage.getItem('userLicense') || '' },
             body: JSON.stringify({ status: 'Succeed' })
         })
         if (!res.ok) throw new Error()

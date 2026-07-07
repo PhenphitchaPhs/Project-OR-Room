@@ -526,7 +526,10 @@ const submitForm = async () => {
 
         const res = await fetch(url, {
             method: method,
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'x-user-license': localStorage.getItem('userLicense') || '' // 🔒 backend fail-closed แล้ว ต้องระบุตัวตน
+            },
             body: JSON.stringify(payload)
         })
 

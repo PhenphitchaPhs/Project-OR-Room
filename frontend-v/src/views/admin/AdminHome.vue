@@ -782,7 +782,8 @@ onMounted(async () => {
                     {
                         method: 'PATCH',
                         headers: {
-                            'Content-Type': 'application/json'
+                            'Content-Type': 'application/json',
+                            'x-user-license': localStorage.getItem('userLicense') || '' // 🔒 backend fail-closed แล้ว ต้องแนบ header
                         },
                         body: JSON.stringify({
                             status: 'Completed'
@@ -917,7 +918,10 @@ const onDrop = async (dropIndex) => {
     try {
         await fetch('https://or-room-backend.rockzee2018.workers.dev/api/bookings/reorder', {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'x-user-license': localStorage.getItem('userLicense') || '' // 🔒 backend เช็คสิทธิ์แอดมินแล้ว ต้องแนบมาด้วย
+            },
             body: JSON.stringify({ updates })
         })
     } catch (e) { console.error("❌ อัปเดตคิวไม่สำเร็จ", e) }
