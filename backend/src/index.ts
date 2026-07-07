@@ -13,7 +13,9 @@ const app = new Hono<{ Bindings: Bindings }>()
 // 📍 ปรับแต่ง CORS ใหม่ให้รองรับหน้าบ้าน Vercel แบบ 100%
 app.use('/*', cors({
   origin: '*', // เปิดรับทุกโดเมน (เพื่อให้ Vercel หรือ localhost ยิงเข้ามาได้)
-  allowHeaders: ['Content-Type', 'Authorization'], // อนุญาตให้ส่งข้อมูลแบบ JSON ได้
+  // ⚠️ ต้องมี 'x-user-license' ด้วย ไม่งั้นเบราว์เซอร์จะไม่แนบ header นี้ไปกับ request จริง
+  // ทำให้ backend มองไม่เห็น license ของผู้เรียก → เข้าใจผิดว่าไม่มีสิทธิ์ → เด้ง 403 ทุกครั้ง
+  allowHeaders: ['Content-Type', 'Authorization', 'x-user-license'],
   allowMethods: ['POST', 'GET', 'OPTIONS', 'PUT', 'DELETE', 'PATCH'], // อนุญาตทุกคำสั่ง
   maxAge: 600, // แคชการตั้งค่าความปลอดภัยไว้ 10 นาที เบราว์เซอร์จะได้ไม่ต้องเช็กซ้ำบ่อยๆ
 }))
@@ -29,7 +31,20 @@ app.use('/*', cors({
 // วิธีนี้ป้องกัน "ผู้ใช้ทั่วไปแก้ localStorage แล้วเข้าหน้า Admin ได้" แต่ยังไม่ป้องกันการปลอม header
 // ระดับ production ควรอัปเกรดเป็นระบบ JWT ที่เซ็นชื่อด้วย secret key ฝั่ง backend ต่อไป
 
-const hasAdminAccess = (role: string | undefined) => role === 'admin' || role === 'user_admin'
+// 📍 canonical role ที่ระบบรองรับ
+const ADMIN_ROLES = ['admin', 'user_admin']
+
+// normalize ค่า role ก่อนเทียบ: ตัดช่องว่าง, เป็นตัวเล็ก, แปลง '-'/space เป็น '_'
+// กันปัญหาค่าใน DB ที่พิมพ์ต่างเล็กน้อย เช่น 'User_Admin', 'user-admin', 'USER_ADMIN'
+const normalizeRole = (role: string | null | undefined) =>
+  (role ?? '').toString().trim().toLowerCase().replace(/[\s-]+/g, '_')
+
+// มีสิทธิ์แอดมินไหม (admin หรือ user_admin ก็ผ่าน — user_admin แก้ไขได้เท่าแอดมิน)
+// ใช้ตรรกะเดียวกับ frontend (getRoleClass/getRoleLabel) เพื่อไม่ให้ badge กับสิทธิ์จริงขัดกัน
+const hasAdminAccess = (role: string | null | undefined) => {
+  const r = normalizeRole(role)
+  return ADMIN_ROLES.includes(r) || r.includes('admin')
+}
 
 // ดึง role ของผู้เรียก API จาก header x-user-license โดย query สดจากฐานข้อมูลทุกครั้ง
 const getRequesterRole = async (c: any): Promise<string | null> => {
@@ -249,9 +264,12 @@ app.get('/api/bookings', async (c) => {
 app.post('/api/bookings', async (c) => {
   const b = await c.req.json()
 
-  // 📍 ถ้าจองให้แพทย์คนอื่น (ไม่ใช่ตัวเอง) ต้องเป็น Admin เท่านั้น
+  // 🔒 ต้องระบุตัวตนเสมอ — ไม่มี header = ปฏิเสธ (กันยิง API ตรงแบบไม่ล็อกอิน)
   const requesterLicense = c.req.header('x-user-license')
-  if (b.doctorLicense && requesterLicense && b.doctorLicense !== requesterLicense) {
+  if (!requesterLicense) return c.json({ error: 'ไม่พบข้อมูลผู้ใช้ กรุณาเข้าสู่ระบบใหม่' }, 401)
+
+  // 📍 จองให้แพทย์คนอื่น (ไม่ใช่ตัวเอง) ต้องมีสิทธิ์แอดมิน (admin หรือ user_admin)
+  if (b.doctorLicense && b.doctorLicense !== requesterLicense) {
     const role = await getRequesterRole(c)
     if (!hasAdminAccess(role)) {
       return c.json({ error: 'ไม่มีสิทธิ์จองคิวแทนแพทย์ท่านอื่น' }, 403)
@@ -289,7 +307,10 @@ app.put('/api/bookings/:id', async (c) => {
     if (!existing) return c.json({ error: 'ไม่พบคิวนี้ในระบบ' }, 404)
 
     const requesterLicense = c.req.header('x-user-license')
-    if (requesterLicense && existing.doctorLicense !== requesterLicense) {
+    // 🔒 ไม่มี header = ปฏิเสธ (เดิม fail-open: ไม่ส่ง header แล้วแก้เคสใครก็ได้)
+    if (!requesterLicense) return c.json({ error: 'ไม่พบข้อมูลผู้ใช้ กรุณาเข้าสู่ระบบใหม่' }, 401)
+    // ไม่ใช่เจ้าของคิว → ต้องมีสิทธิ์แอดมิน
+    if (existing.doctorLicense !== requesterLicense) {
       const role = await getRequesterRole(c)
       if (!hasAdminAccess(role)) return c.json({ error: 'ไม่มีสิทธิ์แก้ไขคิวนี้' }, 403)
     }
@@ -322,7 +343,10 @@ app.patch('/api/bookings/:id/status', async (c) => {
     if (!existing) return c.json({ error: 'ไม่พบคิวนี้ในระบบ' }, 404)
 
     const requesterLicense = c.req.header('x-user-license')
-    if (requesterLicense && existing.doctorLicense !== requesterLicense) {
+    // 🔒 ไม่มี header = ปฏิเสธ
+    if (!requesterLicense) return c.json({ error: 'ไม่พบข้อมูลผู้ใช้ กรุณาเข้าสู่ระบบใหม่' }, 401)
+    // ไม่ใช่เจ้าของคิว → ต้องมีสิทธิ์แอดมิน
+    if (existing.doctorLicense !== requesterLicense) {
       const role = await getRequesterRole(c)
       if (!hasAdminAccess(role)) return c.json({ error: 'ไม่มีสิทธิ์เปลี่ยนสถานะคิวนี้' }, 403)
     }
@@ -336,6 +360,13 @@ app.patch('/api/bookings/:id/status', async (c) => {
 
 // 🟢 อัปเดตลำดับคิวแบบลากวาง (Drag & Drop)
 app.put('/api/bookings/reorder', async (c) => {
+  // 🔒 ต้องระบุตัวตนและเป็นผู้ใช้ที่มีอยู่จริง — ไม่บังคับต้องเป็นแอดมิน
+  //    เพราะหน้าแพทย์ (HomeView) ก็ลากจัดลำดับคิวของตัวเองได้ ส่วนแอดมินจัดคิวรวม
+  const requesterLicense = c.req.header('x-user-license')
+  if (!requesterLicense) return c.json({ error: 'ไม่พบข้อมูลผู้ใช้ กรุณาเข้าสู่ระบบใหม่' }, 401)
+  const role = await getRequesterRole(c)
+  if (!role) return c.json({ error: 'ไม่มีสิทธิ์จัดลำดับคิว' }, 403)
+
   const { updates } = await c.req.json()
   try {
     const statements = updates.map((u: any) => c.env.DB.prepare('UPDATE bookings SET queueOrder = ? WHERE id = ?').bind(u.queueOrder, u.id))
@@ -354,7 +385,10 @@ app.delete('/api/bookings/:id', async (c) => {
     if (!existing) return c.json({ error: 'ไม่พบคิวนี้ในระบบ' }, 404)
 
     const requesterLicense = c.req.header('x-user-license')
-    if (requesterLicense && existing.doctorLicense !== requesterLicense) {
+    // 🔒 ไม่มี header = ปฏิเสธ
+    if (!requesterLicense) return c.json({ error: 'ไม่พบข้อมูลผู้ใช้ กรุณาเข้าสู่ระบบใหม่' }, 401)
+    // ไม่ใช่เจ้าของคิว → ต้องมีสิทธิ์แอดมิน
+    if (existing.doctorLicense !== requesterLicense) {
       const role = await getRequesterRole(c)
       if (!hasAdminAccess(role)) return c.json({ error: 'ไม่มีสิทธิ์ลบคิวนี้' }, 403)
     }
