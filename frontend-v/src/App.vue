@@ -80,17 +80,6 @@
               </div>
             </li>
 
-            <!-- 📍 แสดงเฉพาะบัญชีที่มีสิทธิ์ทั้ง User และ Admin (role: user_admin) -->
-            <li v-if="hasAdminAccess" @click="switchToAdminView" class="menu-item-switch-admin">
-              <div class="menu-item">
-                <span class="menu-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22"
-                    viewBox="0 0 24 24">
-                    <path fill="currentColor"
-                      d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12c5.16-1.26 9-6.45 9-12V5zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11z" />
-                  </svg></span>
-                <span class="menu-text">Switch to Admin View</span>
-              </div>
-            </li>
           </ul>
         </nav>
       </aside>
@@ -165,10 +154,6 @@ const route = useRoute()
 // ค่าที่โชว์จะยังเป็นเลข license ของบัญชีเก่าอยู่
 const userLicense = ref(localStorage.getItem('userLicense') || '------')
 const orNumber = ref(localStorage.getItem('orNumber') || '...')
-// 📍 role ปัจจุบันของผู้ใช้ (user / admin / user_admin) ใช้เช็คว่าจะโชว์เมนู "Switch to Admin View" ไหม
-const userRole = ref(localStorage.getItem('userRole') || 'user')
-const hasAdminAccess = computed(() => userRole.value === 'admin' || userRole.value === 'user_admin')
-
 // 📍 เลขห้องผ่าตัดประจำ OR-201 ถึง OR-220
 const orNumbers = Array.from({ length: 20 }, (_, i) => 201 + i)
 const tempOrNumber = ref(201)
@@ -195,7 +180,6 @@ const showLayout = computed(() => {
 const syncUserFromStorage = async () => {
   const license = localStorage.getItem('userLicense')
   userLicense.value = license || '------'
-  userRole.value = localStorage.getItem('userRole') || 'user'
 
   const savedOrNumber = localStorage.getItem('orNumber')
 
@@ -222,13 +206,6 @@ onMounted(syncUserFromStorage)
 // 📍 ทุกครั้งที่เปลี่ยนหน้า (เช่น login เสร็จแล้วเด้งมา /home) ให้ซิงค์ค่าผู้ใช้ใหม่
 // เผื่อ login ด้วยบัญชีอื่นต่อจากที่ logout ไปแบบไม่ reload หน้าเว็บ
 watch(() => route.path, syncUserFromStorage)
-
-// 📍 สลับไปมุมมองแอดมิน (เฉพาะบัญชีที่มีสิทธิ์ user_admin หรือ admin)
-// ไม่ต้อง login ใหม่ เพราะใช้ userLicense/userRole เดิมที่มีอยู่แล้วใน localStorage
-const switchToAdminView = () => {
-  isSidebarOpen.value = false
-  router.push('/admin-home')
-}
 
 const toggleSidebar = () => { isSidebarOpen.value = !isSidebarOpen.value }
 const closeSidebar = () => { isSidebarOpen.value = false }

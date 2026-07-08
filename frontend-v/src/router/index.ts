@@ -44,11 +44,10 @@ const router = createRouter({
   routes
 })
 
-// 📍 Navigation Guard — รองรับ 3 role: 'user', 'admin', 'user_admin'
+// 📍 Navigation Guard — รองรับ 2 role: 'user', 'admin'
 // - 'user': เข้าได้เฉพาะหน้า user เท่านั้น
 // - 'admin': เข้าได้เฉพาะหน้า admin เท่านั้น (redirect ไป /admin-home ถ้าพยายามเข้าหน้า user)
-// - 'user_admin': เข้าได้ทั้งหน้า user และ admin (สลับไปมาได้เสรี)
-const hasAdminAccess = (role) => role === 'admin' || role === 'user_admin'
+const hasAdminAccess = (role) => role === 'admin'
 
 router.beforeEach((to, from, next) => {
   const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true'
@@ -61,7 +60,7 @@ router.beforeEach((to, from, next) => {
     if (userRole === 'admin') {
       return next('/admin-home')
     } else {
-      // 'user' และ 'user_admin' ให้ไปหน้า /home ก่อน (user_admin จะมีปุ่มสลับไป admin เองในเมนู)
+      // 'user' ให้ไปหน้า /home
       return next('/home')
     }
   }

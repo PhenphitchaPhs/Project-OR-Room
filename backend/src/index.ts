@@ -24,7 +24,7 @@ app.use('/*', cors({
 // ==========================================
 // 🛡️ ROLE-BASED ACCESS CONTROL (RBAC)
 // ==========================================
-const ADMIN_ROLES = ['admin', 'user_admin']
+const ADMIN_ROLES = ['admin']
 
 const normalizeRole = (role: string | null | undefined) =>
   (role ?? '').toString().trim().toLowerCase().replace(/[\s-]+/g, '_')
@@ -277,7 +277,7 @@ app.put('/api/users/:license/role', async (c) => {
 
   const { newRole } = await c.req.json()
   const license = c.req.param('license')
-  const allowedRoles = ['user', 'admin', 'user_admin']
+  const allowedRoles = ['user', 'admin']
 
   if (!allowedRoles.includes(newRole)) {
     return c.json({ error: `Role ไม่ถูกต้อง ต้องเป็นหนึ่งใน ${allowedRoles.join(', ')}` }, 400)

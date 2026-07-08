@@ -141,7 +141,6 @@
                                         @change="changeRole(doc.license, $event.target.value)">
                                         <option value="user">User</option>
                                         <option value="admin">Admin</option>
-                                        <option value="user_admin">User + Admin</option>
                                     </select>
                                 </td>
                                 <td>
@@ -309,7 +308,7 @@ const getRoleClass = (role) => {
     return 'user'
 }
 
-// 📍 เปลี่ยน Role ของบัญชี (user / admin / user_admin) — เรียก endpoint ที่เพิ่มใหม่ฝั่ง backend
+// 📍 เปลี่ยน Role ของบัญชี (user / admin) — เรียก endpoint ที่เพิ่มใหม่ฝั่ง backend
 const changeRole = async (license, newRole) => {
     try {
         const res = await fetch(

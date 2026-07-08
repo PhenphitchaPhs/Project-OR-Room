@@ -82,13 +82,6 @@
                 </svg>
                 <span>Calendar</span>
             </button>
-            <!-- 📍 แสดงเฉพาะบัญชีที่มีสิทธิ์ทั้ง User และ Admin (role: user_admin) ให้สลับกลับไปมุมมองแพทย์ได้ -->
-            <button v-if="userRole === 'user_admin'" class="nav-calendar-btn" @click="router.push('/home')">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24">
-                    <path fill="white" d="M10 20v-6h4v6h5v-8h3L12 3L2 12h3v8z" />
-                </svg>
-                <span>My Queue</span>
-            </button>
             <button class="logout-btn" @click="isLogoutModalOpen = true">
                 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24">
                     <path fill="white"
@@ -601,8 +594,6 @@ const toggleDetail = (id) => { expandedId.value = expandedId.value === id ? null
 
 const router = useRouter()
 const userLicense = ref('Admin')
-// 📍 role ปัจจุบัน ใช้เช็คว่าจะโชว์ปุ่ม "My Queue" (สลับกลับมุมมองแพทย์) ไหม
-const userRole = ref(localStorage.getItem('userRole') || 'admin')
 
 const FILTERS = {
     TODAY: 'Today',

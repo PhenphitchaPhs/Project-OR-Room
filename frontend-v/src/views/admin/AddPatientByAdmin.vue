@@ -264,7 +264,7 @@ onMounted(async () => {
         })
         if (res.ok) {
             const data = await res.json()
-            // กรองเอาเฉพาะบัญชีที่มีสิทธิ์แพทย์ (user และ user_admin) ไม่เอา admin ล้วน
+            // กรองเอาเฉพาะบัญชีแพทย์ (role: user) ไม่เอา admin
             doctors.value = Array.isArray(data) ? data.filter(u => u.role !== 'admin') : []
         }
     } catch (e) {

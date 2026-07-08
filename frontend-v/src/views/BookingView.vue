@@ -260,11 +260,11 @@ onMounted(async () => {
                 const booking = allBookings.find(b => String(b.id) === String(bookingId))
 
                 if (booking) {
-                    // 📍 เช็คสิทธิ์: แอดมิน (admin หรือ user_admin) แก้ได้ทุกคิว, แพทย์ทั่วไปแก้ได้เฉพาะคิวตัวเอง
-                    const isAdmin = myRole === 'admin' || myRole === 'user_admin'
+                    // 📍 เช็คสิทธิ์: แอดมินแก้ได้ทุกคิว, แพทย์ทั่วไปแก้ได้เฉพาะคิวตัวเอง
+                    const isAdmin = myRole === 'admin'
                     if (!isAdmin && booking.doctorLicense !== myLicense) {
                         showAlert('คุณไม่มีสิทธิ์แก้ไขคิวนี้ เพราะไม่ใช่คิวของคุณครับ')
-                        const isAdminReject = ['admin', 'user_admin'].includes(localStorage.getItem('userRole'))
+                        const isAdminReject = localStorage.getItem('userRole') === 'admin'
                         setTimeout(() => { router.push(isAdminReject ? '/admin-home' : '/home') }, 1500)
                         return
                     }
@@ -533,8 +533,8 @@ const submitForm = async () => {
         if (res.ok) {
             showAlert(bookingId ? 'อัปเดตคิวสำเร็จ!' : 'จองคิวสำเร็จ!', true)
             setTimeout(() => {
-                // 📍 แอดมิน (admin หรือ user_admin) กลับหน้า Admin Home, แพทย์ทั่วไปกลับหน้า Home
-                const isAdmin = ['admin', 'user_admin'].includes(localStorage.getItem('userRole'))
+                // 📍 แอดมินกลับหน้า Admin Home, แพทย์ทั่วไปกลับหน้า Home
+                const isAdmin = localStorage.getItem('userRole') === 'admin'
                 if (isAdmin) {
                     router.push('/admin-home')
                 } else {
@@ -552,7 +552,7 @@ const submitForm = async () => {
 }
 
 const goHome = () => {
-    const isAdmin = ['admin', 'user_admin'].includes(localStorage.getItem('userRole'))
+    const isAdmin = localStorage.getItem('userRole') === 'admin'
     router.push(isAdmin ? '/admin-home' : '/home')
 }
 </script>
