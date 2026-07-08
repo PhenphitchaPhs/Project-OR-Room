@@ -79,8 +79,6 @@
                             <p><strong>Age / Gender:</strong> {{ b.age || '-' }} ปี · {{ b.gender === 'female' ? 'หญิง'
                                 : 'ชาย' }}</p>
                             <p><strong>Procedure:</strong> {{ b.procedure }}</p>
-                            <p v-if="b.isNpoRisk">🍼 <strong>NPO Risk</strong></p>
-                            <p v-if="b.isInfected">🦠 <strong>Infection Risk</strong></p>
                             <button class="btn-edit-booking" @click="goToEditBooking(b.id)">✏️ Edit
                                 (เพิ่ม/เปลี่ยนวันที่และห้อง)</button>
                         </template>
@@ -222,19 +220,13 @@ const roomRemainingLabel = (d, roomNum) => {
 // 📍 จำนวนห้องที่ยังว่างอยู่ในวันนั้น (จาก 20 ห้อง) ใช้แสดง badge สรุปในตารางปฏิทิน
 const availableRoomsCount = (d) => orRooms.filter(r => !isRoomFull(d, r)).length
 
-// 📍 สีจุดบนปฏิทินให้ตรงกับสีห้องในป๊อปอัป (เขียว/เหลือง/แดง) แทนสี urgency เดิม
+// 📍 สีจุดบนปฏิทินให้ตรงกับสีห้องในป๊อปอัป (เขียว/เหลือง/แดง)
 const roomStatusColor = (d, roomStr) => {
     const roomNum = getRoomNumber(roomStr)
     if (roomNum === null) return '#b0b8c1' // ไม่มีข้อมูลห้อง ใช้สีเทา
     if (isRoomFull(d, roomNum)) return '#e53935'      // แดง = เต็ม
     if (isRoomPartial(d, roomNum)) return '#f59e0b'   // เหลือง = บางส่วน
     return '#43a047'                                    // เขียว = ว่าง
-}
-
-const urgencyColor = (urgency) => {
-    if (urgency === 'Emergency') return '#e53935'
-    if (urgency === 'Urgent') return '#f9a825'
-    return '#43a047'
 }
 
 const calendarDays = computed(() => {

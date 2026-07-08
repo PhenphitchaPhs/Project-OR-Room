@@ -8,9 +8,6 @@ CREATE TABLE bookings (
   gender TEXT,
   procedure TEXT,
   date TEXT NOT NULL,
-  urgency TEXT,
-  isNpoRisk INTEGER DEFAULT 0,
-  isInfected INTEGER DEFAULT 0,
   underlying TEXT,                
   cxrDate TEXT,        -- 👈 เพิ่มข้อมูล CXR
   cxrNote TEXT,

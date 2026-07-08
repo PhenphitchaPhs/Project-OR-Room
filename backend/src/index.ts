@@ -341,14 +341,14 @@ app.post('/api/bookings', async (c) => {
   try {
     await c.env.DB.prepare(`
       INSERT INTO bookings (
-        hn, fullName, dob, age, gender, procedure, date, urgency, isNpoRisk, isInfected, underlying, 
+        hn, fullName, dob, age, gender, procedure, date, underlying, 
         cxrDate, cxrNote, ecgDate, ecgNote, labDate, labNote, admDate, admNote, 
         notes, status, room, doctorLicense, createdAt
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now', '+7 hours'))
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now', '+7 hours'))
     `).bind(
       b.hn, b.fullName, b.dob, b.age, b.gender, b.procedure, 
-      b.date, b.urgency, b.isNpoRisk ? 1 : 0, b.isInfected ? 1 : 0, b.underlying, 
+      b.date, b.underlying, 
       b.cxrDate, b.cxrNote, b.ecgDate, b.ecgNote, b.labDate, b.labNote, b.admDate, b.admNote, 
       b.notes, 'Upcoming', b.room || 'OR-01', b.doctorLicense 
     ).run()

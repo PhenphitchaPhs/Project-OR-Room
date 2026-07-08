@@ -510,9 +510,6 @@ const submitForm = async () => {
         labDate: form.labDate, labNote: form.labNote,
         admDate: form.admDate, admNote: form.admNote,
         dob: null,
-        urgency: 'Normal',
-        isNpoRisk: false,
-        isInfected: false,
         doctorLicense: localStorage.getItem('userLicense')
     }
 

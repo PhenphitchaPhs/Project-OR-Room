@@ -451,9 +451,6 @@ const submitForm = async () => {
         labDate: form.labDate, labNote: form.labNote,
         admDate: form.admDate, admNote: form.admNote,
         dob: null,
-        urgency: 'Normal',
-        isNpoRisk: false,
-        isInfected: false,
         doctorLicense: form.doctorLicense // ใช้แพทย์ที่แอดมินเลือกจากฟอร์ม
     }
 

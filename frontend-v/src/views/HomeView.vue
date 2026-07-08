@@ -1176,7 +1176,6 @@ const isLoading = ref(false)
 
 // ================= ระบบจัดเรียงคิว (รวม Drag&Drop แบบใหม่) =================
 const sortCases = (arr) => {
-    const urgencyScore = { 'Emergency': 3, 'Urgent': 2, 'Normal': 1 }
     return [...arr].sort((a, b) => {
         // Tier 0: เรียงตามวันก่อนเสมอ
         if (a.date !== b.date) return new Date(a.date) - new Date(b.date)
@@ -1186,21 +1185,7 @@ const sortCases = (arr) => {
         const qB = b.queueOrder || 999
         if (qA !== qB) return qA - qB
 
-        // ถ้าเป็นคิวใหม่ (ยังไม่เคยลากจัด) ให้ใช้ระบบอัจฉริยะแบบเดิม
-        const urgA = urgencyScore[a.urgency] || 1
-        const urgB = urgencyScore[b.urgency] || 1
-        if (urgA !== urgB) return urgB - urgA
-
-        if (a.urgency !== 'Emergency') {
-            const infA = a.isInfected ? 1 : 0
-            const infB = b.isInfected ? 1 : 0
-            if (infA !== infB) return infA - infB
-
-            const npoA = a.isNpoRisk ? 1 : 0
-            const npoB = b.isNpoRisk ? 1 : 0
-            if (npoA !== npoB) return npoB - npoA
-        }
-
+        // ถ้าเป็นคิวใหม่ (ยังไม่เคยลากจัด) เรียงตามอายุมากก่อน แล้วตามด้วยเพศ (หญิงก่อน)
         const ageA = parseInt(a.age) || 0
         const ageB = parseInt(b.age) || 0
         if (ageA !== ageB) return ageB - ageA
