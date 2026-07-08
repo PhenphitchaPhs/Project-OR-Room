@@ -138,10 +138,13 @@ app.post('/api/register', async (c) => {
 // 🟢 เข้าสู่ระบบ (Login) - เปลี่ยนมาใช้ Email และรองรับ Lazy Migration ให้บัญชีเก่า
 app.post('/api/login', async (c) => {
   try {
-    const { email, password } = await c.req.json()
-    
-    // ค้นหาผู้ใช้ด้วย email แทน license
-    const user = await c.env.DB.prepare('SELECT * FROM users WHERE email = ?').bind(email).first()
+    const { email, password, license } = await c.req.json()
+    // 📍 รองรับทั้งหน้า user (ส่ง email) และหน้า admin (ส่ง license)
+    const identifier = email ?? license
+    if (!identifier) return c.json({ error: 'กรุณากรอกอีเมล/เลขใบอนุญาต และรหัสผ่าน' }, 400)
+
+    // ค้นหาผู้ใช้ด้วย email หรือ license
+    const user = await c.env.DB.prepare('SELECT * FROM users WHERE email = ? OR license = ?').bind(identifier, identifier).first()
     if (!user) {
       return c.json({ error: 'อีเมล หรือ รหัสผ่านไม่ถูกต้อง!' }, 401)
     }
@@ -157,10 +160,10 @@ app.post('/api/login', async (c) => {
       if (password === dbPassword) {
         isPasswordMatch = true
         
-        // Lazy Migration: เข้ารหัสรหัสผ่านแล้วเซฟทับให้ทันที
+        // Lazy Migration: เข้ารหัสรหัสผ่านแล้วเซฟทับให้ทันที (ใช้ license ที่มีเสมอ)
         const hashedNewPassword = bcrypt.hashSync(password, 10)
-        await c.env.DB.prepare('UPDATE users SET password = ? WHERE email = ?')
-          .bind(hashedNewPassword, email).run()
+        await c.env.DB.prepare('UPDATE users SET password = ? WHERE license = ?')
+          .bind(hashedNewPassword, user.license).run()
       }
     }
 
