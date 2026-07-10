@@ -2,7 +2,7 @@
     <div class="page">
         <div class="card">
             <img src="../assets/logo.png" class="logo" />
-            <h2 class="title">Hospital</h2>
+            <h2 class="title">ORchestrator</h2>
 
             <p class="subtitle">
                 Enter your email to receive a password reset link.
