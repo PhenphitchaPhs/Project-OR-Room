@@ -12,7 +12,7 @@
                         <polyline points="15 18 9 12 15 6" />
                     </svg>
                 </button>
-                <h1 class="title">ระบบบริหารจัดการคิวห้องผ่าตัด</h1>
+                <h1 class="title">ORchestrator</h1>
                 <div class="header-spacer"></div>
             </div>
 
