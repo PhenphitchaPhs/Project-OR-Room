@@ -99,22 +99,6 @@ const goBack = () => router.back()
 }
 </style>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 <style scoped>
 /* จัดให้อยู่กึ่งกลางหน้าจอ */
 .login-wrapper {

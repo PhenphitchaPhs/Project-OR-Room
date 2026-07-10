@@ -4,7 +4,7 @@
             <!-- logo -->
             <img src="../assets/logo.png" class="logo" />
 
-            <h2 class="title">Hospital</h2>
+            <h2 class="title">ORchestrator</h2>
 
             <!-- new password -->
             <div class="input-wrap">
