@@ -434,27 +434,6 @@ app.put('/api/bookings/reorder', async (c) => {
   }
 })
 
-app.delete('/api/bookings/:id', async (c) => {
-  const id = c.req.param('id')
-  try {
-    const existing = await c.env.DB.prepare('SELECT doctorLicense FROM bookings WHERE id = ?').bind(id).first()
-    if (!existing) return c.json({ error: 'ไม่พบคิวนี้ในระบบ' }, 404)
-
-    const requesterLicense = c.req.header('x-user-license')
-    if (!requesterLicense) return c.json({ error: 'ไม่พบข้อมูลผู้ใช้ กรุณาเข้าสู่ระบบใหม่' }, 401)
-    
-    if (existing.doctorLicense !== requesterLicense) {
-      const role = await getRequesterRole(c)
-      if (!hasAdminAccess(role)) return c.json({ error: 'ไม่มีสิทธิ์ลบคิวนี้' }, 403)
-    }
-
-    await c.env.DB.prepare('DELETE FROM bookings WHERE id = ?').bind(id).run()
-    return c.json({ success: true })
-  } catch (e) {
-    return c.json({ error: 'DB Delete Error' }, 500)
-  }
-})
-
 
 // ==========================================
 // 😷 4. PATIENTS (ข้อมูลผู้ป่วย)
