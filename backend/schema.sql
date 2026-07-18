@@ -2,6 +2,18 @@
 -- รันซ้ำกับฐานข้อมูลที่มีข้อมูลอยู่แล้วได้ โดยข้อมูลเดิมจะไม่ถูกลบ
 -- (ถ้าตารางมีอยู่แล้ว คำสั่งจะข้ามไปเฉย ๆ ไม่เขียนทับ)
 
+-- ตารางสำหรับเก็บข้อมูลผู้ป่วย (แยกออกจากตารางการจอง)
+-- 👉 ทำให้ลบรายการจองได้โดยข้อมูลผู้ป่วยยังคงอยู่ และยังกรอกอัตโนมัติจาก HN ได้
+CREATE TABLE IF NOT EXISTS patients (
+  hn TEXT PRIMARY KEY,              -- 👈 หมายเลข HN ห้ามซ้ำ
+  fullName TEXT NOT NULL,
+  dob TEXT,
+  gender TEXT,
+  underlying TEXT,                  -- 👈 โรคประจำตัว
+  createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
 -- ตารางสำหรับเก็บข้อมูลการจองห้องผ่าตัด
 CREATE TABLE IF NOT EXISTS bookings (
   id INTEGER PRIMARY KEY AUTOINCREMENT,

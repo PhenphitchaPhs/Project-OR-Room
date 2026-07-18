@@ -355,6 +355,22 @@ app.post('/api/bookings', async (c) => {
       b.cxrDate, b.cxrNote, b.ecgDate, b.ecgNote, b.labDate, b.labNote, b.admDate, b.admNote, 
       b.notes, 'Upcoming', b.room || 'OR-01', b.doctorLicense 
     ).run()
+
+    // 📍 บันทึก/อัปเดตข้อมูลผู้ป่วยลงตาราง patients (แยกจากตารางการจอง)
+    //    ทำให้ลบรายการจองได้โดยข้อมูลผู้ป่วยยังคงอยู่
+    if (b.hn && b.fullName) {
+      await c.env.DB.prepare(`
+        INSERT INTO patients (hn, fullName, dob, gender, underlying, updatedAt)
+        VALUES (?, ?, ?, ?, ?, datetime('now', '+7 hours'))
+        ON CONFLICT(hn) DO UPDATE SET
+          fullName = excluded.fullName,
+          dob = excluded.dob,
+          gender = excluded.gender,
+          underlying = excluded.underlying,
+          updatedAt = excluded.updatedAt
+      `).bind(b.hn, b.fullName, b.dob ?? null, b.gender ?? null, b.underlying ?? null).run()
+    }
+
     return c.json({ success: true }, 201)
   } catch (e) {
     console.error("DB Insert Error:", e)
@@ -388,6 +404,22 @@ app.put('/api/bookings/:id', async (c) => {
       b.cxrDate, b.cxrNote, b.ecgDate, b.ecgNote, b.labDate, b.labNote, b.admDate, b.admNote,
       b.notes, id
     ).run()
+
+    // 📍 บันทึก/อัปเดตข้อมูลผู้ป่วยลงตาราง patients (แยกจากตารางการจอง)
+    //    ทำให้ลบรายการจองได้โดยข้อมูลผู้ป่วยยังคงอยู่
+    if (b.hn && b.fullName) {
+      await c.env.DB.prepare(`
+        INSERT INTO patients (hn, fullName, dob, gender, underlying, updatedAt)
+        VALUES (?, ?, ?, ?, ?, datetime('now', '+7 hours'))
+        ON CONFLICT(hn) DO UPDATE SET
+          fullName = excluded.fullName,
+          dob = excluded.dob,
+          gender = excluded.gender,
+          underlying = excluded.underlying,
+          updatedAt = excluded.updatedAt
+      `).bind(b.hn, b.fullName, b.dob ?? null, b.gender ?? null, b.underlying ?? null).run()
+    }
+
 
     return c.json({ success: true, message: 'อัปเดตคิวสำเร็จ' })
   } catch (e) {
@@ -442,10 +474,18 @@ app.put('/api/bookings/reorder', async (c) => {
 app.get('/api/patients/:hn', async (c) => {
   const hn = c.req.param('hn')
   try {
-    const patient = await c.env.DB.prepare(`
+    // 📍 อ่านจากตาราง patients เป็นหลัก ถ้าไม่พบจึงย้อนไปหาในตาราง bookings (ข้อมูลเก่าก่อน migrate)
+    let patient = await c.env.DB.prepare(`
       SELECT hn, fullName, dob, gender, underlying 
-      FROM bookings WHERE hn = ? ORDER BY createdAt DESC LIMIT 1
+      FROM patients WHERE hn = ?
     `).bind(hn).first()
+
+    if (!patient) {
+      patient = await c.env.DB.prepare(`
+        SELECT hn, fullName, dob, gender, underlying 
+        FROM bookings WHERE hn = ? ORDER BY createdAt DESC LIMIT 1
+      `).bind(hn).first()
+    }
     
     if (patient) return c.json(patient)
     return c.json({ error: 'ไม่พบผู้ป่วย' }, 404)
