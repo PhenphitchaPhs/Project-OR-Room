@@ -41,6 +41,8 @@
                         </div>
                         <textarea v-model="form.disease" placeholder="Underlying Disease(s)"
                             class="input-field green-theme" rows="1"></textarea>
+                        <textarea v-model="form.diagnosis" placeholder="Diagnosis"
+                            class="input-field green-theme" rows="1"></textarea>
                     </div>
                 </div>
 
@@ -189,7 +191,7 @@ const doctors = ref([]) // เก็บรายชื่อแพทย์ส�
 
 // ฟอร์มข้อมูล
 const form = reactive({
-    hn: '', fullName: '', age: '', gender: '', disease: '',
+    hn: '', fullName: '', age: '', gender: '', disease: '', diagnosis: '',
     procedure: '', customProcedure: '', customProcedureMinutes: '',
     date: '', room: '', notes: '', doctorLicense: '',
     cxrDate: '', cxrNote: '',
@@ -205,13 +207,55 @@ const procedureGroups = ref([
     {
         label: "ศัลยกรรมทั่วไป (General Surgery)",
         options: [
-            { name: "Appendectomy (ผ่าตัดไส้ติ่ง) - 60 mins" },
             { name: "Laparoscopic Cholecystectomy / LC (ผ่าตัดนิ่วในถุงน้ำดี) - 120 mins" },
-            { name: "Herniorrhaphy (ผ่าตัดไส้เลื่อน) - 90 mins" },
-            { name: "Thyroidectomy (ผ่าตัดต่อมไทรอยด์) - 120 mins" },
+            { name: "Herniorrhaphy (ผ่าตัดไส้เลื่อน) - 90 mins" }
+        ]
+    },
+    {
+        label: "ศัลยกรรมต่อมไร้ท่อ (Endocrine Surgery)",
+        options: [
+            { name: "Thyroid Lobectomy (ผ่าตัดต่อมไทรอยด์ออกหนึ่งข้าง) - 60 mins" },
+            { name: "Total Thyroidectomy (ผ่าตัดต่อมไทรอยด์ออกทั้งหมด) - 120 mins" },
+            { name: "Parathyroidectomy (ผ่าตัดต่อมพาราไทรอยด์) - 90 mins" }
+        ]
+    },
+    {
+        label: "ศัลยกรรมเต้านม (Breast Surgery)",
+        options: [
             { name: "Modified Radical Mastectomy / MRM (ผ่าตัดมะเร็งเต้านม) - 120 mins" },
+            { name: "WE SLNB (ผ่าตัดก้อนเต้านมแบบสงวนเต้า ร่วมกับเลาะต่อมน้ำเหลืองเซนติเนล) - 120 mins" },
+            { name: "SM SLNB (ผ่าตัดเต้านมออกทั้งเต้า ร่วมกับเลาะต่อมน้ำเหลืองเซนติเนล) - 120 mins" }
+        ]
+    },
+    {
+        label: "ศัลยกรรมลำไส้ใหญ่และทวารหนัก (Colorectal Surgery)",
+        options: [
+            { name: "Colectomy (ผ่าตัดลำไส้ใหญ่) - 120 mins" },
+            { name: "LAR APR (ผ่าตัดมะเร็งลำไส้ตรง) - 180 mins" },
             { name: "Hemorrhoidectomy (ผ่าตัดริดสีดวง) - 45 mins" },
-            { name: "Exploratory Laparotomy (ผ่าตัดเปิดช่องท้อง) - 180 mins" }
+            { name: "Fistulotomy (ผ่าตัดเปิดฝีคัณฑสูตร) - 30 mins" }
+        ]
+    },
+    {
+        label: "ศัลยกรรมตับ ทางเดินน้ำดี และตับอ่อน (HPB Surgery)",
+        options: [
+            { name: "Hepatectomy (ผ่าตัดตับ) - 180 mins" },
+            { name: "PPPD (ผ่าตัดตับอ่อนและลำไส้เล็กส่วนต้นแบบสงวนกระเพาะอาหาร) - 300 mins" },
+            { name: "Hilar Resection (ผ่าตัดมะเร็งท่อน้ำดีบริเวณขั้วตับ) - 300 mins" }
+        ]
+    },
+    {
+        label: "ศัลยกรรมหลอดเลือด (Vascular Surgery)",
+        options: [
+            { name: "AVF (ผ่าตัดสร้างหลอดเลือดสำหรับฟอกไต) - 90 mins" },
+            { name: "Venous Ligation (ผ่าตัดผูกหลอดเลือดดำ) - 90 mins" }
+        ]
+    },
+    {
+        label: "ส่องกล้อง (Endoscopy)",
+        options: [
+            { name: "Colonoscopy (ส่องกล้องตรวจลำไส้ใหญ่) - 60 mins" },
+            { name: "ERCP (ส่องกล้องตรวจรักษาท่อทางเดินน้ำดีและตับอ่อน) - 60 mins" }
         ]
     },
     {
@@ -235,8 +279,7 @@ const procedureGroups = ref([
         options: [
             { name: "Cataract Surgery (ผ่าตัดต้อกระจก) - 30 mins" },
             { name: "TURP (ผ่าตัดส่องกล้องต่อมลูกหมาก) - 90 mins" },
-            { name: "Tonsillectomy (ผ่าตัดทอนซิล) - 45 mins" },
-            { name: "Other Procedure (ระบุเอง)", value: "OTHER_PROCEDURE" }
+            { name: "Tonsillectomy (ผ่าตัดทอนซิล) - 45 mins" }
         ]
     }
 ])
@@ -445,6 +488,7 @@ const submitForm = async () => {
         date: form.date,
         room: form.room,
         underlying: form.disease || '',
+        diagnosis: form.diagnosis || '',
         notes: form.notes,
         cxrDate: form.cxrDate, cxrNote: form.cxrNote,
         ecgDate: form.ecgDate, ecgNote: form.ecgNote,

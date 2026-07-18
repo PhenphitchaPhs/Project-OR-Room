@@ -759,14 +759,14 @@ onMounted(async () => {
 
         bookings.value = Array.isArray(data) ? data : []
 
-        // ย้ายเคสที่เลยวันและยังไม่ Cancel ไป Completed อัตโนมัติ
+        // ย้ายเคสที่เลยวันและยังไม่ Cancel ไป Succeed อัตโนมัติ
         for (const item of bookings.value) {
             if (
                 item.date < todayStr &&
                 item.status !== 'Cancelled' &&
-                item.status !== 'Completed'
+                item.status !== 'Succeed'
             ) {
-                item.status = 'Completed'
+                item.status = 'Succeed'
 
                 await fetch(
                     `https://or-room-backend.rockzee2018.workers.dev/api/bookings/${item.id}/status`,
@@ -777,7 +777,7 @@ onMounted(async () => {
                             'x-user-license': localStorage.getItem('userLicense') || '' // 🔒 backend fail-closed แล้ว ต้องแนบ header
                         },
                         body: JSON.stringify({
-                            status: 'Completed'
+                            status: 'Succeed'
                         })
                     }
                 )
@@ -849,7 +849,7 @@ const completedCases = computed(() =>
     sortCases(
         bookings.value.filter(
             item =>
-                item.status === 'Completed' &&
+                item.status === 'Succeed' &&
                 matchSearch(item)
         )
     )

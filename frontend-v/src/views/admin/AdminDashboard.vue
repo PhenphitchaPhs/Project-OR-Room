@@ -173,11 +173,11 @@ const tzOffset = new Date().getTimezoneOffset() * 60000
 const todayStr = new Date(Date.now() - tzOffset).toISOString().split('T')[0]
 
 const upcomingCount = computed(() => bookings.value.filter(b => b.status === 'Upcoming' || !b.status).length)
-const succeedCount = computed(() => bookings.value.filter(b => b.status === 'Completed').length)
+const succeedCount = computed(() => bookings.value.filter(b => b.status === 'Succeed').length)
 const todayCount = computed(() =>
     bookings.value.filter(
         b => b.date === todayStr &&
-            b.status !== 'Completed'
+            b.status !== 'Succeed'
     ).length
 )
 const cancelledCount = computed(() =>
