@@ -92,6 +92,11 @@
 
         <div class="dashboard-container">
             <div class="top-toolbar">
+                <button class="btn-export" @click="openExportDialog">
+                    <span class="material-icons">download</span>
+                    Export CSV
+                </button>
+
                 <div class="search-box">
                     <span class="material-icons">search</span>
                     <input v-model="searchQuery" type="text" placeholder="Search HN, Patient, Doctor..." />
@@ -567,11 +572,132 @@
         </div>
     </Transition>
 
+    <!-- ===== Export CSV ทั้งระบบ (Admin) ===== -->
+    <Transition name="fade">
+        <div v-if="isExportModalOpen" class="modal-overlay-center" @click.self="closeExportDialog">
+            <div class="export-modal-card" role="dialog" aria-modal="true" aria-labelledby="admin-export-title">
+
+                <h2 id="admin-export-title" class="modal-msg-title">
+                    Export รายการจองทั้งระบบ
+                </h2>
+
+                <!-- ขอบเขตวันที่ -->
+                <div class="export-section">
+                    <label class="export-label">ขอบเขต</label>
+
+                    <div class="export-mode-switch">
+                        <button v-for="mode in exportModes" :key="mode.value"
+                            :class="{ active: exportDateMode === mode.value }" @click="exportDateMode = mode.value">
+                            {{ mode.label }}
+                        </button>
+                    </div>
+
+                    <input v-if="exportDateMode === 'day'" v-model="exportDay" type="date" class="export-input" />
+
+                    <input v-if="exportDateMode === 'month'" v-model="exportMonth" type="month" class="export-input" />
+
+                    <div v-if="exportDateMode === 'range'" class="export-range-row">
+                        <input v-model="exportFrom" type="date" class="export-input" />
+                        <span class="export-range-sep">ถึง</span>
+                        <input v-model="exportTo" type="date" class="export-input" />
+                    </div>
+
+                    <select v-if="exportDateMode === 'single'" v-model="exportCaseId" class="export-input">
+                        <option value="">— เลือกคิว —</option>
+                        <option v-for="item in bookings" :key="item.id" :value="item.id">
+                            {{ item.date }} · {{ item.room }} · HN {{ item.hn }} · {{ item.fullName }}
+                        </option>
+                    </select>
+                </div>
+
+                <!-- ห้อง -->
+                <div v-if="exportDateMode !== 'single'" class="export-section">
+                    <label class="export-label">
+                        ห้อง
+                        <span class="export-label-hint">
+                            {{ selectedRooms.length ? `เลือก ${selectedRooms.length} ห้อง` : 'ทั้งหมด' }}
+                        </span>
+                    </label>
+
+                    <div class="export-chip-box">
+                        <button v-for="room in roomOptions" :key="room"
+                            :class="['export-chip', { active: selectedRooms.includes(room) }]"
+                            @click="toggleFrom(selectedRooms, room)">
+                            {{ room }}
+                        </button>
+                    </div>
+                </div>
+
+                <!-- แพทย์ -->
+                <div v-if="exportDateMode !== 'single'" class="export-section">
+                    <label class="export-label">
+                        แพทย์
+                        <span class="export-label-hint">
+                            {{ selectedDoctors.length ? `เลือก ${selectedDoctors.length} คน` : 'ทั้งหมด' }}
+                        </span>
+                    </label>
+
+                    <div class="export-chip-box">
+                        <button v-for="doctor in doctorList" :key="doctor.license"
+                            :class="['export-chip', { active: selectedDoctors.includes(doctor.license) }]"
+                            @click="toggleFrom(selectedDoctors, doctor.license)">
+                            {{ doctor.doctorName || doctor.license }}
+                        </button>
+
+                        <p v-if="doctorList.length === 0" class="export-hint">ยังไม่มีรายชื่อแพทย์</p>
+                    </div>
+                </div>
+
+                <!-- สถานะ -->
+                <div v-if="exportDateMode !== 'single'" class="export-section">
+                    <label class="export-label">
+                        สถานะ
+                        <span class="export-label-hint">
+                            {{ selectedStatuses.length ? `เลือก ${selectedStatuses.length} สถานะ` : 'ทั้งหมด' }}
+                        </span>
+                    </label>
+
+                    <div class="export-chip-box no-scroll">
+                        <button v-for="status in statusOptions" :key="status.value"
+                            :class="['export-chip', { active: selectedStatuses.includes(status.value) }]"
+                            @click="toggleFrom(selectedStatuses, status.value)">
+                            {{ status.label }}
+                        </button>
+                    </div>
+                </div>
+
+                <p class="export-preview" aria-live="polite">
+                    {{ exportPreviewText }}
+                </p>
+
+                <p v-if="exportError" class="export-error">
+                    {{ exportError }}
+                </p>
+
+                <button class="export-reset-btn" @click="resetExportFilters">
+                    ล้าง filter ทั้งหมด
+                </button>
+
+                <div class="modal-button-group">
+                    <button class="btn-cancel-gray" @click="closeExportDialog">
+                        Cancel
+                    </button>
+
+                    <button class="btn-confirm-green" :disabled="!canExport || isExporting" @click="confirmExport">
+                        {{ isExporting ? 'กำลังสร้างไฟล์…' : 'ดาวน์โหลด CSV' }}
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </Transition>
+
 </template>
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useCsvExport } from '../../composables/useCsvExport'
 
 
 const doctorMap = ref({})
@@ -799,6 +925,233 @@ onMounted(async () => {
         }
     } catch (e) { console.error('ดึงรายชื่อหมอไม่สำเร็จ', e) }
 })
+
+// ================= Export CSV ทั้งระบบ (Admin) =================
+const {
+    buildBookingsCsv,
+    downloadCsv,
+    filterByDateRange,
+    buildAdminFileName,
+    buildSingleFileName
+} = useCsvExport()
+
+const EXPORT_API = 'https://or-room-backend.rockzee2018.workers.dev'
+
+const isExportModalOpen = ref(false)
+const isExporting = ref(false)
+const exportError = ref('')
+
+const exportDateMode = ref('all')   // all | day | month | range | single
+const exportDay = ref('')
+const exportMonth = ref('')
+const exportFrom = ref('')
+const exportTo = ref('')
+const exportCaseId = ref('')
+
+const selectedRooms = ref([])
+const selectedDoctors = ref([])
+const selectedStatuses = ref([])
+
+const exportModes = [
+    { value: 'all', label: 'ทั้งหมด' },
+    { value: 'day', label: 'รายวัน' },
+    { value: 'month', label: 'รายเดือน' },
+    { value: 'range', label: 'ช่วงวันที่' },
+    { value: 'single', label: 'คิวเดียว' }
+]
+
+const statusOptions = [
+    { value: 'Upcoming', label: 'รอผ่าตัด' },
+    { value: 'Succeed', label: 'ผ่าตัดแล้ว' },
+    { value: 'Cancelled', label: 'ยกเลิก' }
+]
+
+// เอาเฉพาะห้องที่มีคิวจริง จะได้ไม่ต้องไล่กด 20 ห้องที่ว่างเปล่า
+const roomOptions = computed(() => {
+    const rooms = [...new Set(bookings.value.map(item => item.room).filter(Boolean))]
+    return rooms.sort()
+})
+
+const toggleFrom = (list, value) => {
+    const index = list.indexOf(value)
+    if (index === -1) list.push(value)
+    else list.splice(index, 1)
+}
+
+// แปลงโหมดที่เลือกเป็นช่วงวันที่จริง
+const exportDateRange = computed(() => {
+    if (exportDateMode.value === 'day') {
+        return { from: exportDay.value, to: exportDay.value }
+    }
+
+    if (exportDateMode.value === 'month') {
+        if (!exportMonth.value) return { from: '', to: '' }
+        const [year, month] = exportMonth.value.split('-').map(Number)
+        const lastDay = new Date(year, month, 0).getDate()
+        return {
+            from: `${exportMonth.value}-01`,
+            to: `${exportMonth.value}-${String(lastDay).padStart(2, '0')}`
+        }
+    }
+
+    if (exportDateMode.value === 'range') {
+        return { from: exportFrom.value, to: exportTo.value }
+    }
+
+    return { from: '', to: '' }
+})
+
+// กรอกครบพอที่จะ export หรือยัง (กันกรณีเลือกโหมดแล้วไม่กรอกวัน แล้วได้ข้อมูลทั้งหมดมาโดยไม่ตั้งใจ)
+const isDateInputReady = computed(() => {
+    if (exportDateMode.value === 'day') return !!exportDay.value
+    if (exportDateMode.value === 'month') return !!exportMonth.value
+    if (exportDateMode.value === 'range') return !!(exportFrom.value && exportTo.value)
+    if (exportDateMode.value === 'single') return !!exportCaseId.value
+    return true
+})
+
+// นับจำนวนจากข้อมูลที่โหลดไว้แล้ว เพื่อให้ preview ตอบสนองทันทีโดยไม่ต้องยิง API ทุกครั้งที่เปลี่ยน filter
+const exportRows = computed(() => {
+    if (!isDateInputReady.value) return []
+
+    if (exportDateMode.value === 'single') {
+        const found = bookings.value.find(item => String(item.id) === String(exportCaseId.value))
+        return found ? [found] : []
+    }
+
+    let rows = bookings.value
+
+    if (selectedRooms.value.length) {
+        rows = rows.filter(item => selectedRooms.value.includes(item.room))
+    }
+    if (selectedDoctors.value.length) {
+        rows = rows.filter(item => selectedDoctors.value.includes(item.doctorLicense))
+    }
+    if (selectedStatuses.value.length) {
+        rows = rows.filter(item => selectedStatuses.value.includes(item.status))
+    }
+
+    const { from, to } = exportDateRange.value
+    if (from || to) rows = filterByDateRange(rows, from, to)
+
+    return rows
+})
+
+const canExport = computed(() => exportRows.value.length > 0)
+
+const exportPreviewText = computed(() => {
+    if (!isDateInputReady.value) {
+        if (exportDateMode.value === 'single') return 'เลือกคิวที่ต้องการ export'
+        if (exportDateMode.value === 'range') return 'เลือกวันเริ่มต้นและวันสิ้นสุด'
+        return 'เลือกวันที่ที่ต้องการ export'
+    }
+
+    const count = exportRows.value.length
+    if (count === 0) return 'ไม่พบรายการจองตามเงื่อนไขที่เลือก'
+    return `จะ export ${count} รายการ`
+})
+
+// ใช้ตั้งชื่อไฟล์ให้สื่อความหมาย เช่น เลือกห้องเดียวก็ใช้ชื่อห้องนั้น
+const exportScope = computed(() => {
+    if (selectedRooms.value.length === 1 && selectedDoctors.value.length === 0) {
+        return selectedRooms.value[0]
+    }
+    if (selectedDoctors.value.length === 1 && selectedRooms.value.length === 0) {
+        return selectedDoctors.value[0]
+    }
+    return 'all'
+})
+
+const resetExportFilters = () => {
+    exportDateMode.value = 'all'
+    exportDay.value = ''
+    exportMonth.value = ''
+    exportFrom.value = ''
+    exportTo.value = ''
+    exportCaseId.value = ''
+    selectedRooms.value = []
+    selectedDoctors.value = []
+    selectedStatuses.value = []
+    exportError.value = ''
+}
+
+const openExportDialog = () => {
+    resetExportFilters()
+    isExportModalOpen.value = true
+}
+
+const closeExportDialog = () => {
+    if (isExporting.value) return
+    isExportModalOpen.value = false
+}
+
+const confirmExport = async () => {
+    exportError.value = ''
+
+    if (!canExport.value) {
+        exportError.value = 'ไม่พบรายการจองตามเงื่อนไขที่เลือก'
+        return
+    }
+
+    isExporting.value = true
+
+    try {
+        const params = new URLSearchParams()
+        const { from, to } = exportDateRange.value
+
+        if (exportDateMode.value === 'single') {
+            params.set('id', exportCaseId.value)
+        } else {
+            if (selectedRooms.value.length) params.set('rooms', selectedRooms.value.join(','))
+            if (selectedDoctors.value.length) params.set('doctors', selectedDoctors.value.join(','))
+            if (selectedStatuses.value.length) params.set('statuses', selectedStatuses.value.join(','))
+            if (from) params.set('from', from)
+            if (to) params.set('to', to)
+        }
+
+        // ดึงจาก endpoint ที่บังคับสิทธิ์แอดมินฝั่ง server ไม่ใช้ข้อมูลที่ค้างอยู่ในหน้าจอ
+        const res = await fetch(`${EXPORT_API}/api/bookings/export?${params.toString()}`, {
+            headers: { 'x-user-license': localStorage.getItem('userLicense') || '' }
+        })
+
+        if (res.status === 403) {
+            exportError.value = 'ไม่มีสิทธิ์ export ข้อมูลทั้งระบบ ต้องเป็นแอดมินเท่านั้น'
+            return
+        }
+        if (!res.ok) {
+            exportError.value = 'ดึงข้อมูลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'
+            return
+        }
+
+        const rows = await res.json()
+        if (!Array.isArray(rows) || rows.length === 0) {
+            exportError.value = 'ไม่พบรายการจองตามเงื่อนไขที่เลือก'
+            return
+        }
+
+        const fileName = exportDateMode.value === 'single'
+            ? buildSingleFileName(rows[0].hn, rows[0].date)
+            : buildAdminFileName({
+                scope: exportScope.value,
+                month: exportDateMode.value === 'month' ? exportMonth.value : '',
+                from,
+                to
+            })
+
+        downloadCsv(fileName, buildBookingsCsv(rows, {
+            includeDoctor: true,
+            doctorNames: doctorMap.value
+        }))
+
+        isExportModalOpen.value = false
+        showMessage(`ดาวน์โหลด ${fileName} แล้ว (${rows.length} รายการ)`)
+    } catch (e) {
+        console.error('❌ export ไม่สำเร็จ:', e)
+        exportError.value = 'ระบบขัดข้อง ไม่สามารถติดต่อเซิร์ฟเวอร์ได้'
+    } finally {
+        isExporting.value = false
+    }
+}
 
 // ================= ระบบจัดเรียงคิวอัจฉริยะ =================
 const sortCases = (arr) => {
@@ -1700,8 +2053,240 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
     padding: 16px;
 }
 
+/* ===================== Export CSV (Admin) ===================== */
+.btn-export {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+
+    min-height: 42px;
+    padding: 8px 16px;
+
+    background: #ffffff;
+    color: #1e3a8a;
+    border: 1px solid #dbe3ec;
+    border-radius: 12px;
+
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.btn-export:hover {
+    background: #eef2f9;
+    border-color: #1e3a8a;
+}
+
+.btn-export .material-icons {
+    font-size: 18px;
+}
+
+.export-modal-card {
+    background: #ffffff;
+    width: min(92vw, 460px);
+    max-height: 88vh;
+    overflow-y: auto;
+
+    padding: 26px 22px;
+    border-radius: 20px;
+    text-align: center;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.export-section {
+    text-align: left;
+    margin-bottom: 18px;
+}
+
+.export-label {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+
+    color: #1e3a8a;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.export-label-hint {
+    color: #94a3b8;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.export-mode-switch {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 10px;
+}
+
+.export-mode-switch button {
+    flex: 1 1 auto;
+    min-height: 38px;
+    padding: 6px 12px;
+
+    background: #f0f2f5;
+    color: #64748b;
+    border: none;
+    border-radius: 10px;
+
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.export-mode-switch button.active {
+    background: #1e3a8a;
+    color: #ffffff;
+}
+
+.export-input {
+    width: 100%;
+    min-height: 42px;
+    padding: 8px 12px;
+
+    background: #ffffff;
+    border: 1px solid #dbe3ec;
+    border-radius: 10px;
+
+    color: #333;
+    font-family: inherit;
+    font-size: 14px;
+}
+
+.export-range-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.export-range-sep {
+    color: #94a3b8;
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+.export-chip-box {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+
+    max-height: 120px;
+    overflow-y: auto;
+
+    padding: 10px;
+    background: #f8fafc;
+    border: 1px solid #e6ecf4;
+    border-radius: 12px;
+}
+
+.export-chip-box.no-scroll {
+    max-height: none;
+    overflow: visible;
+}
+
+.export-chip {
+    min-height: 34px;
+    padding: 6px 12px;
+
+    background: #ffffff;
+    color: #475569;
+    border: 1px solid #dbe3ec;
+    border-radius: 999px;
+
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.15s;
+}
+
+.export-chip:hover {
+    border-color: #1e3a8a;
+}
+
+.export-chip.active {
+    background: #1e3a8a;
+    border-color: #1e3a8a;
+    color: #ffffff;
+}
+
+.export-hint {
+    margin: 0;
+    color: #94a3b8;
+    font-size: 12px;
+}
+
+.export-preview {
+    margin: 0 0 12px 0;
+    padding: 10px 12px;
+
+    background: #f5f7fa;
+    border-radius: 10px;
+
+    color: #4a5e75;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.export-error {
+    margin: 0 0 12px 0;
+    color: #c62828;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.export-reset-btn {
+    margin-bottom: 14px;
+    padding: 0;
+
+    background: none;
+    border: none;
+
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.btn-confirm-green:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* จอแคบ: ปุ่มเรียงแนวตั้งเต็มความกว้าง กันปุ่มเบียดกันจนกดพลาด */
+@media (max-width: 480px) {
+
+    .export-modal-card {
+        width: 94vw;
+        padding: 22px 16px;
+    }
+
+    .export-modal-card .modal-button-group {
+        flex-direction: column;
+    }
+
+    .export-modal-card .modal-button-group button {
+        width: 100%;
+        min-height: 44px;
+    }
+
+    .export-range-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}
+
 .top-toolbar {
     display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
     justify-content: flex-end;
     margin-bottom: 12px;
 }

@@ -343,6 +343,81 @@ app.get('/api/bookings', async (c) => {
   }
 })
 
+// ==========================================
+// 📤 Export รายการจองทั้งระบบ (เฉพาะ admin)
+// แยก endpoint ออกมาเพื่อบังคับสิทธิ์ได้เต็มที่
+// โดยไม่กระทบ GET /api/bookings ที่หน้า Calendar / Booking ฝั่ง user ยังต้องใช้
+// ==========================================
+app.get('/api/bookings/export', async (c) => {
+  try {
+    const role = await getRequesterRole(c)
+    if (!hasAdminAccess(role)) {
+      return c.json({ error: 'ต้องมีสิทธิ์แอดมินจึงจะ export ข้อมูลทั้งระบบได้' }, 403)
+    }
+
+    const splitList = (value: string | undefined) =>
+      (value || '').split(',').map((item) => item.trim()).filter(Boolean)
+
+    const rooms = splitList(c.req.query('rooms'))
+    const doctors = splitList(c.req.query('doctors'))
+    const statuses = splitList(c.req.query('statuses'))
+    const from = c.req.query('from')
+    const to = c.req.query('to')
+    const id = c.req.query('id')
+
+    const conditions: string[] = []
+    const params: (string | number)[] = []
+
+    // ใช้ placeholder ตามจำนวนสมาชิกจริง ค่าทุกตัว bind เข้าไป ไม่ต่อ string เอง
+    if (id) {
+      conditions.push('id = ?')
+      params.push(id)
+    }
+    if (rooms.length) {
+      conditions.push(`room IN (${rooms.map(() => '?').join(',')})`)
+      params.push(...rooms)
+    }
+    if (doctors.length) {
+      conditions.push(`doctorLicense IN (${doctors.map(() => '?').join(',')})`)
+      params.push(...doctors)
+    }
+    if (statuses.length) {
+      conditions.push(`status IN (${statuses.map(() => '?').join(',')})`)
+      params.push(...statuses)
+    }
+    if (from) {
+      conditions.push('date >= ?')
+      params.push(from)
+    }
+    if (to) {
+      conditions.push('date <= ?')
+      params.push(to)
+    }
+
+    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''
+
+    // 📌 เรียงแค่ date เหมือน GET /api/bookings เดิม เพื่อไม่ให้พึ่งคอลัมน์ที่ฐานข้อมูลจริงอาจยังไม่มี
+    //    (การเรียงตามห้อง/ลำดับคิว ทำต่อที่ฝั่ง frontend ใน sortForExport อยู่แล้ว)
+    const sql = `SELECT * FROM bookings ${where} ORDER BY date ASC`
+    const stmt = c.env.DB.prepare(sql)
+
+    // ไม่เรียก .bind() ตอนไม่มีพารามิเตอร์ กัน D1 บางเวอร์ชันโวยเรื่องจำนวน binding
+    const { results } = params.length > 0
+      ? await stmt.bind(...params).all()
+      : await stmt.all()
+
+    return c.json(results)
+  } catch (e: any) {
+    // ⚠️ ส่งข้อความจริงกลับไปด้วย จะได้รู้ว่าพังเพราะอะไร
+    //    เมื่อแก้เสร็จแล้วควรเอา detail ออก ไม่ให้ข้อมูลภายในหลุดไปหา client
+    console.error('❌ /api/bookings/export ล้มเหลว:', e)
+    return c.json(
+      { error: 'Export failed', detail: String(e?.message || e) },
+      500
+    )
+  }
+})
+
 app.post('/api/bookings', async (c) => {
   const b = await c.req.json()
   const requesterLicense = c.req.header('x-user-license')

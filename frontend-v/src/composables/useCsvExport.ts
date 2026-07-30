@@ -38,6 +38,8 @@ export interface Booking {
   room?: string
   queueOrder?: number
   doctorLicense?: string
+  /** ไม่มีในตาราง bookings แต่บางหน้าผสมชื่อแพทย์เข้ามาก่อนส่งมา export */
+  doctorName?: string
   [key: string]: unknown
 }
 
@@ -123,6 +125,18 @@ export const toDateKey = (value: unknown): string => {
 export const toCompactDate = (value: unknown): string => toDateKey(value).replace(/-/g, '')
 
 /**
+ * วันที่ดาวน์โหลด (ตามเวลาเครื่องผู้ใช้) สำหรับต่อท้ายชื่อไฟล์
+ * ทำให้รู้ว่าไฟล์นี้ดึงออกมาเมื่อไร และโหลดคนละวันแล้วไฟล์ไม่ทับกัน
+ *
+ * อยากได้เวลาด้วย (กันไฟล์ชนกันเมื่อโหลดหลายรอบในวันเดียว) ให้เพิ่มบรรทัดนี้ต่อท้าย:
+ *   + `-${pad(now.getHours())}${pad(now.getMinutes())}`
+ */
+export const downloadStamp = (now: Date = new Date()): string => {
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`
+}
+
+/**
  * เรียงลำดับให้ตรงกับที่ผู้ใช้เห็นบนหน้าจอ (ตรรกะเดียวกับ sortCases ใน HomeView)
  * วันผ่าตัด → ลำดับที่ผู้ใช้ลากจัดเอง → อายุมากก่อน → เพศหญิงก่อน
  * แล้วใส่เลขลำดับคิวโดยเริ่มนับใหม่ทุกวัน
@@ -181,10 +195,53 @@ export const filterByDateRange = (
   })
 }
 
-/** คอลัมน์ใน CSV — ยึดตามช่องที่กรอกได้จริงในหน้าจอง (BookingView.vue) */
-const CSV_COLUMNS: { header: string; value: (row: ExportRow, index: number) => string }[] = [
+/**
+ * 🔢 บังคับให้ Excel อ่าน HN เป็นข้อความ ไม่ตัดเลข 0 นำหน้าทิ้ง
+ *
+ * ปัญหา: HN ของโรงพยาบาลเป็นเลข 7 หลักและหลายเลขขึ้นต้นด้วย 0 (เช่น 0433557)
+ *        CSV เป็นไฟล์ข้อความล้วน ไม่มีที่เก็บว่าคอลัมน์นี้เป็นชนิดอะไร
+ *        Excel เลยเดาเองว่าเป็นตัวเลข แล้วตัด 0 ทิ้งเหลือ 433557 ซึ่งเป็น HN ที่ผิด
+ *        การครอบด้วย " เฉย ๆ ไม่ช่วย เพราะ Excel ยังเดาชนิดข้อมูลอยู่ดี
+ *
+ * วิธีแก้: เขียนค่าเป็น ="0433557" ซึ่ง Excel ตีความเป็นสูตรที่คืนค่าข้อความ
+ *
+ * ⚠️ ข้อแลกเปลี่ยน: เครื่องมืออื่น (pandas, Google Sheets, สคริปต์ทั่วไป)
+ *    จะเห็นค่าเป็น ="0433557" ตรง ๆ ต้องตัดส่วนครอบออกเอง
+ *    ถ้าไฟล์นี้ถูกเอาไปเข้าระบบอื่นมากกว่าเปิดด้วย Excel ให้ตั้งค่านี้เป็น false
+ *    ทางแก้ที่จบกว่านี้คือ export เป็น .xlsx ซึ่งกำหนดชนิด cell ได้จริง
+ */
+const EXCEL_TEXT_HN = true
+
+const excelSafeText = (value: unknown): string => {
+  const text = dash(value)
+  if (!EXCEL_TEXT_HN || text === '-') return text
+
+  // ครอบเฉพาะค่าที่เป็นตัวเลขล้วน เพื่อไม่ให้กลายเป็นช่องทางสร้างสูตรจากข้อมูลที่ผู้ใช้พิมพ์เอง
+  if (!/^\d+$/.test(text)) return text
+
+  return `="${text}"`
+}
+
+/** ตัวเลือกตอนสร้าง CSV — ฝั่ง admin ต้องการคอลัมน์แพทย์เพิ่ม */
+export interface CsvOptions {
+  /** เพิ่มคอลัมน์ ชื่อแพทย์ + เลขใบประกอบวิชาชีพ ต่อท้าย (ใช้ในหน้า admin) */
+  includeDoctor?: boolean
+  /** map license -> ชื่อแพทย์ สำหรับเติมคอลัมน์ชื่อแพทย์ */
+  doctorNames?: Record<string, string>
+}
+
+type ColumnDef = {
+  header: string
+  value: (row: ExportRow, index: number, options: CsvOptions) => string
+}
+
+/**
+ * คอลัมน์พื้นฐาน — ยึดตามช่องที่กรอกได้จริงในหน้าจอง (BookingView.vue)
+ * ฝั่ง user และ admin ใช้ชุดนี้เหมือนกัน 16 คอลัมน์แรก ไฟล์จึงเทียบกันได้ตรง ๆ
+ */
+const CSV_COLUMNS: ColumnDef[] = [
   { header: 'ลำดับคิว', value: (row, index) => String(row.__queueNo ?? index + 1) },
-  { header: 'HN', value: (row) => dash(row.hn) },
+  { header: 'HN', value: (row) => excelSafeText(row.hn) },
   { header: 'ชื่อ-นามสกุล', value: (row) => dash(row.fullName) },
   { header: 'อายุ', value: (row) => dash(row.age) },
   { header: 'เพศ', value: (row) => genderLabel(row.gender) },
@@ -202,6 +259,19 @@ const CSV_COLUMNS: { header: string; value: (row: ExportRow, index: number) => s
 ]
 
 /**
+ * คอลัมน์เพิ่มสำหรับหน้า admin — ต่อท้ายคอลัมน์พื้นฐาน
+ * วางไว้ท้ายสุดเพื่อให้ 16 คอลัมน์แรกตรงกับไฟล์ฝั่ง user เป๊ะ ๆ เอาไปเทียบกันได้
+ */
+const ADMIN_COLUMNS: ColumnDef[] = [
+  {
+    header: 'ชื่อแพทย์',
+    value: (row, _index, options) =>
+      dash(options.doctorNames?.[String(row.doctorLicense || '')] || row.doctorName),
+  },
+  { header: 'เลขใบประกอบวิชาชีพ', value: (row) => dash(row.doctorLicense) },
+]
+
+/**
  * escape ค่าตาม RFC 4180
  * ครอบด้วย " เมื่อค่ามี , หรือ " หรือขึ้นบรรทัดใหม่ และแปลง " ข้างในเป็น ""
  */
@@ -212,13 +282,14 @@ export const escapeCsvValue = (value: unknown): string => {
 }
 
 /** แปลงรายการจองเป็นข้อความ CSV (ยังไม่ใส่ BOM — ใส่ตอนสร้างไฟล์) */
-export const buildBookingsCsv = (rows: Booking[]): string => {
+export const buildBookingsCsv = (rows: Booking[], options: CsvOptions = {}): string => {
   const prepared = sortForExport(rows)
+  const columns = options.includeDoctor ? [...CSV_COLUMNS, ...ADMIN_COLUMNS] : CSV_COLUMNS
 
-  const headerLine = CSV_COLUMNS.map((column) => escapeCsvValue(column.header)).join(',')
+  const headerLine = columns.map((column) => escapeCsvValue(column.header)).join(',')
 
   const bodyLines = prepared.map((row, index) =>
-    CSV_COLUMNS.map((column) => escapeCsvValue(column.value(row, index))).join(','),
+    columns.map((column) => escapeCsvValue(column.value(row, index, options))).join(','),
   )
 
   return [headerLine, ...bodyLines].join(CRLF)
@@ -232,19 +303,53 @@ const safeFileToken = (value: unknown): string =>
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '') || 'unknown'
 
-/** bookings_{license}_{YYYYMMDD}-{YYYYMMDD}.csv */
+/** bookings_{license}_{ช่วงวันผ่าตัด}_exported{วันที่โหลด}.csv */
 export const buildRangeFileName = (license: unknown, from: unknown, to: unknown): string => {
   let start = toCompactDate(from)
   let end = toCompactDate(to)
   if (start && end && start > end) [start, end] = [end, start]
 
-  const range = start && end ? `${start}-${end}` : start || end || 'all'
-  return `bookings_${safeFileToken(license)}_${range}.csv`
+  const range = start && end
+    ? (start === end ? start : `${start}-${end}`)
+    : start || end || 'all'
+
+  return `bookings_${safeFileToken(license)}_${range}_exported${downloadStamp()}.csv`
 }
 
-/** booking_{HN}_{YYYYMMDD}.csv */
+/** booking_{HN}_{วันผ่าตัด}_exported{วันที่โหลด}.csv */
 export const buildSingleFileName = (hn: unknown, date: unknown): string =>
-  `booking_${safeFileToken(hn)}_${toCompactDate(date) || 'nodate'}.csv`
+  `booking_${safeFileToken(hn)}_${toCompactDate(date) || 'nodate'}_exported${downloadStamp()}.csv`
+
+/**
+ * ชื่อไฟล์ฝั่ง admin ที่สื่อความหมายตาม filter ที่เลือก
+ * เช่น bookings_OR-201_2026-07_exported20260731.csv
+ *      bookings_all_20260701-20260731_exported20260731.csv
+ *      bookings_all_exported20260731.csv  (ไม่ได้ระบุช่วงวันที่)
+ */
+export const buildAdminFileName = (parts: {
+  scope?: string
+  from?: unknown
+  to?: unknown
+  month?: string
+}): string => {
+  const scope = parts.scope ? safeFileToken(parts.scope) : 'all'
+  const stamp = `exported${downloadStamp()}`
+
+  if (parts.month) return `bookings_${scope}_${parts.month}_${stamp}.csv`
+
+  let start = toCompactDate(parts.from)
+  let end = toCompactDate(parts.to)
+  if (start && end && start > end) [start, end] = [end, start]
+
+  if (start && end) {
+    const range = start === end ? start : `${start}-${end}`
+    return `bookings_${scope}_${range}_${stamp}.csv`
+  }
+  if (start || end) return `bookings_${scope}_${start || end}_${stamp}.csv`
+
+  // ไม่ได้กรองวันที่ ไม่ต้องมีคำว่า all ซ้ำสองรอบให้รก
+  return `bookings_${scope}_${stamp}.csv`
+}
 
 /**
  * สั่งดาวน์โหลดไฟล์ CSV
@@ -280,6 +385,7 @@ export function useCsvExport() {
     sortForExport,
     buildRangeFileName,
     buildSingleFileName,
+    buildAdminFileName,
     toDateKey,
     toCompactDate,
     escapeCsvValue,
