@@ -13,7 +13,12 @@ export interface Booking {
   id?: number | string
   hn?: string
   fullName?: string
-  dob?: string
+  /**
+   * ⚠️ คอลัมน์ dob มีอยู่ใน DB แต่ไม่ได้ export
+   * เพราะหน้าจอง (BookingView.vue) ไม่มีช่องให้กรอกวันเกิด และส่ง `dob: null` ตายตัว
+   * ถ้าวันหน้าเพิ่มช่องวันเกิดในฟอร์ม ให้เพิ่มคอลัมน์กลับเข้า CSV_COLUMNS ด้วย
+   */
+  dob?: string | null
   age?: number | string
   gender?: string
   procedure?: string
@@ -78,9 +83,21 @@ const statusLabel = (value: unknown): string => {
   return STATUS_LABELS[key] || String(value)
 }
 
-/** รวมช่อง "วันที่ / หมายเหตุ" ของ CXR, ECG, Lab, Admission ให้อยู่คอลัมน์เดียว */
-const pairLabel = (dateValue: unknown, noteValue: unknown): string =>
-  `${dash(dateValue)} / ${dash(noteValue)}`
+/**
+ * รวมช่อง "วันที่ / หมายเหตุ" ของ CXR, ECG, Lab, Admission ให้อยู่คอลัมน์เดียว
+ * - มีครบทั้งคู่  → "2026-07-28 / normal"
+ * - มีอย่างเดียว  → แสดงเฉพาะค่าที่มี
+ * - ไม่มีเลย      → "-" (ไม่ใช่ "- / -" ที่รกตาเวลาเปิดในตาราง)
+ */
+const pairLabel = (dateValue: unknown, noteValue: unknown): string => {
+  const dateText = dash(dateValue)
+  const noteText = dash(noteValue)
+
+  if (dateText === '-' && noteText === '-') return '-'
+  if (dateText === '-') return noteText
+  if (noteText === '-') return dateText
+  return `${dateText} / ${noteText}`
+}
 
 /**
  * แปลงค่าวันที่เป็นคีย์ YYYY-MM-DD
@@ -164,12 +181,11 @@ export const filterByDateRange = (
   })
 }
 
-/** คอลัมน์ใน CSV — ลำดับตามที่ตกลงไว้ใน issue ห้ามสลับ */
+/** คอลัมน์ใน CSV — ยึดตามช่องที่กรอกได้จริงในหน้าจอง (BookingView.vue) */
 const CSV_COLUMNS: { header: string; value: (row: ExportRow, index: number) => string }[] = [
   { header: 'ลำดับคิว', value: (row, index) => String(row.__queueNo ?? index + 1) },
   { header: 'HN', value: (row) => dash(row.hn) },
   { header: 'ชื่อ-นามสกุล', value: (row) => dash(row.fullName) },
-  { header: 'วันเกิด', value: (row) => dash(row.dob) },
   { header: 'อายุ', value: (row) => dash(row.age) },
   { header: 'เพศ', value: (row) => genderLabel(row.gender) },
   { header: 'โรคประจำตัว', value: (row) => dash(row.underlying) },
