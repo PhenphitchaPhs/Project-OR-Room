@@ -121,6 +121,14 @@
 
                 </div>
 
+                <!-- แถบเครื่องมือของการ์ดคิว: ปุ่ม Export CSV แสดงทุกแท็บ -->
+                <div class="queue-toolbar">
+                    <button class="btn-export" @click="openExportDialog">
+                        <span class="material-icons">download</span>
+                        Export CSV
+                    </button>
+                </div>
+
                 <div class="tab-content-wrapper">
                     <div v-if="filter === FILTERS.TODAY">
 
@@ -268,6 +276,12 @@
                                             <button class="btn-delete" @click.stop="deleteCase(item.id)">
                                                 Cancel
                                             </button>
+
+                                            <button class="btn-export-case" title="Export คิวนี้เป็น CSV"
+                                                @click.stop="exportSingleCase(item)">
+                                                <span class="material-icons">download</span>
+                                                CSV
+                                            </button>
                                         </div>
                                         <div class="see-more-toggle">
                                             <span class="see-more-text">
@@ -396,6 +410,12 @@
 
                                             <button class="btn-delete" @click.stop="deleteCase(item.id)">
                                                 Cancel
+                                            </button>
+
+                                            <button class="btn-export-case" title="Export คิวนี้เป็น CSV"
+                                                @click.stop="exportSingleCase(item)">
+                                                <span class="material-icons">download</span>
+                                                CSV
                                             </button>
                                         </div>
                                         <div class="see-more-toggle">
@@ -703,6 +723,12 @@
 
                                         </button>
 
+                                        <button class="btn-export-case" title="Export คิวนี้เป็น CSV"
+                                            @click.stop="exportSingleCase(item)">
+                                            <span class="material-icons">download</span>
+                                            CSV
+                                        </button>
+
                                     </div>
                                     <div class="see-more-toggle">
                                         <span class="see-more-text">
@@ -815,6 +841,73 @@
         </div>
     </Transition>
 
+    <!-- ===== Export CSV: เลือกคิวเดียว หรือ หลายคิวตามช่วงวันที่ ===== -->
+    <Transition name="fade">
+        <div v-if="isExportModalOpen" class="modal-overlay-center" @click.self="closeExportDialog">
+            <div class="export-modal-card" role="dialog" aria-modal="true" aria-labelledby="export-dialog-title">
+
+                <h2 id="export-dialog-title" class="modal-msg-title">
+                    Export รายการจองเป็น CSV
+                </h2>
+
+                <div class="export-mode-switch">
+                    <button :class="{ active: exportMode === 'single' }" @click="exportMode = 'single'">
+                        คิวเดียว
+                    </button>
+                    <button :class="{ active: exportMode === 'range' }" @click="exportMode = 'range'">
+                        ช่วงวันที่
+                    </button>
+                </div>
+
+                <div v-if="exportMode === 'single'" class="export-field">
+                    <label for="export-case-select">เลือกคิวที่ต้องการ</label>
+
+                    <select id="export-case-select" v-model="exportCaseId" class="export-select">
+                        <option value="">— เลือกคิว —</option>
+                        <option v-for="item in exportableCases" :key="item.id" :value="item.id">
+                            {{ item.date }} · HN {{ item.hn }} · {{ item.fullName }}
+                        </option>
+                    </select>
+
+                    <p v-if="exportableCases.length === 0" class="export-hint">
+                        ยังไม่มีรายการจองในระบบ
+                    </p>
+                </div>
+
+                <div v-else class="export-field">
+                    <label for="export-range-picker">ช่วงวันผ่าตัด</label>
+
+                    <!-- ไม่ใช้ teleport: ให้ปฏิทินอยู่ในการ์ด จะได้ไม่ถูก overlay (z-index 4000) ทับ -->
+                    <VueDatePicker id="export-range-picker" v-model="exportRange" range auto-apply
+                        :enable-time-picker="false" format="yyyy-MM-dd" placeholder="เลือกวันเริ่มต้น – วันสิ้นสุด" />
+
+                    <button v-if="exportRange" class="export-clear-btn" @click="exportRange = null">
+                        ล้างช่วงวันที่
+                    </button>
+                </div>
+
+                <p class="export-preview" aria-live="polite">
+                    {{ exportPreviewText }}
+                </p>
+
+                <p v-if="exportError" class="export-error">
+                    {{ exportError }}
+                </p>
+
+                <div class="modal-button-group">
+                    <button class="btn-cancel-gray" @click="closeExportDialog">
+                        Cancel
+                    </button>
+
+                    <button class="btn-confirm-green" :disabled="!canExport || isExporting" @click="confirmExport">
+                        {{ isExporting ? 'กำลังสร้างไฟล์…' : 'ดาวน์โหลด CSV' }}
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </Transition>
+
 
 </template>
 
@@ -826,6 +919,7 @@ import { useRouter, useRoute } from 'vue-router'
 import VueDatePicker from '@vuepic/vue-datepicker'
 import draggable from 'vuedraggable'
 import '@vuepic/vue-datepicker/dist/main.css'
+import { useCsvExport } from '../composables/useCsvExport'
 
 const route = useRoute() // 🌟 ประกาศใช้งาน
 
@@ -1329,6 +1423,140 @@ const notCompleteCases = computed(() =>
 
 
 
+// ================= Export CSV =================
+const {
+    buildBookingsCsv,
+    downloadCsv,
+    filterOwnBookings,
+    filterByDateRange,
+    sortForExport,
+    buildRangeFileName,
+    buildSingleFileName,
+    toDateKey
+} = useCsvExport()
+
+const isExportModalOpen = ref(false)
+const exportMode = ref('range')      // 'single' | 'range'
+const exportRange = ref(null)        // [Date, Date] จาก VueDatePicker
+const exportCaseId = ref('')
+const isExporting = ref(false)
+const exportError = ref('')
+
+// กันเหนียวอีกชั้น: export ได้เฉพาะรายการที่ doctorLicense ตรงกับคนที่ล็อกอินอยู่
+const ownBookings = computed(() =>
+    filterOwnBookings(bookings.value, userLicense.value)
+)
+
+const exportableCases = computed(() => sortForExport(ownBookings.value))
+
+const exportRangeKeys = computed(() => {
+    const range = Array.isArray(exportRange.value) ? exportRange.value : []
+    return {
+        from: toDateKey(range[0]),
+        to: toDateKey(range[1] || range[0])
+    }
+})
+
+// รายการที่จะถูกเขียนลงไฟล์จริง ใช้ทั้งตอน preview และตอนกดยืนยัน
+const exportRows = computed(() => {
+    if (exportMode.value === 'single') {
+        if (!exportCaseId.value) return []
+        const found = ownBookings.value.find(
+            item => String(item.id) === String(exportCaseId.value)
+        )
+        return found ? [found] : []
+    }
+
+    const { from, to } = exportRangeKeys.value
+    if (!from) return []
+    return filterByDateRange(ownBookings.value, from, to)
+})
+
+const canExport = computed(() => exportRows.value.length > 0)
+
+const exportPreviewText = computed(() => {
+    if (exportMode.value === 'single') {
+        return exportCaseId.value
+            ? 'จะ export 1 รายการ'
+            : 'เลือกคิวที่ต้องการ export'
+    }
+
+    const { from, to } = exportRangeKeys.value
+    if (!from) return 'เลือกช่วงวันที่ที่ต้องการ export'
+
+    const count = exportRows.value.length
+    if (count === 0) return `ไม่พบรายการจองระหว่าง ${from} ถึง ${to}`
+    return `จะ export ${count} รายการ (${from} ถึง ${to})`
+})
+
+const openExportDialog = () => {
+    exportError.value = ''
+    exportCaseId.value = ''
+    exportRange.value = null
+    exportMode.value = 'range'
+    isExportModalOpen.value = true
+}
+
+const closeExportDialog = () => {
+    if (isExporting.value) return
+    isExportModalOpen.value = false
+}
+
+const confirmExport = () => {
+    exportError.value = ''
+
+    const rows = exportRows.value
+    if (rows.length === 0) {
+        exportError.value = 'ไม่พบรายการจองตามเงื่อนไขที่เลือก'
+        return
+    }
+
+    isExporting.value = true
+
+    try {
+        const fileName = exportMode.value === 'single'
+            ? buildSingleFileName(rows[0].hn, rows[0].date)
+            : buildRangeFileName(
+                userLicense.value,
+                exportRangeKeys.value.from,
+                exportRangeKeys.value.to
+            )
+
+        downloadCsv(fileName, buildBookingsCsv(rows))
+
+        isExportModalOpen.value = false
+        showMessageDialog(`ดาวน์โหลด ${fileName} แล้ว (${rows.length} รายการ)`)
+    } catch (error) {
+        console.error('❌ สร้างไฟล์ CSV ไม่สำเร็จ:', error)
+        exportError.value = 'สร้างไฟล์ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'
+    } finally {
+        isExporting.value = false
+    }
+}
+
+// export คิวเดียวจากปุ่มบนการ์ด โดยไม่ต้องเปิด modal
+const exportSingleCase = (item) => {
+    if (!item?.id) return
+
+    const owned = ownBookings.value.find(
+        row => String(row.id) === String(item.id)
+    )
+
+    if (!owned) {
+        showMessageDialog('ไม่สามารถ export รายการนี้ได้ เนื่องจากไม่ใช่คิวของคุณ')
+        return
+    }
+
+    try {
+        const fileName = buildSingleFileName(owned.hn, owned.date)
+        downloadCsv(fileName, buildBookingsCsv([owned]))
+        showMessageDialog(`ดาวน์โหลด ${fileName} แล้ว`)
+    } catch (error) {
+        console.error('❌ สร้างไฟล์ CSV ไม่สำเร็จ:', error)
+        showMessageDialog('สร้างไฟล์ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง')
+    }
+}
+
 // ================= ฟังก์ชันรีเซ็ตคิว =================
 const resetQueue = async () => {
     const resetQueue = () => {
@@ -1400,7 +1628,10 @@ const fetchBookings = async () => {
     isLoading.value = true
     try {
         const license = localStorage.getItem('userLicense')
-        const response = await fetch(`${API_URL}?license=${license}`)
+        const response = await fetch(`${API_URL}?license=${encodeURIComponent(license || '')}`, {
+            // ส่ง license ของคนที่ล็อกอินไปด้วย ให้ backend ตรวจได้ว่าไม่ได้ดึงข้อมูลของแพทย์ท่านอื่น
+            headers: { 'x-user-license': license || '' }
+        })
         const data = await response.json()
         bookings.value = Array.isArray(data) ? data : []
     } catch (error) { console.error("❌ ดึงคิวไม่สำเร็จ:", error) }
@@ -2366,6 +2597,198 @@ input[type="checkbox"] {
     }
 }
 
+/* ===================== Export CSV ===================== */
+.queue-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    padding: 12px 15px 0 15px;
+    background: #f8f9fa;
+}
+
+.btn-export {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+
+    min-height: 40px;
+    padding: 8px 16px;
+
+    background: #ffffff;
+    color: #1a3a5f;
+    border: 1px solid #d6e0ec;
+    border-radius: 10px;
+
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.btn-export:hover {
+    background: #eef2f7;
+    border-color: #1a3a5f;
+}
+
+.btn-export .material-icons {
+    font-size: 18px;
+}
+
+/* ปุ่ม export บนการ์ดแต่ละเคส */
+.btn-export-case {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+
+    background: #eef2f7;
+    color: #1a3a5f;
+    border: 1px solid #d6e0ec;
+    border-radius: 8px;
+    padding: 6px 12px;
+
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.btn-export-case:hover {
+    background: #dde6f1;
+}
+
+.btn-export-case .material-icons {
+    font-size: 16px;
+}
+
+.export-modal-card {
+    background: #ffffff;
+    width: min(90vw, 380px);
+    max-height: 90vh;
+    overflow-y: auto;
+
+    padding: 26px 20px;
+    border-radius: 20px;
+    text-align: center;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.export-mode-switch {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 18px;
+}
+
+.export-mode-switch button {
+    flex: 1;
+    min-height: 40px;
+
+    background: #f0f2f5;
+    color: #64748b;
+    border: none;
+    border-radius: 10px;
+
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.export-mode-switch button.active {
+    background: #1a3a5f;
+    color: #ffffff;
+}
+
+.export-field {
+    text-align: left;
+    margin-bottom: 16px;
+}
+
+.export-field label {
+    display: block;
+    margin-bottom: 6px;
+
+    color: #1a3a5f;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.export-select {
+    width: 100%;
+    min-height: 44px;
+    padding: 8px 12px;
+
+    background: #ffffff;
+    border: 1px solid #d6e0ec;
+    border-radius: 10px;
+
+    color: #333;
+    font-family: inherit;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+.export-clear-btn {
+    margin-top: 8px;
+    padding: 0;
+
+    background: none;
+    border: none;
+
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.export-hint {
+    margin: 8px 0 0 0;
+    color: #94a3b8;
+    font-size: 12px;
+}
+
+.export-preview {
+    margin: 0 0 14px 0;
+    padding: 10px 12px;
+
+    background: #f5f7fa;
+    border-radius: 10px;
+
+    color: #4a5e75;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.export-error {
+    margin: 0 0 14px 0;
+    color: #c62828;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.btn-confirm-green:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* จอแคบ: ปุ่มเรียงแนวตั้งเต็มความกว้าง กันปุ่มเบียดกันจนกดพลาด */
+@media (max-width: 480px) {
+
+    .export-modal-card {
+        width: min(94vw, 380px);
+        padding: 22px 16px;
+    }
+
+    .export-modal-card .modal-button-group {
+        flex-direction: column;
+    }
+
+    .export-modal-card .modal-button-group button {
+        width: 100%;
+        min-height: 44px;
+    }
+}
+
 @media (max-width: 768px) {
 
     .top-nav {
@@ -2442,6 +2865,10 @@ input[type="checkbox"] {
         flex: unset !important;
     }
 
+    /* มีปุ่ม CSV เพิ่มเข้ามา ต้องยอมให้ตกบรรทัดได้ ไม่ให้ปุ่มถูกบีบ */
+    .case-actions {
+        flex-wrap: wrap;
+    }
 
 }
 

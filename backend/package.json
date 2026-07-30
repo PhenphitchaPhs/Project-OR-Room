@@ -14,6 +14,7 @@
     "hono": "^4.11.4"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260730.1",
     "@types/bcryptjs": "^2.4.6",
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^20.11.17",

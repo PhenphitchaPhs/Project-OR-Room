@@ -319,6 +319,20 @@ app.delete('/api/users/:license', async (c) => {
 
 app.get('/api/bookings', async (c) => {
   const license = c.req.query('license')
+  const requesterLicense = c.req.header('x-user-license')
+
+  // 🛡️ กันการดึง (และ export) ข้อมูลของแพทย์ท่านอื่น
+  // ถ้าผู้เรียกบอก license ตัวเองมาแล้วไม่ตรงกับที่ขอ ต้องเป็น admin เท่านั้นจึงผ่าน
+  if (license && requesterLicense && license !== requesterLicense) {
+    const requester = await c.env.DB.prepare('SELECT role FROM users WHERE license = ?')
+      .bind(requesterLicense)
+      .first<{ role: string }>()
+
+    if (requester?.role !== 'admin') {
+      return c.json({ error: 'ไม่มีสิทธิ์เข้าถึงข้อมูลการจองของแพทย์ท่านอื่น' }, 403)
+    }
+  }
+
   try {
     const { results } = license
       ? await c.env.DB.prepare('SELECT * FROM bookings WHERE doctorLicense = ? ORDER BY date ASC').bind(license).all()
