@@ -1525,7 +1525,7 @@ const confirmExport = () => {
         downloadCsv(fileName, buildBookingsCsv(rows))
 
         isExportModalOpen.value = false
-        showMessageDialog(`ดาวน์โหลด ${fileName} แล้ว (${rows.length} รายการ)`)
+        showMessageDialog(`ดาวน์โหลดแล้ว ${rows.length} รายการ\n${fileName}`)
     } catch (error) {
         console.error('❌ สร้างไฟล์ CSV ไม่สำเร็จ:', error)
         exportError.value = 'สร้างไฟล์ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'
@@ -1550,7 +1550,7 @@ const exportSingleCase = (item) => {
     try {
         const fileName = buildSingleFileName(owned.hn, owned.date)
         downloadCsv(fileName, buildBookingsCsv([owned]))
-        showMessageDialog(`ดาวน์โหลด ${fileName} แล้ว`)
+        showMessageDialog(`ดาวน์โหลดแล้ว\n${fileName}`)
     } catch (error) {
         console.error('❌ สร้างไฟล์ CSV ไม่สำเร็จ:', error)
         showMessageDialog('สร้างไฟล์ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง')
@@ -1993,7 +1993,12 @@ const markAsSucceed = async (id) => {
 .modal-msg-title {
     color: #2c4c87;
     font-size: 1.1rem;
+    line-height: 1.6;
     margin-bottom: 25px;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    /* ให้ \n ในข้อความขึ้นบรรทัดใหม่จริง จะได้แยกชื่อไฟล์ออกจากข้อความหลัก */
+    white-space: pre-line;
 }
 
 .modal-button-group {
