@@ -125,7 +125,7 @@
                 <div class="queue-toolbar">
                     <button class="btn-export" @click="openExportDialog">
                         <span class="material-icons">download</span>
-                        Export CSV
+                        Export
                     </button>
                 </div>
 
@@ -887,13 +887,16 @@
                 </div>
 
                 <div v-else class="export-field">
-                    <label for="export-range-picker">ช่วงวันผ่าตัด</label>
+                    <label for="export-from">ช่วงวันผ่าตัด</label>
 
-                    <!-- ไม่ใช้ teleport: ให้ปฏิทินอยู่ในการ์ด จะได้ไม่ถูก overlay (z-index 4000) ทับ -->
-                    <VueDatePicker id="export-range-picker" v-model="exportRange" range auto-apply
-                        :enable-time-picker="false" format="yyyy-MM-dd" placeholder="เลือกวันเริ่มต้น – วันสิ้นสุด" />
+                    <!-- ใช้ช่องวันที่ของเบราว์เซอร์ ปฏิทินจะถูกวาดนอกหน้าเว็บ ไม่ถูกกรอบ modal ตัด -->
+                    <div class="export-range-row">
+                        <input id="export-from" v-model="exportFrom" type="date" class="export-input" />
+                        <span class="export-range-sep">ถึง</span>
+                        <input id="export-to" v-model="exportTo" type="date" class="export-input" />
+                    </div>
 
-                    <button v-if="exportRange" class="export-clear-btn" @click="exportRange = null">
+                    <button v-if="exportFrom || exportTo" class="export-clear-btn" @click="clearExportRange">
                         ล้างช่วงวันที่
                     </button>
                 </div>
@@ -1453,7 +1456,8 @@ const {
 const isExportModalOpen = ref(false)
 const exportFormat = ref('csv')      // 'csv' | 'pdf'
 const exportMode = ref('range')      // 'single' | 'range'
-const exportRange = ref(null)        // [Date, Date] จาก VueDatePicker
+const exportFrom = ref('')           // 'YYYY-MM-DD'
+const exportTo = ref('')             // 'YYYY-MM-DD'
 const exportCaseId = ref('')
 const isExporting = ref(false)
 const exportError = ref('')
@@ -1466,12 +1470,16 @@ const ownBookings = computed(() =>
 const exportableCases = computed(() => sortForExport(ownBookings.value))
 
 const exportRangeKeys = computed(() => {
-    const range = Array.isArray(exportRange.value) ? exportRange.value : []
-    return {
-        from: toDateKey(range[0]),
-        to: toDateKey(range[1] || range[0])
-    }
+    const from = toDateKey(exportFrom.value)
+    const to = toDateKey(exportTo.value)
+    // เลือกมาวันเดียวก็ถือว่า export เฉพาะวันนั้น
+    return { from: from || to, to: to || from }
 })
+
+const clearExportRange = () => {
+    exportFrom.value = ''
+    exportTo.value = ''
+}
 
 // รายการที่จะถูกเขียนลงไฟล์จริง ใช้ทั้งตอน preview และตอนกดยืนยัน
 const exportRows = computed(() => {
@@ -1509,7 +1517,8 @@ const openExportDialog = () => {
     exportError.value = ''
     exportFormat.value = 'csv'
     exportCaseId.value = ''
-    exportRange.value = null
+    exportFrom.value = ''
+    exportTo.value = ''
     exportMode.value = 'range'
     isExportModalOpen.value = true
 }
@@ -2769,6 +2778,32 @@ input[type="checkbox"] {
     font-weight: 700;
 }
 
+.export-input {
+    width: 100%;
+    min-height: 44px;
+    padding: 8px 12px;
+
+    background: #ffffff;
+    border: 1px solid #d6e0ec;
+    border-radius: 10px;
+
+    color: #333;
+    font-family: inherit;
+    font-size: 15px;
+}
+
+.export-range-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.export-range-sep {
+    color: #94a3b8;
+    font-size: 13px;
+    white-space: nowrap;
+}
+
 .export-select {
     width: 100%;
     min-height: 44px;
@@ -2843,6 +2878,11 @@ input[type="checkbox"] {
     .export-modal-card .modal-button-group button {
         width: 100%;
         min-height: 44px;
+    }
+
+    .export-range-row {
+        flex-direction: column;
+        align-items: stretch;
     }
 }
 
