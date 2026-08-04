@@ -847,8 +847,20 @@
             <div class="export-modal-card" role="dialog" aria-modal="true" aria-labelledby="export-dialog-title">
 
                 <h2 id="export-dialog-title" class="modal-msg-title">
-                    Export รายการจองเป็น CSV
+                    Export รายการจอง
                 </h2>
+
+                <div class="export-field">
+                    <label>รูปแบบไฟล์</label>
+                    <div class="export-mode-switch">
+                        <button :class="{ active: exportFormat === 'csv' }" @click="exportFormat = 'csv'">
+                            CSV (ตาราง)
+                        </button>
+                        <button :class="{ active: exportFormat === 'pdf' }" @click="exportFormat = 'pdf'">
+                            PDF (รายงาน)
+                        </button>
+                    </div>
+                </div>
 
                 <div class="export-mode-switch">
                     <button :class="{ active: exportMode === 'single' }" @click="exportMode = 'single'">
@@ -900,7 +912,7 @@
                     </button>
 
                     <button class="btn-confirm-green" :disabled="!canExport || isExporting" @click="confirmExport">
-                        {{ isExporting ? 'กำลังสร้างไฟล์…' : 'ดาวน์โหลด CSV' }}
+                        {{ isExporting ? 'กำลังสร้างไฟล์…' : `ดาวน์โหลด ${exportFormat.toUpperCase()}` }}
                     </button>
                 </div>
 
@@ -920,6 +932,7 @@ import VueDatePicker from '@vuepic/vue-datepicker'
 import draggable from 'vuedraggable'
 import '@vuepic/vue-datepicker/dist/main.css'
 import { useCsvExport } from '../composables/useCsvExport'
+import { buildQueueReportPdf, buildReportFileName, formatThaiDate } from '../components/report/QueueReportPdf'
 
 const route = useRoute() // 🌟 ประกาศใช้งาน
 
@@ -1427,15 +1440,18 @@ const notCompleteCases = computed(() =>
 const {
     buildBookingsCsv,
     downloadCsv,
+    downloadBlob,
     filterOwnBookings,
     filterByDateRange,
     sortForExport,
     buildRangeFileName,
     buildSingleFileName,
-    toDateKey
+    toDateKey,
+    downloadStamp
 } = useCsvExport()
 
 const isExportModalOpen = ref(false)
+const exportFormat = ref('csv')      // 'csv' | 'pdf'
 const exportMode = ref('range')      // 'single' | 'range'
 const exportRange = ref(null)        // [Date, Date] จาก VueDatePicker
 const exportCaseId = ref('')
@@ -1491,6 +1507,7 @@ const exportPreviewText = computed(() => {
 
 const openExportDialog = () => {
     exportError.value = ''
+    exportFormat.value = 'csv'
     exportCaseId.value = ''
     exportRange.value = null
     exportMode.value = 'range'
@@ -1502,7 +1519,14 @@ const closeExportDialog = () => {
     isExportModalOpen.value = false
 }
 
-const confirmExport = () => {
+// ข้อความบอกช่วงวันที่ที่จะพิมพ์บนหัวรายงาน PDF
+const exportRangeLabel = computed(() => {
+    const { from, to } = exportRangeKeys.value
+    if (!from) return '-'
+    return from === to ? formatThaiDate(from) : `${formatThaiDate(from)} - ${formatThaiDate(to)}`
+})
+
+const confirmExport = async () => {
     exportError.value = ''
 
     const rows = exportRows.value
@@ -1514,6 +1538,34 @@ const confirmExport = () => {
     isExporting.value = true
 
     try {
+        if (exportFormat.value === 'pdf') {
+            const fileName = buildReportFileName(
+                {
+                    license: userLicense.value,
+                    hn: rows[0].hn,
+                    from: exportMode.value === 'single' ? toDateKey(rows[0].date) : exportRangeKeys.value.from,
+                    to: exportRangeKeys.value.to,
+                    mode: exportMode.value
+                },
+                downloadStamp()
+            )
+
+            const blob = await buildQueueReportPdf(rows, {
+                doctorName: doctorName.value || '-',
+                license: userLicense.value || '-',
+                room: localStorage.getItem('orNumber') || '-',
+                rangeLabel: exportMode.value === 'single'
+                    ? formatThaiDate(rows[0].date)
+                    : exportRangeLabel.value,
+                mode: exportMode.value
+            })
+
+            downloadBlob(fileName, blob)
+            isExportModalOpen.value = false
+            showMessageDialog(`ดาวน์โหลดแล้ว ${rows.length} รายการ\n${fileName}`)
+            return
+        }
+
         const fileName = exportMode.value === 'single'
             ? buildSingleFileName(rows[0].hn, rows[0].date)
             : buildRangeFileName(
@@ -1527,7 +1579,7 @@ const confirmExport = () => {
         isExportModalOpen.value = false
         showMessageDialog(`ดาวน์โหลดแล้ว ${rows.length} รายการ\n${fileName}`)
     } catch (error) {
-        console.error('❌ สร้างไฟล์ CSV ไม่สำเร็จ:', error)
+        console.error('❌ สร้างไฟล์ไม่สำเร็จ:', error)
         exportError.value = 'สร้างไฟล์ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'
     } finally {
         isExporting.value = false

@@ -55,7 +55,7 @@ const dash = (value: unknown): string => {
   return text === '' ? '-' : text
 }
 
-const genderLabel = (value: unknown): string => {
+export const genderLabel = (value: unknown): string => {
   const key = String(value || '').toLowerCase()
   if (key === 'male' || key === 'ชาย') return 'ชาย'
   if (key === 'female' || key === 'หญิง') return 'หญิง'
@@ -79,7 +79,7 @@ const STATUS_LABELS: Record<string, string> = {
   canceled: 'ยกเลิก',
 }
 
-const statusLabel = (value: unknown): string => {
+export const statusLabel = (value: unknown): string => {
   const key = String(value || '').toLowerCase().trim()
   if (!key) return STATUS_LABELS.upcoming
   return STATUS_LABELS[key] || String(value)
@@ -358,8 +358,8 @@ export const buildAdminFileName = (parts: {
  * หมายเหตุ: Excel จะตัดเลข 0 หน้าของ HN (เช่น 00123 → 123) ซึ่งเป็นพฤติกรรมของ Excel เอง
  * แก้ไม่ได้ด้วยการครอบ " แต่ผู้ใช้เลี่ยงได้โดยใช้เมนู Data > From Text/CSV แล้วตั้งคอลัมน์เป็น Text
  */
-export const downloadCsv = (fileName: string, csvText: string): void => {
-  const blob = new Blob([BOM + csvText], { type: 'text/csv;charset=utf-8;' })
+/** สั่งดาวน์โหลด Blob ใด ๆ (ใช้ร่วมกันทั้ง CSV และ PDF) */
+export const downloadBlob = (fileName: string, blob: Blob): void => {
   const url = URL.createObjectURL(blob)
 
   const link = document.createElement('a')
@@ -376,10 +376,15 @@ export const downloadCsv = (fileName: string, csvText: string): void => {
   setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
+export const downloadCsv = (fileName: string, csvText: string): void => {
+  downloadBlob(fileName, new Blob([BOM + csvText], { type: 'text/csv;charset=utf-8;' }))
+}
+
 export function useCsvExport() {
   return {
     buildBookingsCsv,
     downloadCsv,
+    downloadBlob,
     filterOwnBookings,
     filterByDateRange,
     sortForExport,
@@ -388,6 +393,7 @@ export function useCsvExport() {
     buildAdminFileName,
     toDateKey,
     toCompactDate,
+    downloadStamp,
     escapeCsvValue,
   }
 }
