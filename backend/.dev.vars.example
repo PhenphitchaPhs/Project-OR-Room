@@ -1,0 +1,15 @@
+# คัดลอกไฟล์นี้เป็น .dev.vars แล้วใส่ค่าจริง สำหรับรัน `npx wrangler dev` ในเครื่อง
+# .dev.vars อยู่ใน .gitignore แล้ว จะไม่ถูก commit
+#
+# ค่าที่ใช้ตอน dev ไม่จำเป็นต้องตรงกับ production
+# สร้างค่าใหม่ได้ด้วย
+#   node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
+
+JWT_SECRET=ใส่ค่าสุ่มสำหรับ dev ตรงนี้
+
+# คีย์ของ EmailJS และ Google Calendar ใส่เพิ่มได้ถ้าต้องทดสอบ OTP หรือวันหยุด
+# EMAILJS_SERVICE_ID=
+# EMAILJS_TEMPLATE_ID=
+# EMAILJS_PUBLIC_KEY=
+# EMAILJS_PRIVATE_KEY=
+# HOLIDAY_API_KEY=

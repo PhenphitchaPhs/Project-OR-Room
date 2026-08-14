@@ -27,3 +27,6 @@ lerna-debug.log*
 
 # misc
 .DS_Store
+
+# ข้อมูลตัวอย่างสำหรับทดสอบในเครื่อง มีรหัสผ่านอยู่ในไฟล์ ห้ามขึ้น repo
+seed-local.sql

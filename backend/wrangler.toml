@@ -2,6 +2,17 @@ name = "or-room-backend"
 main = "src/index.ts"
 compatibility_date = "2025-01-01"
 
+# 🔑 ความลับที่ต้องตั้งด้วย wrangler secret เท่านั้น ห้ามใส่ไว้ในไฟล์นี้
+#    (ไฟล์นี้อยู่ใน repo ใครเห็น repo ก็เห็นค่าที่เขียนไว้ที่นี่)
+#
+#    wrangler secret put JWT_SECRET
+#
+#    สร้างค่าสุ่มยาว ๆ ด้วยคำสั่งนี้แล้ววางตอนที่ถาม
+#    node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
+#
+#    ถ้าเปลี่ยนค่านี้ token ที่ออกไปแล้วทั้งหมดจะใช้ไม่ได้ทันที ผู้ใช้ต้อง login ใหม่
+#    ซึ่งเป็นวิธีเดียวที่มีตอนนี้ในการเตะทุกคนออกจากระบบ (ยังไม่มี token revocation รายคน)
+
 [[d1_databases]]
 binding = "DB" 
 database_name = "or_room_db"
