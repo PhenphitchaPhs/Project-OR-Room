@@ -92,9 +92,10 @@
 
         <div class="dashboard-container">
             <div class="top-toolbar">
-                <button class="btn-export" @click="openExportDialog">
+                <!-- ปุ่มเดียว เลือก CSV / PDF ในกล่อง export (filter ชุดเดียวกันทั้งสองแบบ) -->
+                <button v-if="isAdmin" class="btn-export" @click="openExportDialog()">
                     <span class="material-icons">download</span>
-                    Export CSV
+                    Export
                 </button>
 
                 <div class="search-box">
@@ -581,6 +582,21 @@
                     Export รายการจองทั้งระบบ
                 </h2>
 
+                <!-- รูปแบบไฟล์ -->
+                <div class="export-section">
+                    <label class="export-label">รูปแบบไฟล์</label>
+
+                    <div class="export-mode-switch">
+                        <button v-for="format in exportFormats" :key="format.value"
+                            :class="{ active: exportFormat === format.value }" @click="exportFormat = format.value">
+                            <span class="material-icons">{{ format.icon }}</span>
+                            {{ format.label }}
+                        </button>
+                    </div>
+
+                    <p class="export-hint">{{ exportFormatHint }}</p>
+                </div>
+
                 <!-- ขอบเขตวันที่ -->
                 <div class="export-section">
                     <label class="export-label">ขอบเขต</label>
@@ -666,8 +682,25 @@
                     </div>
                 </div>
 
+                <!-- การจัดกลุ่มในรายงาน PDF (CSV เป็นตารางดิบ ไม่มีหัวกลุ่ม จึงไม่ต้องถาม) -->
+                <div v-if="exportFormat === 'pdf' && exportDateMode !== 'single'" class="export-section">
+                    <label class="export-label">จัดกลุ่มรายงาน</label>
+
+                    <div class="export-mode-switch">
+                        <button v-for="option in groupByOptions" :key="option.value"
+                            :class="{ active: exportGroupBy === option.value }"
+                            @click="exportGroupBy = option.value">
+                            {{ option.label }}
+                        </button>
+                    </div>
+                </div>
+
                 <p class="export-preview" aria-live="polite">
                     {{ exportPreviewText }}
+                </p>
+
+                <p v-if="exportFormat === 'pdf' && isDateInputReady" class="export-filter-summary">
+                    เงื่อนไขที่จะพิมพ์บนหัวรายงาน: {{ exportFilterLabel }}
                 </p>
 
                 <p v-if="exportError" class="export-error">
@@ -684,7 +717,7 @@
                     </button>
 
                     <button class="btn-confirm-green" :disabled="!canExport || isExporting" @click="confirmExport">
-                        {{ isExporting ? 'กำลังสร้างไฟล์…' : 'ดาวน์โหลด CSV' }}
+                        {{ isExporting ? 'กำลังสร้างไฟล์…' : exportFormat === 'pdf' ? 'ดาวน์โหลด PDF' : 'ดาวน์โหลด CSV' }}
                     </button>
                 </div>
 
@@ -698,6 +731,12 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCsvExport } from '../../composables/useCsvExport'
+import {
+    buildQueueReportPdf,
+    buildReportFileName,
+    formatThaiDate,
+    formatThaiMonth
+} from '../../components/report/QueueReportPdf'
 
 
 const doctorMap = ref({})
@@ -930,17 +969,27 @@ onMounted(async () => {
 const {
     buildBookingsCsv,
     downloadCsv,
+    downloadBlob,
     filterByDateRange,
     buildAdminFileName,
-    buildSingleFileName
+    buildSingleFileName,
+    downloadStamp
 } = useCsvExport()
 
 const EXPORT_API = 'https://or-room-backend.rockzee2018.workers.dev'
+
+// 🔒 Export ทั้งระบบเป็นสิทธิ์ของ admin เท่านั้น
+//    ฝั่ง server บังคับอยู่แล้ว (403) อันนี้คือกันไม่ให้ปุ่มโผล่ตั้งแต่แรก
+const isAdmin = computed(() =>
+    String(localStorage.getItem('userRole') || '').trim().toLowerCase() === 'admin'
+)
 
 const isExportModalOpen = ref(false)
 const isExporting = ref(false)
 const exportError = ref('')
 
+const exportFormat = ref('csv')     // csv | pdf
+const exportGroupBy = ref('room')   // room | doctor  (ใช้เฉพาะ pdf)
 const exportDateMode = ref('all')   // all | day | month | range | single
 const exportDay = ref('')
 const exportMonth = ref('')
@@ -951,6 +1000,22 @@ const exportCaseId = ref('')
 const selectedRooms = ref([])
 const selectedDoctors = ref([])
 const selectedStatuses = ref([])
+
+const exportFormats = [
+    { value: 'csv', label: 'CSV (ตาราง)', icon: 'table_view' },
+    { value: 'pdf', label: 'PDF (รายงาน)', icon: 'picture_as_pdf' }
+]
+
+const groupByOptions = [
+    { value: 'room', label: 'ตามห้อง' },
+    { value: 'doctor', label: 'ตามแพทย์' }
+]
+
+const exportFormatHint = computed(() =>
+    exportFormat.value === 'pdf'
+        ? 'รายงานพร้อมพิมพ์ มีหัวเอกสาร สรุปภาพรวม และตารางรายละเอียด'
+        : 'ไฟล์ตารางสำหรับเปิดใน Excel เพื่อไปคำนวณต่อ'
+)
 
 const exportModes = [
     { value: 'all', label: 'ทั้งหมด' },
@@ -1051,6 +1116,95 @@ const exportPreviewText = computed(() => {
     return `จะ export ${count} รายการ`
 })
 
+/**
+ * ย่อรายการห้องที่เลขติดกันให้เป็นช่วง เช่น
+ *   OR-201, OR-202, OR-203, OR-207 → OR-201–OR-203, OR-207
+ * ห้องที่ไม่มีตัวเลขต่อท้าย (หรือคนละ prefix) จะถูกปล่อยไว้เดี่ยว ๆ ไม่ยุบรวม
+ */
+const summarizeRooms = (rooms) => {
+    const parsed = [...rooms]
+        .map(room => {
+            const matched = String(room).match(/^(.*?)(\d+)$/)
+            return matched
+                ? { room, prefix: matched[1], number: Number(matched[2]) }
+                : { room, prefix: null, number: null }
+        })
+        .sort((a, b) => String(a.room).localeCompare(String(b.room), 'en', { numeric: true }))
+
+    const parts = []
+    let index = 0
+
+    while (index < parsed.length) {
+        const start = parsed[index]
+
+        if (start.prefix === null) {
+            parts.push(start.room)
+            index += 1
+            continue
+        }
+
+        let end = index
+        while (
+            end + 1 < parsed.length &&
+            parsed[end + 1].prefix === start.prefix &&
+            parsed[end + 1].number === parsed[end].number + 1
+        ) {
+            end += 1
+        }
+
+        // ยุบเป็นช่วงเมื่อติดกันตั้งแต่ 3 ห้องขึ้นไป น้อยกว่านั้นเขียนเต็มอ่านง่ายกว่า
+        if (end - index >= 2) {
+            parts.push(`${start.room}–${parsed[end].room}`)
+        } else {
+            for (let i = index; i <= end; i += 1) parts.push(parsed[i].room)
+        }
+
+        index = end + 1
+    }
+
+    return parts.join(', ')
+}
+
+/**
+ * เงื่อนไข filter เขียนเป็นข้อความอ่านได้ สำหรับพิมพ์บนหัวรายงาน PDF
+ * เช่น "ห้อง OR-201–OR-205 · เดือนกรกฎาคม 2569 · สถานะ รอผ่าตัด"
+ */
+const exportFilterLabel = computed(() => {
+    const parts = []
+
+    parts.push(
+        selectedRooms.value.length
+            ? `ห้อง ${summarizeRooms(selectedRooms.value)}`
+            : 'ทุกห้องผ่าตัด'
+    )
+
+    parts.push(
+        selectedDoctors.value.length
+            ? `แพทย์ ${selectedDoctors.value.map(license => doctorMap.value[license] || license).join(', ')}`
+            : 'แพทย์ทุกคน'
+    )
+
+    if (exportDateMode.value === 'day') {
+        parts.push(`วันที่ ${formatThaiDate(exportDay.value)}`)
+    } else if (exportDateMode.value === 'month') {
+        parts.push(formatThaiMonth(exportMonth.value))
+    } else if (exportDateMode.value === 'range') {
+        const { from, to } = exportDateRange.value
+        parts.push(`${formatThaiDate(from)} – ${formatThaiDate(to)}`)
+    } else {
+        parts.push('ทุกช่วงวันที่')
+    }
+
+    if (selectedStatuses.value.length) {
+        const labels = selectedStatuses.value.map(
+            value => statusOptions.find(option => option.value === value)?.label || value
+        )
+        parts.push(`สถานะ ${labels.join(', ')}`)
+    }
+
+    return parts.join('  ·  ')
+})
+
 // ใช้ตั้งชื่อไฟล์ให้สื่อความหมาย เช่น เลือกห้องเดียวก็ใช้ชื่อห้องนั้น
 const exportScope = computed(() => {
     if (selectedRooms.value.length === 1 && selectedDoctors.value.length === 0) {
@@ -1062,6 +1216,7 @@ const exportScope = computed(() => {
     return 'all'
 })
 
+// ล้างเฉพาะเงื่อนไขการกรอง — รูปแบบไฟล์กับการจัดกลุ่มไม่ใช่ filter จึงไม่โดนล้างด้วย
 const resetExportFilters = () => {
     exportDateMode.value = 'all'
     exportDay.value = ''
@@ -1076,7 +1231,14 @@ const resetExportFilters = () => {
 }
 
 const openExportDialog = () => {
+    if (!isAdmin.value) {
+        showMessage('ไม่มีสิทธิ์ export ข้อมูลทั้งระบบ ต้องเป็นแอดมินเท่านั้น', 'error')
+        return
+    }
+
     resetExportFilters()
+    exportFormat.value = 'csv'
+    exportGroupBy.value = 'room'
     isExportModalOpen.value = true
 }
 
@@ -1087,6 +1249,11 @@ const closeExportDialog = () => {
 
 const confirmExport = async () => {
     exportError.value = ''
+
+    if (!isAdmin.value) {
+        exportError.value = 'ไม่มีสิทธิ์ export ข้อมูลทั้งระบบ ต้องเป็นแอดมินเท่านั้น'
+        return
+    }
 
     if (!canExport.value) {
         exportError.value = 'ไม่พบรายการจองตามเงื่อนไขที่เลือก'
@@ -1129,6 +1296,49 @@ const confirmExport = async () => {
             return
         }
 
+        // 📄 PDF — ใช้ generator ตัวเดียวกับรายงานฝั่ง user (QueueReportPdf) ส่งแค่ config ต่างกัน
+        //    ตัวเลขสรุปในรายงานคำนวณจาก rows ชุดนี้ (ผ่าน filter จาก server แล้ว)
+        //    ไม่ใช่จากตัวเลขที่แสดงบนหน้าจอ ซึ่งถูก pagination ตัดไปแล้ว
+        if (exportFormat.value === 'pdf') {
+            const isSingle = exportDateMode.value === 'single'
+
+            const fileName = isSingle
+                ? buildReportFileName(
+                    { license: rows[0].doctorLicense, hn: rows[0].hn, from: rows[0].date, mode: 'single' },
+                    downloadStamp()
+                )
+                : buildAdminFileName({
+                    scope: exportScope.value,
+                    month: exportDateMode.value === 'month' ? exportMonth.value : '',
+                    from,
+                    to,
+                    prefix: 'report',
+                    extension: 'pdf'
+                })
+
+            const blob = await buildQueueReportPdf(rows, isSingle
+                ? {
+                    mode: 'single',
+                    doctorName: doctorMap.value[rows[0].doctorLicense] || rows[0].doctorLicense || '-',
+                    license: rows[0].doctorLicense || '-',
+                    room: rows[0].room || '-',
+                    rangeLabel: formatThaiDate(rows[0].date)
+                }
+                : {
+                    mode: 'admin',
+                    rangeLabel: exportFilterLabel.value,
+                    filterLabel: exportFilterLabel.value,
+                    printedBy: localStorage.getItem('userLicense') || '-',
+                    groupBy: exportGroupBy.value,
+                    doctorNames: doctorMap.value
+                })
+
+            downloadBlob(fileName, blob)
+            isExportModalOpen.value = false
+            showMessage(`ดาวน์โหลดแล้ว ${rows.length} รายการ\n${fileName}`)
+            return
+        }
+
         const fileName = exportDateMode.value === 'single'
             ? buildSingleFileName(rows[0].hn, rows[0].date)
             : buildAdminFileName({
@@ -1147,7 +1357,9 @@ const confirmExport = async () => {
         showMessage(`ดาวน์โหลดแล้ว ${rows.length} รายการ\n${fileName}`)
     } catch (e) {
         console.error('❌ export ไม่สำเร็จ:', e)
-        exportError.value = 'ระบบขัดข้อง ไม่สามารถติดต่อเซิร์ฟเวอร์ได้'
+        exportError.value = exportFormat.value === 'pdf'
+            ? 'สร้างไฟล์ PDF ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'
+            : 'ระบบขัดข้อง ไม่สามารถติดต่อเซิร์ฟเวอร์ได้'
     } finally {
         isExporting.value = false
     }
@@ -2158,6 +2370,13 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
     color: #ffffff;
 }
 
+/* ปุ่มเลือกรูปแบบไฟล์มีไอคอนนำหน้า ต้องจัดให้อยู่กึ่งกลางคู่กับข้อความ */
+.export-mode-switch button .material-icons {
+    margin-right: 4px;
+    font-size: 16px;
+    vertical-align: -3px;
+}
+
 .export-input {
     width: 100%;
     min-height: 42px;
@@ -2244,6 +2463,22 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
     color: #4a5e75;
     font-size: 13px;
     line-height: 1.5;
+}
+
+/* ตัวอย่างข้อความเงื่อนไขที่จะไปโผล่บนหัวรายงาน PDF — ให้เห็นก่อนกดดาวน์โหลด */
+.export-filter-summary {
+    margin: 0 0 12px 0;
+    padding: 10px 12px;
+    text-align: left;
+
+    background: #ffffff;
+    border: 1px dashed #dbe3ec;
+    border-radius: 10px;
+
+    color: #64748b;
+    font-size: 12px;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
 }
 
 .export-error {

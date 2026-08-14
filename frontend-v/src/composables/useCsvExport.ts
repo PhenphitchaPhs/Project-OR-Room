@@ -167,6 +167,45 @@ export const sortForExport = (rows: Booking[]): ExportRow[] => {
   })
 }
 
+/**
+ * เรียงสำหรับรายงานระดับระบบ (Admin): วัน → ห้อง → ลำดับคิว → อายุมากก่อน → หญิงก่อน
+ *
+ * ต่างจาก sortForExport ตรงที่แทรก "ห้อง" เป็นลำดับที่สอง และนับเลขคิวใหม่ทุก (วัน + ห้อง)
+ * เพราะรายงานฝั่ง admin รวมทุกห้องไว้ในไฟล์เดียว ถ้านับต่อวันอย่างเดียว
+ * เลขคิวจะไหลข้ามห้องจนอ่านไม่รู้เรื่องว่าเป็นคิวที่เท่าไรของห้องนั้น
+ *
+ * เรียงห้องด้วย localeCompare + numeric เพื่อให้ OR-2 มาก่อน OR-10 (ไม่ใช่เรียงแบบ string ล้วน)
+ */
+export const sortForAdminExport = (rows: Booking[]): ExportRow[] => {
+  const sorted = [...rows].sort((a, b) => {
+    const dateA = toDateKey(a.date)
+    const dateB = toDateKey(b.date)
+    if (dateA !== dateB) return dateA < dateB ? -1 : 1
+
+    const roomA = String(a.room || '')
+    const roomB = String(b.room || '')
+    if (roomA !== roomB) return roomA.localeCompare(roomB, 'en', { numeric: true })
+
+    const orderA = Number(a.queueOrder) || 999
+    const orderB = Number(b.queueOrder) || 999
+    if (orderA !== orderB) return orderA - orderB
+
+    const ageA = parseInt(String(a.age)) || 0
+    const ageB = parseInt(String(b.age)) || 0
+    if (ageA !== ageB) return ageB - ageA
+
+    if (a.gender !== b.gender) return a.gender === 'female' ? -1 : 1
+    return 0
+  })
+
+  const counterByDateRoom: Record<string, number> = {}
+  return sorted.map((row) => {
+    const key = `${toDateKey(row.date)}|${String(row.room || '')}`
+    counterByDateRoom[key] = (counterByDateRoom[key] || 0) + 1
+    return { ...row, __queueNo: counterByDateRoom[key] }
+  })
+}
+
 /** เก็บเฉพาะรายการของแพทย์เจ้าของ license ที่ระบุ (defense in depth ฝั่ง frontend) */
 export const filterOwnBookings = (rows: Booking[], license: string): Booking[] => {
   if (!license) return []
@@ -325,17 +364,24 @@ export const buildSingleFileName = (hn: unknown, date: unknown): string =>
  * เช่น bookings_OR-201_2026-07_exported20260731.csv
  *      bookings_all_20260701-20260731_exported20260731.csv
  *      bookings_all_exported20260731.csv  (ไม่ได้ระบุช่วงวันที่)
+ *
+ * PDF ใช้ตัวเดียวกัน แค่ส่ง prefix/extension ต่างกัน จะได้ไม่มีกติกาตั้งชื่อไฟล์สองชุด
+ * เช่น report_OR-201_2026-07_exported20260731.pdf
  */
 export const buildAdminFileName = (parts: {
   scope?: string
   from?: unknown
   to?: unknown
   month?: string
+  prefix?: string
+  extension?: string
 }): string => {
   const scope = parts.scope ? safeFileToken(parts.scope) : 'all'
   const stamp = `exported${downloadStamp()}`
+  const prefix = parts.prefix || 'bookings'
+  const ext = parts.extension || 'csv'
 
-  if (parts.month) return `bookings_${scope}_${parts.month}_${stamp}.csv`
+  if (parts.month) return `${prefix}_${scope}_${parts.month}_${stamp}.${ext}`
 
   let start = toCompactDate(parts.from)
   let end = toCompactDate(parts.to)
@@ -343,12 +389,12 @@ export const buildAdminFileName = (parts: {
 
   if (start && end) {
     const range = start === end ? start : `${start}-${end}`
-    return `bookings_${scope}_${range}_${stamp}.csv`
+    return `${prefix}_${scope}_${range}_${stamp}.${ext}`
   }
-  if (start || end) return `bookings_${scope}_${start || end}_${stamp}.csv`
+  if (start || end) return `${prefix}_${scope}_${start || end}_${stamp}.${ext}`
 
   // ไม่ได้กรองวันที่ ไม่ต้องมีคำว่า all ซ้ำสองรอบให้รก
-  return `bookings_${scope}_${stamp}.csv`
+  return `${prefix}_${scope}_${stamp}.${ext}`
 }
 
 /**
@@ -388,6 +434,7 @@ export function useCsvExport() {
     filterOwnBookings,
     filterByDateRange,
     sortForExport,
+    sortForAdminExport,
     buildRangeFileName,
     buildSingleFileName,
     buildAdminFileName,
