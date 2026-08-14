@@ -850,25 +850,32 @@
                     Export รายการจอง
                 </h2>
 
+                <!-- รูปแบบไฟล์ — โครงเดียวกับหน้า Admin เพื่อให้ผู้ใช้ที่สลับสองหน้าไม่ต้องเรียนรู้ใหม่ -->
                 <div class="export-field">
                     <label>รูปแบบไฟล์</label>
+
                     <div class="export-mode-switch">
-                        <button :class="{ active: exportFormat === 'csv' }" @click="exportFormat = 'csv'">
-                            CSV (ตาราง)
-                        </button>
-                        <button :class="{ active: exportFormat === 'pdf' }" @click="exportFormat = 'pdf'">
-                            PDF (รายงาน)
+                        <button v-for="format in exportFormats" :key="format.value"
+                            :class="{ active: exportFormat === format.value }" @click="exportFormat = format.value">
+                            <span class="material-icons">{{ format.icon }}</span>
+                            {{ format.label }}
                         </button>
                     </div>
+
+                    <p class="export-hint">{{ exportFormatHint }}</p>
                 </div>
 
-                <div class="export-mode-switch">
-                    <button :class="{ active: exportMode === 'single' }" @click="exportMode = 'single'">
-                        คิวเดียว
-                    </button>
-                    <button :class="{ active: exportMode === 'range' }" @click="exportMode = 'range'">
-                        ช่วงวันที่
-                    </button>
+                <div class="export-field">
+                    <label>ขอบเขต</label>
+
+                    <div class="export-mode-switch">
+                        <button :class="{ active: exportMode === 'single' }" @click="exportMode = 'single'">
+                            คิวเดียว
+                        </button>
+                        <button :class="{ active: exportMode === 'range' }" @click="exportMode = 'range'">
+                            ช่วงวันที่
+                        </button>
+                    </div>
                 </div>
 
                 <div v-if="exportMode === 'single'" class="export-field">
@@ -1455,6 +1462,19 @@ const {
 
 const isExportModalOpen = ref(false)
 const exportFormat = ref('csv')      // 'csv' | 'pdf'
+
+// ใช้ชุดเดียวกับหน้า Admin — ป้ายกำกับและไอคอนต้องตรงกันทั้งสองหน้า
+const exportFormats = [
+    { value: 'csv', label: 'CSV (ตาราง)', icon: 'table_view' },
+    { value: 'pdf', label: 'PDF (รายงาน)', icon: 'picture_as_pdf' }
+]
+
+const exportFormatHint = computed(() =>
+    exportFormat.value === 'pdf'
+        ? 'รายงานพร้อมพิมพ์ มีหัวเอกสาร สรุปภาพรวม และตารางรายละเอียด'
+        : 'ไฟล์ตารางสำหรับเปิดใน Excel เพื่อไปคำนวณต่อ'
+)
+
 const exportMode = ref('range')      // 'single' | 'range'
 const exportFrom = ref('')           // 'YYYY-MM-DD'
 const exportTo = ref('')             // 'YYYY-MM-DD'
@@ -2666,24 +2686,27 @@ input[type="checkbox"] {
 /* ===================== Export CSV ===================== */
 .queue-toolbar {
     display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
     justify-content: flex-end;
     padding: 12px 15px 0 15px;
     background: #f8f9fa;
 }
 
+/* ทรงปุ่มเดียวกับ .btn-export ในหน้า Admin — ต่างแค่โทน navy ที่ยึดตามพาเลตของหน้านี้ */
 .btn-export {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 6px;
 
-    min-height: 40px;
+    min-height: 42px;
     padding: 8px 16px;
 
     background: #ffffff;
     color: #1a3a5f;
     border: 1px solid #d6e0ec;
-    border-radius: 10px;
+    border-radius: 12px;
 
     font-size: 13px;
     font-weight: 700;
@@ -2740,20 +2763,22 @@ input[type="checkbox"] {
 
 .export-mode-switch {
     display: flex;
-    gap: 8px;
-    margin-bottom: 18px;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 10px;
 }
 
 .export-mode-switch button {
-    flex: 1;
-    min-height: 40px;
+    flex: 1 1 auto;
+    min-height: 38px;
+    padding: 6px 12px;
 
     background: #f0f2f5;
     color: #64748b;
     border: none;
     border-radius: 10px;
 
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 700;
     cursor: pointer;
     transition: 0.2s;
@@ -2764,6 +2789,13 @@ input[type="checkbox"] {
     color: #ffffff;
 }
 
+/* ปุ่มเลือกรูปแบบไฟล์มีไอคอนนำหน้า ต้องจัดให้อยู่กึ่งกลางคู่กับข้อความ */
+.export-mode-switch button .material-icons {
+    margin-right: 4px;
+    font-size: 16px;
+    vertical-align: -3px;
+}
+
 .export-field {
     text-align: left;
     margin-bottom: 16px;
@@ -2771,7 +2803,7 @@ input[type="checkbox"] {
 
 .export-field label {
     display: block;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
 
     color: #1a3a5f;
     font-size: 13px;
@@ -2834,9 +2866,14 @@ input[type="checkbox"] {
 }
 
 .export-hint {
-    margin: 8px 0 0 0;
+    margin: 0;
     color: #94a3b8;
     font-size: 12px;
+}
+
+/* ต่อท้ายช่องเลือกคิวต้องมีระยะห่าง ส่วนที่ตามหลังแถบปุ่มไม่ต้อง เพราะแถบปุ่มมี margin ล่างอยู่แล้ว */
+.export-select + .export-hint {
+    margin-top: 8px;
 }
 
 .export-preview {
