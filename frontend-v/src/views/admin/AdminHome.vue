@@ -737,6 +737,7 @@ import {
     formatThaiDate,
     formatThaiMonth
 } from '../../components/report/QueueReportPdf'
+import { apiFetch } from '../../api/client'
 
 
 const doctorMap = ref({})
@@ -857,9 +858,9 @@ const matchSearch = (item) => {
 
 const moveBackToUpcoming = async (id) => {
     try {
-        await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/bookings/${id}/status`, {
+        await apiFetch(`/api/bookings/${id}/status`, {
             method: 'PATCH',
-            headers: { 'Content-Type': 'application/json', 'x-user-license': localStorage.getItem('userLicense') || '' },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ status: 'Upcoming' })
         })
 
@@ -886,11 +887,11 @@ const openCancelModal = (id) => {
 
 const confirmCancelCase = async () => {
     try {
-        await fetch(
-            `https://or-room-backend.rockzee2018.workers.dev/api/bookings/${selectedCancelId.value}/status`,
+        await apiFetch(
+            `/api/bookings/${selectedCancelId.value}/status`,
             {
                 method: 'PATCH',
-                headers: { 'Content-Type': 'application/json', 'x-user-license': localStorage.getItem('userLicense') || '' },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status: 'Cancelled' })
             }
         )
@@ -919,7 +920,7 @@ onMounted(async () => {
     if (savedLicense) userLicense.value = savedLicense
 
     try {
-        const res = await fetch('https://or-room-backend.rockzee2018.workers.dev/api/bookings')
+        const res = await apiFetch('/api/bookings')
         const data = await res.json()
 
         bookings.value = Array.isArray(data) ? data : []
@@ -933,13 +934,12 @@ onMounted(async () => {
             ) {
                 item.status = 'Succeed'
 
-                await fetch(
-                    `https://or-room-backend.rockzee2018.workers.dev/api/bookings/${item.id}/status`,
+                await apiFetch(
+                    `/api/bookings/${item.id}/status`,
                     {
                         method: 'PATCH',
                         headers: {
                             'Content-Type': 'application/json',
-                            'x-user-license': localStorage.getItem('userLicense') || '' // 🔒 backend fail-closed แล้ว ต้องแนบ header
                         },
                         body: JSON.stringify({
                             status: 'Succeed'
@@ -954,9 +954,7 @@ onMounted(async () => {
     }
 
     try {
-        const res2 = await fetch('https://or-room-backend.rockzee2018.workers.dev/api/users', {
-            headers: { 'x-user-license': localStorage.getItem('userLicense') || '' } // 🔒 endpoint นี้ต้องมีสิทธิ์แอดมิน
-        })
+        const res2 = await apiFetch('/api/users')
         const users = await res2.json()
         if (Array.isArray(users)) {
             doctorList.value = users
@@ -976,7 +974,7 @@ const {
     downloadStamp
 } = useCsvExport()
 
-const EXPORT_API = 'https://or-room-backend.rockzee2018.workers.dev'
+// path ล้วน ๆ — base URL และ token จัดการโดย apiFetch ใน src/api/client.ts
 
 // 🔒 Export ทั้งระบบเป็นสิทธิ์ของ admin เท่านั้น
 //    ฝั่ง server บังคับอยู่แล้ว (403) อันนี้คือกันไม่ให้ปุ่มโผล่ตั้งแต่แรก
@@ -1277,9 +1275,7 @@ const confirmExport = async () => {
         }
 
         // ดึงจาก endpoint ที่บังคับสิทธิ์แอดมินฝั่ง server ไม่ใช้ข้อมูลที่ค้างอยู่ในหน้าจอ
-        const res = await fetch(`${EXPORT_API}/api/bookings/export?${params.toString()}`, {
-            headers: { 'x-user-license': localStorage.getItem('userLicense') || '' }
-        })
+        const res = await apiFetch(`/api/bookings/export?${params.toString()}`)
 
         if (res.status === 403) {
             exportError.value = 'ไม่มีสิทธิ์ export ข้อมูลทั้งระบบ ต้องเป็นแอดมินเท่านั้น'
@@ -1434,9 +1430,8 @@ const cancelledCases = computed(() =>
 const deleteDoctor = async (license, name) => {
     if (!confirm(`ลบบัญชี "${name}" ออกจากระบบ?\n(ข้อมูลคิวผ่าตัดของหมอยังคงอยู่)`)) return
     try {
-        const res = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/users/${license}`, {
+        const res = await apiFetch(`/api/users/${license}`, {
             method: 'DELETE',
-            headers: { 'x-user-license': localStorage.getItem('userLicense') || '' }
         })
         const data = await res.json()
         if (res.ok) {
@@ -1474,11 +1469,10 @@ const onDrop = async (dropIndex) => {
     draggedIndex.value = null
 
     try {
-        await fetch('https://or-room-backend.rockzee2018.workers.dev/api/bookings/reorder', {
+        await apiFetch('/api/bookings/reorder', {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
-                'x-user-license': localStorage.getItem('userLicense') || '' // 🔒 backend เช็คสิทธิ์แอดมินแล้ว ต้องแนบมาด้วย
             },
             body: JSON.stringify({ updates })
         })
@@ -1491,7 +1485,7 @@ const onDrop = async (dropIndex) => {
 // API Functions
 // const markAsSucceed = async (id) => {
 //     try {
-//         await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/bookings/${id}/status`, {
+//         await apiFetch(`/api/bookings/${id}/status`, {
 //             method: 'PATCH',
 //             headers: { 'Content-Type': 'application/json' },
 //             body: JSON.stringify({ status: 'Completed' })
@@ -1508,8 +1502,8 @@ const onDrop = async (dropIndex) => {
 //     if (!confirm('ยืนยันการยกเลิกเคสนี้?')) return
 
 //     try {
-//         await fetch(
-//             `https://or-room-backend.rockzee2018.workers.dev/api/bookings/${id}/status`,
+//         await apiFetch(
+//             `/api/bookings/${id}/status`,
 //             {
 //                 method: 'PATCH',
 //                 headers: { 'Content-Type': 'application/json' },

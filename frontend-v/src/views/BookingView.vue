@@ -165,6 +165,7 @@
 import { reactive, ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { createRouter, createWebHistory } from 'vue-router'
+import { apiFetch } from '../api/client'
 
 const router = useRouter()
 const route = useRoute()
@@ -297,7 +298,7 @@ onMounted(async () => {
     // 🌟 ดึงข้อมูลเก่ามาใส่ฟอร์มถ้าเป็นการ Edit (มี bookingId)
     if (bookingId) {
         try {
-            const res = await fetch('https://or-room-backend.rockzee2018.workers.dev/api/bookings')
+            const res = await apiFetch('/api/bookings')
 
             if (res.ok) {
                 const allBookings = await res.json()
@@ -343,7 +344,7 @@ onMounted(async () => {
     } else if (myLicense) {
         // 📍 ถ้าเป็นการจองใหม่ (ไม่ใช่ edit) ตั้งค่าห้องเริ่มต้นเป็นห้องประจำของแพทย์คนนี้
         try {
-            const res = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/users/${myLicense}`)
+            const res = await apiFetch(`/api/users/${myLicense}`)
             if (res.ok) {
                 const userData = await res.json()
                 if (userData.orNumber) form.room = `OR-${userData.orNumber}`
@@ -363,7 +364,7 @@ onMounted(async () => {
         const tomorrow = new Date()
         tomorrow.setDate(tomorrow.getDate() + 1)
         const tomStr = tomorrow.toISOString().split('T')[0]
-        const res = await fetch('https://or-room-backend.rockzee2018.workers.dev/api/bookings')
+        const res = await apiFetch('/api/bookings')
         if (res.ok) {
             const data = await res.json()
             tomorrowCount.value = data.filter(b => b.date === tomStr).length
@@ -371,7 +372,7 @@ onMounted(async () => {
     } catch (e) { console.error("Reminder failed", e) }
 
     try {
-        const holidayRes = await fetch('https://or-room-backend.rockzee2018.workers.dev/api/holidays')
+        const holidayRes = await apiFetch('/api/holidays')
         if (holidayRes.ok) {
             const holidayData = await holidayRes.json()
             if (holidayData.items) {
@@ -393,7 +394,7 @@ const lookupHN = async () => {
     if (form.hn.length < 3) return
     hnStatus.value = 'loading'
     try {
-        const res = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/patients/${form.hn}`)
+        const res = await apiFetch(`/api/patients/${form.hn}`)
         if (res.ok) {
             const p = await res.json()
             form.fullName = p.fullName; form.gender = p.gender; form.disease = p.underlying || ''
@@ -461,8 +462,8 @@ const checkValidDate = async () => {
     }
 
     try {
-        const res = await fetch(
-            'https://or-room-backend.rockzee2018.workers.dev/api/bookings'
+        const res = await apiFetch(
+            '/api/bookings'
         )
 
         const allBookings = await res.json()
@@ -562,16 +563,15 @@ const submitForm = async () => {
     try {
         // 🌟 แยก URL และ Method ให้ถูกต้อง
         const url = bookingId
-            ? `https://or-room-backend.rockzee2018.workers.dev/api/bookings/${bookingId}`
-            : 'https://or-room-backend.rockzee2018.workers.dev/api/bookings'
+            ? `/api/bookings/${bookingId}`
+            : '/api/bookings'
 
         const method = bookingId ? 'PUT' : 'POST'
 
-        const res = await fetch(url, {
+        const res = await apiFetch(url, {
             method: method,
             headers: {
                 'Content-Type': 'application/json',
-                'x-user-license': localStorage.getItem('userLicense') || '' // 🔒 backend fail-closed แล้ว ต้องระบุตัวตน
             },
             body: JSON.stringify(payload)
         })

@@ -118,6 +118,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { apiFetch } from '../../api/client'
 
 const router = useRouter()
 const now = new Date()
@@ -137,7 +138,7 @@ const officialHolidays = ref([])
 onMounted(async () => {
     try {
         // admin ดึงคิวทั้งหมด ไม่กรอง license
-        const res = await fetch('https://or-room-backend.rockzee2018.workers.dev/api/bookings')
+        const res = await apiFetch('/api/bookings')
         const data = await res.json()
         bookings.value = Array.isArray(data) ? data : []
     } catch (e) {
@@ -146,7 +147,7 @@ onMounted(async () => {
 
     try {
         // ดึงชื่อหมอ map license -> doctorName
-        const res2 = await fetch('https://or-room-backend.rockzee2018.workers.dev/api/users')
+        const res2 = await apiFetch('/api/users')
         const users = await res2.json()
         if (Array.isArray(users)) {
             users.forEach(u => { doctorMap.value[u.license] = u.doctorName })
@@ -157,7 +158,7 @@ onMounted(async () => {
 
     // 📍 2. ดึงข้อมูลวันหยุดจาก API หลังบ้าน
     try {
-        const resHoliday = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/holidays`)
+        const resHoliday = await apiFetch(`/api/holidays`)
         const dataHoliday = await resHoliday.json()
 
         if (dataHoliday.items) {

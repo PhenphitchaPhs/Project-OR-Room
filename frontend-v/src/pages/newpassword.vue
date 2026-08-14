@@ -50,6 +50,7 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import { useRouter, useRoute } from "vue-router";
+import { apiFetch } from '../api/client'
 
 const router = useRouter();
 const route = useRoute();
@@ -107,7 +108,7 @@ const confirm = async () => {
     message.value = "";
 
     try {
-        const response = await fetch('https://or-room-backend.rockzee2018.workers.dev/api/reset-password', {
+        const response = await apiFetch('/api/reset-password', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ token: token.value, newPassword: newPassword.value })

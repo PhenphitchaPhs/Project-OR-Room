@@ -51,15 +51,25 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import logo from '../../assets/logo.png'
+import { apiPost, setToken, clearSession, SESSION_EXPIRED_KEY } from '../../api/client'
 
 const router = useRouter()
 const name = ref('')
 const password = ref('')
 const showPassword = ref(false)
 const errorMessage = ref('')
+
+// ถูกเด้งมาที่นี่เพราะ token หมดอายุ ให้บอกเหตุผลด้วย
+onMounted(() => {
+    const expired = sessionStorage.getItem(SESSION_EXPIRED_KEY)
+    if (expired) {
+        sessionStorage.removeItem(SESSION_EXPIRED_KEY)
+        errorMessage.value = expired
+    }
+})
 
 const handleLogin = async () => {
     errorMessage.value = ''
@@ -68,23 +78,28 @@ const handleLogin = async () => {
         return
     }
     try {
-        const res = await fetch('https://or-room-backend.rockzee2018.workers.dev/api/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ license: name.value, password: password.value })
-        })
-        const data = await res.json()
-        // 📍 อนุญาตเฉพาะ role 'admin' ให้ล็อกอินเข้าฝั่งแอดมินได้
-        if (res.ok && data.user?.role === 'admin') {
-            localStorage.setItem('isLoggedIn', 'true')
-            localStorage.setItem('userLicense', data.user.license)
-            localStorage.setItem('userRole', data.user.role)
-            router.push({ name: 'admin-home' })
-        } else {
+        const data = await apiPost('/api/login', {
+            license: name.value,
+            password: password.value
+        }, { skipAuth: true })
+
+        // 📍 เช็ค role ตรงนี้เพื่อกันไม่ให้บัญชีทั่วไปเข้าหน้าแอดมิน
+        //    เป็นการกันระดับ UI เท่านั้น สิทธิ์จริงบังคับที่ backend จาก role ใน token
+        if (data.user?.role !== 'admin') {
             errorMessage.value = '❌ ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง หรือไม่มีสิทธิ์ Admin'
+            return
         }
+
+        clearSession()
+        setToken(data.token)
+
+        localStorage.setItem('isLoggedIn', 'true')
+        localStorage.setItem('userLicense', data.user.license)
+        localStorage.setItem('userRole', data.user.role)
+        router.push({ name: 'admin-home' })
     } catch (e) {
-        errorMessage.value = '❌ เชื่อมต่อ server ไม่ได้'
+        // ข้อความรวม ไม่บอกว่าผิดที่ช่องไหน กันการเดาว่า license ไหนมีอยู่จริง
+        errorMessage.value = '❌ ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง หรือไม่มีสิทธิ์ Admin'
     }
 }
 

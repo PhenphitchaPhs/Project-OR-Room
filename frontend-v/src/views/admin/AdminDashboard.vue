@@ -160,6 +160,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { apiFetch } from '../../api/client'
 
 const router = useRouter()
 const userLicense = ref('Admin')
@@ -192,10 +193,8 @@ onMounted(async () => {
 
     try {
         const [resBookings, resUsers] = await Promise.all([
-            fetch('https://or-room-backend.rockzee2018.workers.dev/api/bookings'),
-            fetch('https://or-room-backend.rockzee2018.workers.dev/api/users', {
-                headers: { 'x-user-license': savedLicense || '' } // 📍 endpoint นี้ต้องมีสิทธิ์ Admin ฝั่ง backend
-            })
+            apiFetch('/api/bookings'),
+            apiFetch('/api/users')
         ])
         const bData = await resBookings.json()
         const uData = await resUsers.json()
@@ -239,11 +238,10 @@ const deleteDoctor = (license, name) => {
         `ลบบัญชี "${name}" ออกจากระบบ?`,
         async () => {
             try {
-                const res = await fetch(
-                    `https://or-room-backend.rockzee2018.workers.dev/api/users/${license}`,
+                const res = await apiFetch(
+                    `/api/users/${license}`,
                     {
                         method: 'DELETE',
-                        headers: { 'x-user-license': localStorage.getItem('userLicense') || '' }
                     }
                 )
 
@@ -311,13 +309,12 @@ const getRoleClass = (role) => {
 // 📍 เปลี่ยน Role ของบัญชี (user / admin) — เรียก endpoint ที่เพิ่มใหม่ฝั่ง backend
 const changeRole = async (license, newRole) => {
     try {
-        const res = await fetch(
-            `https://or-room-backend.rockzee2018.workers.dev/api/users/${license}/role`,
+        const res = await apiFetch(
+            `/api/users/${license}/role`,
             {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                    'x-user-license': localStorage.getItem('userLicense') || ''
                 },
                 body: JSON.stringify({ newRole })
             }

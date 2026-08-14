@@ -49,6 +49,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { apiFetch } from '../api/client'
 
 const router = useRouter()
 
@@ -78,7 +79,7 @@ const sendOtp = async () => {
   isSuccess.value = true 
 
   try {
-    const response = await fetch('https://or-room-backend.rockzee2018.workers.dev/api/send-otp', {
+    const response = await apiFetch('/api/send-otp', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: email.value })
@@ -119,7 +120,7 @@ const submitForm = async () => {
   }
 
   try {
-    const response = await fetch('https://or-room-backend.rockzee2018.workers.dev/api/register', {
+    const response = await apiFetch('/api/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

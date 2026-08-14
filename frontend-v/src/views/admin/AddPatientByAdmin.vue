@@ -174,6 +174,7 @@
 <script setup>
 import { reactive, ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { apiFetch } from '../../api/client'
 
 const router = useRouter()
 const route = useRoute()
@@ -302,9 +303,7 @@ const showAlert = (message, isSuccess = false) => {
 onMounted(async () => {
     // 1. ดึงรายชื่อแพทย์ทั้งหมดเพื่อใส่ใน Dropdown ให้แอดมินเลือก
     try {
-        const res = await fetch('https://or-room-backend.rockzee2018.workers.dev/api/users', {
-            headers: { 'x-user-license': localStorage.getItem('userLicense') || '' }
-        })
+        const res = await apiFetch('/api/users')
         if (res.ok) {
             const data = await res.json()
             // กรองเอาเฉพาะบัญชีแพทย์ (role: user) ไม่เอา admin
@@ -322,7 +321,7 @@ onMounted(async () => {
 
     // 3. ดึงข้อมูลวันหยุดราชการ
     try {
-        const holidayRes = await fetch('https://or-room-backend.rockzee2018.workers.dev/api/holidays')
+        const holidayRes = await apiFetch('/api/holidays')
         if (holidayRes.ok) {
             const holidayData = await holidayRes.json()
             if (holidayData.items) {
@@ -345,7 +344,7 @@ const lookupHN = async () => {
     if (form.hn.length < 3) return
     hnStatus.value = 'loading'
     try {
-        const res = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/patients/${form.hn}`)
+        const res = await apiFetch(`/api/patients/${form.hn}`)
         if (res.ok) {
             const p = await res.json()
             form.fullName = p.fullName
@@ -405,7 +404,7 @@ const checkValidDate = async () => {
     if (!form.room) return
 
     try {
-        const res = await fetch('https://or-room-backend.rockzee2018.workers.dev/api/bookings')
+        const res = await apiFetch('/api/bookings')
         const allBookings = await res.json()
 
         const sameDayBookings = allBookings.filter(
@@ -499,12 +498,11 @@ const submitForm = async () => {
     }
 
     try {
-        const url = 'https://or-room-backend.rockzee2018.workers.dev/api/bookings'
-        const res = await fetch(url, {
+        const url = '/api/bookings'
+        const res = await apiFetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'x-user-license': localStorage.getItem('userLicense') || ''
             },
             body: JSON.stringify(payload)
         })

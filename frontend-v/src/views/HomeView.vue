@@ -943,6 +943,7 @@ import draggable from 'vuedraggable'
 import '@vuepic/vue-datepicker/dist/main.css'
 import { useCsvExport } from '../composables/useCsvExport'
 import { buildQueueReportPdf, buildReportFileName, formatThaiDate } from '../components/report/QueueReportPdf'
+import { apiFetch } from '../api/client'
 
 const route = useRoute() // 🌟 ประกาศใช้งาน
 
@@ -1198,9 +1199,9 @@ const confirmRestoreCase = async () => {
 
     try {
         // 1. ยิง API อัปเดตสถานะเป็น Upcoming ทันที
-        const res = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/bookings/${targetId}/status`, {
+        const res = await apiFetch(`/api/bookings/${targetId}/status`, {
             method: 'PATCH',
-            headers: { 'Content-Type': 'application/json', 'x-user-license': localStorage.getItem('userLicense') || '' },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ status: FILTERS.UPCOMING }) // เปลี่ยนสถานะเป็น Upcoming
         })
 
@@ -1278,7 +1279,7 @@ const progressColor = computed(() => {
 })
 
 const router = useRouter()
-const API_URL = 'https://or-room-backend.rockzee2018.workers.dev/api/bookings'
+const API_URL = '/api/bookings'
 
 // --- State ---
 const bookings = ref([])
@@ -1388,13 +1389,12 @@ const saveOrder = async (event) => {
     })
 
     try {
-        await fetch(
-            'https://or-room-backend.rockzee2018.workers.dev/api/bookings/reorder',
+        await apiFetch(
+            '/api/bookings/reorder',
             {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                    'x-user-license': localStorage.getItem('userLicense') || ''
                 },
                 body: JSON.stringify({ updates })
             }
@@ -1659,13 +1659,12 @@ const resetQueue = async () => {
 
                 try {
 
-                    await fetch(
-                        'https://or-room-backend.rockzee2018.workers.dev/api/bookings/reorder',
+                    await apiFetch(
+                        '/api/bookings/reorder',
                         {
                             method: 'PUT',
                             headers: {
                                 'Content-Type': 'application/json',
-                                'x-user-license': localStorage.getItem('userLicense') || ''
                             },
                             body: JSON.stringify({ updates })
                         }
@@ -1692,9 +1691,9 @@ const resetQueue = async () => {
 
     // 3. บันทึกลงฐานข้อมูล
     try {
-        await fetch('https://or-room-backend.rockzee2018.workers.dev/api/bookings/reorder', {
+        await apiFetch('/api/bookings/reorder', {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json', 'x-user-license': localStorage.getItem('userLicense') || '' },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ updates })
         })
         showMessageDialog('✅ รีเซ็ตการจัดคิวเรียบร้อย')
@@ -1709,10 +1708,8 @@ const fetchBookings = async () => {
     isLoading.value = true
     try {
         const license = localStorage.getItem('userLicense')
-        const response = await fetch(`${API_URL}?license=${encodeURIComponent(license || '')}`, {
-            // ส่ง license ของคนที่ล็อกอินไปด้วย ให้ backend ตรวจได้ว่าไม่ได้ดึงข้อมูลของแพทย์ท่านอื่น
-            headers: { 'x-user-license': license || '' }
-        })
+        // backend เทียบ license ที่ขอกับ license ใน token ให้อยู่แล้ว ขอของคนอื่นจะได้ 403
+        const response = await apiFetch(`${API_URL}?license=${encodeURIComponent(license || '')}`)
         const data = await response.json()
         bookings.value = Array.isArray(data) ? data : []
     } catch (error) { console.error("❌ ดึงคิวไม่สำเร็จ:", error) }
@@ -1762,13 +1759,12 @@ const deleteCase = (id) => {
 
             try {
 
-                const res = await fetch(
-                    `https://or-room-backend.rockzee2018.workers.dev/api/bookings/${id}/status`,
+                const res = await apiFetch(
+                    `/api/bookings/${id}/status`,
                     {
                         method: 'PATCH',
                         headers: {
                             'Content-Type': 'application/json',
-                            'x-user-license': localStorage.getItem('userLicense') || ''
                         },
                         body: JSON.stringify({
                             status: FILTERS.NOT_COMPLETE
@@ -1796,9 +1792,9 @@ const deleteCase = (id) => {
 }
 const markAsSucceed = async (id) => {
     try {
-        const res = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/bookings/${id}/status`, {
+        const res = await apiFetch(`/api/bookings/${id}/status`, {
             method: 'PATCH',
-            headers: { 'Content-Type': 'application/json', 'x-user-license': localStorage.getItem('userLicense') || '' },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ status: 'Succeed' })
         })
         if (!res.ok) throw new Error()

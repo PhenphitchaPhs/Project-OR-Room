@@ -110,6 +110,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { apiFetch } from '../api/client'
 
 
 const router = useRouter()
@@ -136,7 +137,7 @@ onMounted(async () => {
     // 📍 ดึงคิวทั้งหมดของทุกแพทย์ (ไม่กรอง license) เพื่อใช้แสดงว่าห้องไหนถูกจองแล้วบ้าง
     // ส่วนข้อมูลผู้ป่วยของคนอื่นจะถูกซ่อนตอนแสดงผล (เห็นแค่ว่าห้องถูกจองแล้ว)
     try {
-        const res = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/bookings`)
+        const res = await apiFetch(`/api/bookings`)
         const data = await res.json()
         bookings.value = Array.isArray(data) ? data : []
     } catch (e) {
@@ -145,7 +146,7 @@ onMounted(async () => {
 
 
     try {
-        const resHoliday = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/holidays`)
+        const resHoliday = await apiFetch(`/api/holidays`)
         const dataHoliday = await resHoliday.json()
 
         if (dataHoliday.items) {

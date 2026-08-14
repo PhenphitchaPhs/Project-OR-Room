@@ -73,6 +73,7 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
+import { apiPost, setToken, clearSession, SESSION_EXPIRED_KEY } from "../api/client";
 
 const router = useRouter();
 const email = ref(""); // 🟢 ใช้ email แทน license
@@ -82,6 +83,14 @@ const showDialog = ref(false);
 const dialogMessage = ref("");
 
 onMounted(() => {
+  // ถูกเด้งมาที่นี่เพราะ token หมดอายุ ให้บอกเหตุผลแทนที่จะทิ้งผู้ใช้ไว้กับหน้า login เปล่า ๆ
+  const expiredMessage = sessionStorage.getItem(SESSION_EXPIRED_KEY);
+  if (expiredMessage) {
+    sessionStorage.removeItem(SESSION_EXPIRED_KEY);
+    dialogMessage.value = expiredMessage;
+    showDialog.value = true;
+  }
+
   const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
   const userRole = localStorage.getItem("userRole");
 
@@ -112,32 +121,29 @@ const login = async () => {
   }
 
   try {
-    const response = await fetch('https://or-room-backend.rockzee2018.workers.dev/api/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: email.value, // 🟢 ส่ง email ไปที่ Backend
-        password: password.value
-      })
-    });
+    // skipAuth เพราะยังไม่มี token ตอนนี้ นี่คือขั้นที่กำลังไปขอ token
+    const data = await apiPost('/api/login', {
+      email: email.value, // 🟢 ส่ง email ไปที่ Backend
+      password: password.value
+    }, { skipAuth: true });
 
-    const data = await response.json();
+    // ล้างของเก่าก่อนเสมอ กันค่าค้างจากบัญชีที่ล็อกอินไว้ก่อนหน้า
+    clearSession();
 
-    if (response.ok && data.success) {
-      localStorage.setItem("isLoggedIn", "true");
-      localStorage.setItem("userLicense", data.user.license);
-      localStorage.setItem("doctorName", data.user.doctorName);
-      localStorage.setItem("userRole", data.user.role || 'user');
-      localStorage.setItem("selectedDay", data.user.day || 'Monday');
+    // 🔑 token คือสิ่งเดียวที่ backend ใช้ตัดสินสิทธิ์
+    setToken(data.token);
 
-      router.push("/home");
-    } else {
-      dialogMessage.value = "❌ " + (data.error || "ล็อกอินไม่สำเร็จ");
-      showDialog.value = true;
-    }
+    // ค่าที่เหลือเก็บไว้แสดงผล UI เท่านั้น แก้ใน DevTools ได้และไม่มีผลกับสิทธิ์จริง
+    localStorage.setItem("isLoggedIn", "true");
+    localStorage.setItem("userLicense", data.user.license);
+    localStorage.setItem("doctorName", data.user.doctorName);
+    localStorage.setItem("userRole", data.user.role || 'user');
+    localStorage.setItem("selectedDay", data.user.day || 'Monday');
+
+    router.push("/home");
   } catch (error) {
     console.error(error);
-    dialogMessage.value = "❌ ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้";
+    dialogMessage.value = "❌ " + (error?.message || "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้");
     showDialog.value = true;
   }
 }

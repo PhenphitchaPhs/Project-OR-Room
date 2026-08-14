@@ -137,6 +137,7 @@
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue'
 import { RouterView, useRouter, useRoute } from 'vue-router'
+import { apiFetch } from './api/client'
 
 // แสดงผลเป็น dialog
 const isDialogOpen = ref(false)
@@ -188,7 +189,7 @@ const syncUserFromStorage = async () => {
     tempOrNumber.value = Number(savedOrNumber)
   } else if (license) {
     try {
-      const res = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/users/${license}`)
+      const res = await apiFetch(`/api/users/${license}`)
       const data = await res.json()
       if (data.orNumber) {
         orNumber.value = data.orNumber
@@ -219,11 +220,10 @@ const openOrNumberModal = () => {
 
 const confirmOrNumberChange = async () => {
   try {
-    const response = await fetch(`https://or-room-backend.rockzee2018.workers.dev/api/users/${userLicense.value}/or-number`, {
+    const response = await apiFetch(`/api/users/${userLicense.value}/or-number`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'x-user-license': userLicense.value // 📍 ระบุตัวตนผู้เรียก API ให้ backend ตรวจสอบสิทธิ์
       },
       body: JSON.stringify({ orNumber: tempOrNumber.value })
     })
