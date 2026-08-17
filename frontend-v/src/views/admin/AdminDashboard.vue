@@ -38,7 +38,6 @@
             </div>
         </Transition>
 
-
         <!-- Top Nav -->
         <header class="top-nav">
             <div class="user-group">
@@ -71,162 +70,189 @@
             </button>
         </header>
 
-        <!-- Content -->
-        <div class="page-container">
-            <h1 class="main-title">📊 Admin Dashboard</h1>
+        <!-- Content: sidebar เล็ก + page-container -->
+        <div class="body-layout">
+            <aside class="section-nav">
+                <button class="section-nav-btn" :class="{ active: activeSection === 'dashboard' }"
+                    @click="activeSection = 'dashboard'">
+                    <span class="section-nav-emoji">📊</span>
+                    <span>Admin Dashboard</span>
+                </button>
 
-            <!-- Stats Cards -->
-            <div class="stats-row">
-                <div class="stat-card blue">
-                    <div class="stat-icon">📋</div>
-                    <div class="stat-info">
-                        <div class="stat-number">{{ upcomingCount }}</div>
-                        <div class="stat-label">Upcoming Queues</div>
+                <button class="section-nav-btn" :class="{ active: activeSection === 'fiscal' }"
+                    @click="activeSection = 'fiscal'">
+                    <span class="section-nav-emoji">📅</span>
+                    <span>Fiscal Year</span>
+                </button>
+
+                <button class="section-nav-btn" :class="{ active: activeSection === 'doctors' }"
+                    @click="activeSection = 'doctors'">
+                    <span class="section-nav-emoji">👨‍⚕️</span>
+                    <span>Doctor Accounts</span>
+                </button>
+            </aside>
+
+            <div class="page-container">
+
+                <!-- ===== Section: Admin Dashboard ===== -->
+                <div v-if="activeSection === 'dashboard'">
+                    <h1 class="main-title">📊 Admin Dashboard</h1>
+
+                    <!-- Stats Cards: เคสที่กำลังจะมาถึง / เคสที่ถูกยกเลิก (ดีไซน์ทางการ) -->
+                    <div class="formal-stats-row">
+                        <div class="formal-stat-card accent-blue">
+                            <div class="formal-stat-top">
+                                <span class="formal-stat-label">เคสที่กำลังจะมาถึง</span>
+                                <span class="formal-stat-icon-badge blue">
+                                    <span class="material-icons">event_upcoming</span>
+                                </span>
+                            </div>
+                            <div class="formal-stat-number">{{ upcomingCount }}</div>
+                            <div class="formal-stat-foot">รายการที่ยังไม่ถึงวันผ่าตัด</div>
+                        </div>
+
+                        <div class="formal-stat-card accent-red">
+                            <div class="formal-stat-top">
+                                <span class="formal-stat-label">เคสที่ถูกยกเลิก</span>
+                                <span class="formal-stat-icon-badge red">
+                                    <span class="material-icons">cancel</span>
+                                </span>
+                            </div>
+                            <div class="formal-stat-number">{{ cancelledCount }}</div>
+                            <div class="formal-stat-foot">รายการที่ถูกยกเลิกทั้งหมด</div>
+                        </div>
                     </div>
-                </div>
-                <div class="stat-card green">
-                    <div class="stat-icon">✅</div>
-                    <div class="stat-info">
-                        <div class="stat-number">{{ succeedCount }}</div>
-                        <div class="stat-label">Completed</div>
-                    </div>
-                </div>
-                <!-- <div class="stat-card purple">
-                    <div class="stat-icon">👨‍⚕️</div>
-                    <div class="stat-info">
-                        <div class="stat-number">{{ doctorList.length }}</div>
-                        <div class="stat-label">Doctors</div>
-                    </div>
-                </div> -->
 
-                <div class="stat-card red">
-                    <div class="stat-icon">❌</div>
-                    <div class="stat-info">
-                        <div class="stat-number">{{ cancelledCount }}</div>
-                        <div class="stat-label">Cancelled</div>
-                    </div>
-                </div>
-            </div>
+                    <!-- Surgery Room Queues -->
+                    <div class="doctor-section" style="margin-bottom: 20px;">
+                        <div class="section-header">
+                            <h2 class="section-title">🏥 คิวห้องผ่าตัดวันนี้</h2>
+                        </div>
 
-            <!-- Surgery Room Queues -->
-            <div class="doctor-section" style="margin-bottom: 20px;">
-                <div class="section-header">
-                    <h2 class="section-title">🏥 คิวห้องผ่าตัดวันนี้</h2>
-                </div>
-
-                <div class="room-queue-wrap">
-                    <div v-if="loading" class="empty-state" style="padding: 30px">
-                        <p>กำลังโหลด...</p>
-                    </div>
-                    <div v-else-if="roomQueues.length === 0" class="empty-state" style="padding: 30px">
-                        <p>ไม่มีคิวผ่าตัดในขณะนี้</p>
-                    </div>
-
-                    <div v-else class="room-list">
-                        <div v-for="rq in roomQueues" :key="rq.room" class="room-card" @click="toggleRoom(rq.room)">
-
-                            <!-- หัวการ์ด: ห้อง + สถานะ + กำลังทำอะไร + จำนวนคิว/นาที -->
-                            <div class="room-summary">
-                                <div class="room-summary-left">
-                                    <span class="room-status-dot" :class="rq.status.class"></span>
-                                    <div>
-                                        <div class="room-name-row">
-                                            <span class="room-name">{{ rq.room }}</span>
-                                            <span class="room-status-text" :class="rq.status.class">{{ rq.status.label
-                                            }}</span>
-                                        </div>
-                                        <div class="room-current">
-                                            <span v-if="rq.current">
-                                                <span class="live-tag">🔴 กำลังผ่าตัด</span> {{ rq.current.procedureName
-                                                }}
-                                            </span>
-                                            <span v-else>ไม่มีคิว</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="room-summary-right">
-                                    <span class="room-count-badge">{{ rq.queues.length }} คิว</span>
-                                    <span class="room-min-badge">{{ rq.totalMinutes }} นาที</span>
-                                    <span class="material-icons expand-icon">
-                                        {{ expandedRoom === rq.room ? 'expand_less' : 'expand_more' }}
-                                    </span>
-                                </div>
+                        <div class="room-queue-wrap">
+                            <div v-if="loading" class="empty-state" style="padding: 30px">
+                                <p>กำลังโหลด...</p>
+                            </div>
+                            <div v-else-if="roomQueues.length === 0" class="empty-state" style="padding: 30px">
+                                <p>ไม่มีคิวผ่าตัดในขณะนี้</p>
                             </div>
 
-                            <!-- รายละเอียด: กางเมื่อคลิก -->
-                            <transition name="expand">
-                                <div v-if="expandedRoom === rq.room" class="room-detail" @click.stop>
-                                    <div v-for="(q, idx) in rq.queues" :key="idx" class="queue-row">
-                                        <span class="queue-order">#{{ idx + 1 }}</span>
-                                        <div class="queue-info">
-                                            <div class="queue-procedure-row">
-                                                <span class="queue-procedure">{{ q.procedureName }}</span>
-                                                <span class="queue-live-badge" :class="{ 'is-active': idx === 0 }">
-                                                    {{ idx === 0 ? '🔴 กำลังผ่าตัด' : '⏳ รอคิว' }}
-                                                </span>
+                            <div v-else class="room-list">
+                                <div v-for="rq in roomQueues" :key="rq.room" class="room-card"
+                                    @click="toggleRoom(rq.room)">
+                                    <div class="room-summary">
+                                        <div class="room-summary-left">
+                                            <span class="room-status-dot" :class="rq.status.class"></span>
+                                            <div>
+                                                <div class="room-name-row">
+                                                    <span class="room-name">{{ rq.room }}</span>
+                                                    <span class="room-status-text" :class="rq.status.class">{{
+                                                        rq.status.label }}</span>
+                                                </div>
+                                                <div class="room-current">
+                                                    <span v-if="rq.current">
+                                                        <span class="live-tag">🔴 กำลังผ่าตัด</span> {{
+                                                            rq.current.procedureName }}
+                                                    </span>
+                                                    <span v-else>ไม่มีคิว</span>
+                                                </div>
                                             </div>
-                                            <div class="queue-meta">
-                                                HN {{ q.hn }} · {{ q.patientName }}
-                                            </div>
-                                            <div class="queue-doctor-row">👨‍⚕️ {{ q.doctorName }}</div>
                                         </div>
-                                        <span v-if="q.duration" class="queue-duration">{{ q.duration }} น.</span>
+
+                                        <div class="room-summary-right">
+                                            <span class="room-count-badge">{{ rq.queues.length }} คิว</span>
+                                            <span class="room-min-badge">{{ rq.totalMinutes }} นาที</span>
+                                            <span class="material-icons expand-icon">
+                                                {{ expandedRoom === rq.room ? 'expand_less' : 'expand_more' }}
+                                            </span>
+                                        </div>
                                     </div>
+
+                                    <transition name="expand">
+                                        <div v-if="expandedRoom === rq.room" class="room-detail" @click.stop>
+                                            <div v-for="(q, idx) in rq.queues" :key="idx" class="queue-row">
+                                                <span class="queue-order">#{{ idx + 1 }}</span>
+                                                <div class="queue-info">
+                                                    <div class="queue-procedure-row">
+                                                        <span class="queue-procedure">{{ q.procedureName }}</span>
+                                                        <span class="queue-live-badge"
+                                                            :class="{ 'is-active': idx === 0 }">
+                                                            {{ idx === 0 ? '🔴 กำลังผ่าตัด' : '⏳ รอคิว' }}
+                                                        </span>
+                                                    </div>
+                                                    <div class="queue-meta">HN {{ q.hn }} · {{ q.patientName }}</div>
+                                                    <div class="queue-doctor-row">👨‍⚕️ {{ q.doctorName }}</div>
+                                                </div>
+                                                <span v-if="q.duration" class="queue-duration">{{ q.duration }}
+                                                    น.</span>
+                                            </div>
+                                        </div>
+                                    </transition>
                                 </div>
-                            </transition>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
+                <!-- ===== Section: Fiscal Year ===== -->
+                <div v-if="activeSection === 'fiscal'">
+                    <h1 class="main-title">📅 สถิติปีงบประมาณ</h1>
+                    <FiscalYearStats :bookings="bookings" />
+                </div>
 
-            <!-- Doctor Management Table -->
-            <div class="doctor-section">
-                <div class="section-header">
-                    <h2 class="section-title">👨‍⚕️ Doctor Accounts</h2>
-                </div>
-                <div class="doctor-table-wrap">
-                    <div v-if="loading" class="empty-state" style="padding: 30px">
-                        <p>กำลังโหลด...</p>
+                <!-- ===== Section: Doctor Accounts ===== -->
+                <div v-if="activeSection === 'doctors'">
+                    <h1 class="main-title">👨‍⚕️ Doctor Accounts</h1>
+
+                    <div class="doctor-section">
+                        <div class="section-header">
+                            <h2 class="section-title">👨‍⚕️ Doctor Accounts</h2>
+                        </div>
+                        <div class="doctor-table-wrap">
+                            <div v-if="loading" class="empty-state" style="padding: 30px">
+                                <p>กำลังโหลด...</p>
+                            </div>
+                            <div v-else-if="doctorList.length === 0" class="empty-state" style="padding: 30px">
+                                <p>No doctor accounts found.</p>
+                            </div>
+                            <table v-else class="doctor-table">
+                                <thead>
+                                    <tr>
+                                        <th>License</th>
+                                        <th>Name</th>
+                                        <th>Role</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="doc in doctorList" :key="doc.license">
+                                        <td>{{ doc.license }}</td>
+                                        <td>{{ doc.doctorName }}</td>
+                                        <td>
+                                            <span class="role-badge" :class="getRoleClass(doc.role)">
+                                                {{ getRoleLabel(doc.role) }}
+                                            </span>
+                                            <select class="role-select" :value="doc.role || 'user'"
+                                                @change="changeRole(doc.license, $event.target.value)">
+                                                <option value="user">User</option>
+                                                <option value="admin">Admin</option>
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <button v-if="doc.role !== 'admin'" class="btn-delete-doc"
+                                                @click="deleteDoctor(doc.license, doc.doctorName)">Delete</button>
+                                            <span v-else class="protected-text">Protected</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-                    <div v-else-if="doctorList.length === 0" class="empty-state" style="padding: 30px">
-                        <p>No doctor accounts found.</p>
-                    </div>
-                    <table v-else class="doctor-table">
-                        <thead>
-                            <tr>
-                                <th>License</th>
-                                <th>Name</th>
-                                <th>Role</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="doc in doctorList" :key="doc.license">
-                                <td>{{ doc.license }}</td>
-                                <td>{{ doc.doctorName }}</td>
-                                <td>
-                                    <span class="role-badge" :class="getRoleClass(doc.role)">
-                                        {{ getRoleLabel(doc.role) }}
-                                    </span>
-                                    <select class="role-select" :value="doc.role || 'user'"
-                                        @change="changeRole(doc.license, $event.target.value)">
-                                        <option value="user">User</option>
-                                        <option value="admin">Admin</option>
-                                    </select>
-                                </td>
-                                <td>
-                                    <button v-if="doc.role !== 'admin'" class="btn-delete-doc"
-                                        @click="deleteDoctor(doc.license, doc.doctorName)">Delete</button>
-                                    <span v-else class="protected-text">Protected</span>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
                 </div>
+
             </div>
         </div>
+
     </div>
 </template>
 
@@ -234,6 +260,7 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { apiFetch } from '../../api/client'
+import FiscalYearStats from '../../components/report/FiscalYearStats.vue'
 
 const router = useRouter()
 const userLicense = ref('Admin')
@@ -242,6 +269,8 @@ const doctorMap = ref({})
 const bookings = ref([])
 const loading = ref(true)
 const isLogoutModalOpen = ref(false)
+const activeSection = ref('dashboard') // 'dashboard' | 'fiscal' | 'doctors'
+
 
 // 🐛 Fix: ปรับปรุงการดึงวันที่ปัจจุบันให้ตรงกับ Local Timezone (แก้ปัญหา UTC offset)
 const tzOffset = new Date().getTimezoneOffset() * 60000
@@ -260,13 +289,14 @@ const cancelledCount = computed(() =>
         b => b.status === 'Cancelled'
     ).length
 )
+
 // 🏥 จัดกลุ่มคิวผ่าตัดตามห้อง (ไม่รวม Cancelled/Succeed) — อิงลำดับคิว (queueOrder) + นาทีจาก procedure
 const roomQueues = computed(() => {
     const groups = {}
 
     bookings.value
         .filter(b =>
-            b.date === todayStr &&                        // ✅ ลบ .value ออก เพราะ todayStr เป็น string ธรรมดา
+            b.date === todayStr &&
             b.status !== 'Cancelled' &&
             b.status !== 'Succeed'
         )
@@ -478,6 +508,7 @@ const changeRole = async (license, newRole) => {
     background-color: #f5f7fa;
 }
 
+/* ===== Top Nav ===== */
 .top-nav {
     background-color: #1a3a5f !important;
     height: 80px;
@@ -485,6 +516,7 @@ const changeRole = async (license, newRole) => {
     justify-content: space-between;
     align-items: center;
     padding: 0 20px;
+    flex-shrink: 0;
 }
 
 .user-group {
@@ -539,11 +571,81 @@ const changeRole = async (license, newRole) => {
     padding: 4px;
 }
 
+/* ===== body layout: sidebar เล็ก + content ===== */
+.body-layout {
+    display: flex;
+    flex: 1;
+}
+
+.section-nav {
+    width: 200px;
+    flex-shrink: 0;
+    background: white;
+    border-right: 1px solid #e2e8f0;
+    padding: 20px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.section-nav-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: #4a5e75;
+    padding: 12px 14px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.2s, color 0.2s;
+}
+
+.section-nav-btn:hover {
+    background: #eef2f7;
+}
+
+.section-nav-btn.active {
+    background: #1a3a5f;
+    color: white;
+}
+
+.section-nav-emoji {
+    font-size: 16px;
+    width: 20px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
 .page-container {
-    padding: 16px;
+    padding: 16px 24px;
     max-width: 900px;
     margin: 0 auto;
     width: 100%;
+    flex: 1;
+}
+
+@media (max-width: 768px) {
+    .body-layout {
+        flex-direction: column;
+    }
+
+    .section-nav {
+        width: 100%;
+        flex-direction: row;
+        border-right: none;
+        border-bottom: 1px solid #e2e8f0;
+        padding: 10px 12px;
+    }
+
+    .section-nav-btn {
+        flex: 1;
+        justify-content: center;
+    }
 }
 
 .main-title {
@@ -590,8 +692,6 @@ const changeRole = async (license, newRole) => {
     border-left-color: #7b5ea7;
 }
 
-
-
 .stat-card.red {
     border-left-color: #dc3545;
 }
@@ -611,6 +711,94 @@ const changeRole = async (license, newRole) => {
     font-size: 12px;
     color: #888;
     margin-top: 4px;
+}
+
+/* ===== Formal Stat Cards (Upcoming / Cancelled) ===== */
+.formal-stats-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+@media (min-width: 640px) {
+    .formal-stats-row {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.formal-stat-card {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 20px 22px;
+    box-shadow: 0 2px 8px rgba(15, 42, 71, 0.04);
+    border-top: 3px solid #cbd5e1;
+}
+
+.formal-stat-card.accent-blue {
+    border-top-color: #1a3a5f;
+}
+
+.formal-stat-card.accent-red {
+    border-top-color: #b91c1c;
+}
+
+.formal-stat-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+}
+
+.formal-stat-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: #4a5e75;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.formal-stat-icon-badge {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.formal-stat-icon-badge .material-icons {
+    font-size: 18px;
+}
+
+.formal-stat-icon-badge.blue {
+    background: #e8f0fe;
+    color: #1a3a5f;
+}
+
+.formal-stat-icon-badge.red {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.formal-stat-icon-badge.green {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.formal-stat-number {
+    font-size: 2.1rem;
+    font-weight: 800;
+    color: #1a3a5f;
+    line-height: 1;
+}
+
+.formal-stat-foot {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #94a3b8;
 }
 
 /* Doctor Section */
