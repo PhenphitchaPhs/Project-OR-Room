@@ -243,6 +243,13 @@
                                     <button class="btn-delete" @click.stop="openCancelModal(item.id)">
                                         Cancel
                                     </button>
+
+                                    <button class="btn-export-case" title="Export คิวนี้"
+                                        @click.stop="openCaseExport(item)">
+                                        <span class="material-icons">download</span>
+                                        Export
+                                    </button>
+
                                 </div>
                                 <div class="see-more-toggle">
                                     <span class="see-more-text">
@@ -341,6 +348,13 @@
                                     <button class="btn-delete" @click.stop="openCancelModal(item.id)">
                                         Cancel
                                     </button>
+
+                                    <button class="btn-export-case" title="Export คิวนี้"
+                                        @click.stop="openCaseExport(item)">
+                                        <span class="material-icons">download</span>
+                                        Export
+                                    </button>
+
                                 </div>
                                 <div class="see-more-toggle">
                                     <span class="see-more-text">
@@ -516,6 +530,11 @@
                                         Back to Upcoming
                                     </button>
 
+                                    <button class="btn-export-case" title="Export คิวนี้"
+                                        @click.stop="openCaseExport(item)">
+                                        <span class="material-icons">download</span>
+                                        Export
+                                    </button>
 
                                 </div>
 
@@ -568,6 +587,46 @@
                         OK
                     </button>
                 </div>
+            </div>
+        </div>
+    </Transition>
+
+    <!-- ===== เลือกรูปแบบไฟล์ตอนกด Export บนการ์ด =====
+         เลื่อนขึ้นจากขอบล่างบนมือถือ (ปุ่มอยู่ใกล้นิ้วโป้ง) และเป็นการ์ดกลางจอบนเดสก์ท็อป -->
+    <Transition name="fade">
+        <div v-if="caseExportTarget" class="sheet-overlay" @click.self="closeCaseExport">
+            <div class="export-sheet" role="dialog" aria-modal="true" aria-labelledby="case-export-title">
+
+                <div class="sheet-grabber"></div>
+
+                <h2 id="case-export-title" class="sheet-title">Export คิวนี้</h2>
+
+                <p class="sheet-subtitle">
+                    HN {{ caseExportTarget.hn }} · {{ caseExportTarget.fullName }}
+                    <br />
+                    {{ doctorMap[caseExportTarget.doctorLicense] || caseExportTarget.doctorLicense || '-' }}
+                </p>
+
+                <button class="sheet-option" :disabled="isExportingCase" @click="exportCaseCsv(caseExportTarget)">
+                    <span class="material-icons">table_view</span>
+                    <span class="sheet-option-text">
+                        <strong>CSV</strong>
+                        <small>ไฟล์ตาราง เปิดใน Excel เพื่อคำนวณต่อ</small>
+                    </span>
+                </button>
+
+                <button class="sheet-option" :disabled="isExportingCase" @click="exportCasePdf(caseExportTarget)">
+                    <span class="material-icons">picture_as_pdf</span>
+                    <span class="sheet-option-text">
+                        <strong>PDF</strong>
+                        <small>{{ isExportingCase ? 'กำลังสร้างไฟล์…' : 'ใบสรุปคิว พร้อมพิมพ์ออกมาใช้ได้ทันที' }}</small>
+                    </span>
+                </button>
+
+                <button class="sheet-cancel" :disabled="isExportingCase" @click="closeCaseExport">
+                    ยกเลิก
+                </button>
+
             </div>
         </div>
     </Transition>
@@ -1360,6 +1419,86 @@ const confirmExport = async () => {
     }
 }
 
+// ============ Export คิวเดียวจากปุ่มบนการ์ด (ไม่ต้องเปิด modal) ============
+//
+// ใช้ข้อมูลที่โหลดมาแล้วในหน้าจอได้เลย ไม่ต้องยิง API ซ้ำ
+// เพราะเป็นคิวเดียวที่ผู้ใช้เห็นอยู่ตรงหน้า ไม่มีเรื่อง pagination มาทำให้ตัวเลขคลาดเคลื่อน
+
+/**
+ * แผ่นเลือกรูปแบบไฟล์ตอนกด Export บนการ์ด
+ * ใช้ปุ่มเดียวบนการ์ดแล้วค่อยให้เลือก CSV หรือ PDF ในแผ่นนี้
+ * เพราะการ์ดบนมือถือแคบ ถ้าวางสองปุ่มจะเบียดกับปุ่ม Edit และ Cancel จนกดพลาด
+ */
+const caseExportTarget = ref(null)
+const isExportingCase = ref(false)
+
+const findCase = (item) => {
+    if (!item?.id) return null
+    return bookings.value.find(row => String(row.id) === String(item.id)) || item
+}
+
+const openCaseExport = (item) => {
+    const row = findCase(item)
+    if (!row) return
+    caseExportTarget.value = row
+}
+
+const closeCaseExport = () => {
+    if (isExportingCase.value) return
+    caseExportTarget.value = null
+}
+
+const exportCaseCsv = (item) => {
+    const row = findCase(item)
+    if (!row) return
+
+    try {
+        const fileName = buildSingleFileName(row.hn, row.date)
+        downloadCsv(fileName, buildBookingsCsv([row], {
+            includeDoctor: true,
+            doctorNames: doctorMap.value
+        }))
+        caseExportTarget.value = null
+        showMessage(`ดาวน์โหลดแล้ว\n${fileName}`)
+    } catch (e) {
+        console.error('❌ สร้างไฟล์ CSV ไม่สำเร็จ:', e)
+        showMessage('สร้างไฟล์ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', 'error')
+    }
+}
+
+const exportCasePdf = async (item) => {
+    const row = findCase(item)
+    if (!row) return
+
+    // การสร้าง PDF ต้องโหลดฟอนต์ ใช้เวลาสักครู่ กันกดซ้ำระหว่างนั้น
+    if (isExportingCase.value) return
+    isExportingCase.value = true
+
+    try {
+        const fileName = buildReportFileName(
+            { license: row.doctorLicense, hn: row.hn, from: row.date, mode: 'single' },
+            downloadStamp()
+        )
+
+        const blob = await buildQueueReportPdf([row], {
+            mode: 'single',
+            doctorName: doctorMap.value[row.doctorLicense] || row.doctorLicense || '-',
+            license: row.doctorLicense || '-',
+            room: row.room || '-',
+            rangeLabel: formatThaiDate(row.date)
+        })
+
+        downloadBlob(fileName, blob)
+        caseExportTarget.value = null
+        showMessage(`ดาวน์โหลดแล้ว\n${fileName}`)
+    } catch (e) {
+        console.error('❌ สร้างไฟล์ PDF ไม่สำเร็จ:', e)
+        showMessage('สร้างไฟล์ PDF ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', 'error')
+    } finally {
+        isExportingCase.value = false
+    }
+}
+
 // ================= ระบบจัดเรียงคิวอัจฉริยะ =================
 const sortCases = (arr) => {
     return [...arr].sort((a, b) => {
@@ -1831,8 +1970,187 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
 .case-actions {
     display: flex;
     justify-content: flex-end;
-    gap: 12px;
+    /* การ์ดมีปุ่มถึง 4 ปุ่มแล้ว บนจอแคบต้องยอมให้ตกบรรทัดแทนที่จะบีบจนอ่านไม่ออก */
+    flex-wrap: wrap;
+    gap: 8px;
     margin-top: 12px;
+}
+
+/* ปุ่ม export บนการ์ดแต่ละเคส — ทรงเดียวกับฝั่งแพทย์ ต่างแค่โทน navy ตามพาเลตของหน้านี้ */
+.btn-export-case {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+
+    background: #eef2f9;
+    color: #1e3a8a;
+    border: 1px solid #dbe3ec;
+    border-radius: 8px;
+    padding: 6px 12px;
+
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.btn-export-case:hover {
+    background: #dde6f4;
+}
+
+.btn-export-case .material-icons {
+    font-size: 16px;
+}
+
+.btn-export-case:disabled {
+    opacity: 0.6;
+    cursor: progress;
+}
+
+/* ===================== แผ่นเลือกรูปแบบไฟล์ (Export บนการ์ด) =====================
+   มือถือ: เลื่อนขึ้นจากขอบล่าง ปุ่มอยู่ในระยะที่นิ้วโป้งเอื้อมถึง
+   เดสก์ท็อป: กลายเป็นการ์ดกลางจอ (ดู media query ท้ายบล็อกนี้) */
+.sheet-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+
+    background: rgba(15, 23, 42, 0.45);
+}
+
+.export-sheet {
+    width: 100%;
+    padding: 10px 16px calc(18px + env(safe-area-inset-bottom));
+
+    background: #ffffff;
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.18);
+}
+
+/* ขีดเล็ก ๆ ด้านบนเป็นสัญญาณว่าแผ่นนี้ปิดได้ */
+.sheet-grabber {
+    width: 40px;
+    height: 4px;
+    margin: 0 auto 14px;
+    background: #dbe3ec;
+    border-radius: 999px;
+}
+
+.sheet-title {
+    margin: 0 0 4px;
+    color: #1e3a8a;
+    font-size: 17px;
+    font-weight: 700;
+    text-align: center;
+}
+
+.sheet-subtitle {
+    margin: 0 0 16px;
+    color: #64748b;
+    font-size: 13px;
+    line-height: 1.6;
+    text-align: center;
+    overflow-wrap: anywhere;
+}
+
+.sheet-option {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+
+    /* 60px เพื่อให้เป็นเป้ากดที่ใหญ่พอสำหรับนิ้ว ไม่ใช่ขนาดเมาส์ */
+    min-height: 60px;
+    padding: 12px 16px;
+    margin-bottom: 10px;
+
+    background: #f8fafc;
+    border: 1px solid #e6ecf4;
+    border-radius: 14px;
+
+    color: #1e3a8a;
+    text-align: left;
+    cursor: pointer;
+    transition: 0.15s;
+}
+
+.sheet-option:active {
+    background: #eef2f9;
+    transform: scale(0.99);
+}
+
+.sheet-option:disabled {
+    opacity: 0.55;
+    cursor: progress;
+}
+
+.sheet-option .material-icons {
+    flex-shrink: 0;
+    font-size: 26px;
+}
+
+.sheet-option-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.sheet-option-text strong {
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.sheet-option-text small {
+    color: #64748b;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.sheet-cancel {
+    width: 100%;
+    min-height: 48px;
+    margin-top: 4px;
+
+    background: none;
+    border: none;
+
+    color: #64748b;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.sheet-cancel:disabled {
+    opacity: 0.5;
+}
+
+/* จอกว้างพอแล้วให้เป็นการ์ดลอยกลางจอแทนแผ่นติดขอบล่าง */
+@media (min-width: 640px) {
+    .sheet-overlay {
+        align-items: center;
+    }
+
+    .export-sheet {
+        width: min(92vw, 380px);
+        padding: 18px 20px 20px;
+        border-radius: 20px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    }
+
+    .sheet-grabber {
+        display: none;
+    }
+
+    .sheet-option:hover:not(:disabled) {
+        background: #eef2f9;
+        border-color: #dbe3ec;
+    }
 }
 
 
@@ -2546,7 +2864,12 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
     gap: 10px;
     flex-wrap: wrap;
     justify-content: flex-end;
+    align-items: center;
     margin-bottom: 12px;
+
+    /* ⚠️ ปุ่มเฟือง (.main-header ใน App.vue) เป็น position: fixed อยู่มุมซ้ายบน
+       กินพื้นที่ประมาณ 60px ต้องเว้นให้ ไม่งั้นช่องค้นหาจะไปอยู่ใต้ปุ่มนั้นตอนจอแคบ */
+    padding-left: 56px;
 }
 
 .search-box {
@@ -2557,7 +2880,11 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
     border: 1px solid #dbe3ec;
     border-radius: 12px;
     padding: 0 12px;
-    width: 350px;
+
+    /* ความกว้างตายตัว 350px เดิมล้นขอบจอมือถือ เปลี่ยนเป็นยืดหดตามที่ว่างที่เหลือ */
+    flex: 1 1 220px;
+    max-width: 350px;
+
     height: 46px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, .05);
 }
