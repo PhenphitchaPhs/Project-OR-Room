@@ -148,7 +148,7 @@
                     </button>
 
                     <button :class="{ active: filter === FILTERS.PASS }" @click="filter = FILTERS.PASS">
-                        Pass
+                        Passed
                     </button>
                 </div>
                 <div v-if="filter === FILTERS.PASS" class="sub-filter">
@@ -222,7 +222,7 @@
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                            }}</div>
+                                        }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
                                             item.cxrNote || '-' }}</div>
@@ -237,8 +237,7 @@
                                 </transition>
                                 <div class="case-actions">
                                     <!-- 📍 แอดมินใช้หน้าจองเดียวกับแพทย์ได้ เพราะ BookingView เช็ค userRole === 'admin' ให้แล้ว -->
-                                    <button class="btn-edit"
-                                        @click.stop="router.push(`/booking/${item.id}`)">
+                                    <button class="btn-edit" @click.stop="router.push(`/booking/${item.id}`)">
                                         Edit
                                     </button>
                                     <button class="btn-delete" @click.stop="openCancelModal(item.id)">
@@ -319,7 +318,7 @@
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                            }}</div>
+                                        }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
                                             item.cxrNote || '-' }}</div>
@@ -411,7 +410,7 @@
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                            }}</div>
+                                        }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
                                             item.cxrNote || '-' }}</div>
@@ -496,7 +495,7 @@
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                        }}</div>
+                                            }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
                                             item.cxrNote || '-' }}</div>
@@ -688,8 +687,7 @@
 
                     <div class="export-mode-switch">
                         <button v-for="option in groupByOptions" :key="option.value"
-                            :class="{ active: exportGroupBy === option.value }"
-                            @click="exportGroupBy = option.value">
+                            :class="{ active: exportGroupBy === option.value }" @click="exportGroupBy = option.value">
                             {{ option.label }}
                         </button>
                     </div>
@@ -717,7 +715,8 @@
                     </button>
 
                     <button class="btn-confirm-green" :disabled="!canExport || isExporting" @click="confirmExport">
-                        {{ isExporting ? 'กำลังสร้างไฟล์…' : exportFormat === 'pdf' ? 'ดาวน์โหลด PDF' : 'ดาวน์โหลด CSV' }}
+                        {{ isExporting ? 'กำลังสร้างไฟล์…' : exportFormat === 'pdf' ? 'ดาวน์โหลด PDF' : 'ดาวน์โหลด CSV'
+                        }}
                     </button>
                 </div>
 
@@ -1636,6 +1635,7 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
     padding: 16px 20px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
 }
+
 .capacity-header {
     display: flex;
     justify-content: space-between;
@@ -1645,11 +1645,13 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
     color: #1a3a5f;
     margin-bottom: 10px;
 }
+
 .capacity-title {
     display: flex;
     align-items: center;
     gap: 6px;
 }
+
 .capacity-bar {
     width: 100%;
     height: 10px;
@@ -1658,17 +1660,20 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
     overflow: hidden;
     margin-bottom: 10px;
 }
+
 .capacity-fill {
     height: 100%;
     border-radius: 999px;
     transition: 0.3s ease;
 }
+
 .capacity-detail {
     display: flex;
     justify-content: space-between;
     align-items: center;
     font-size: 12px;
 }
+
 .remaining-time {
     display: flex;
     align-items: center;
@@ -1676,6 +1681,7 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
     color: #374151;
     font-weight: 500;
 }
+
 .capacity-status {
     display: flex;
     align-items: center;
@@ -1683,14 +1689,22 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
     color: #22c55e;
     font-weight: 600;
 }
-.capacity-status.warning { color: #f59e0b; }
-.capacity-status.danger { color: #dc2626; }
+
+.capacity-status.warning {
+    color: #f59e0b;
+}
+
+.capacity-status.danger {
+    color: #dc2626;
+}
+
 .room-status-row {
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
     margin-top: 10px;
 }
+
 .room-chip {
     font-size: 12px;
     font-weight: 600;
@@ -1699,7 +1713,10 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
     background: #f1f5f9;
     color: #334155;
 }
-.small-icon { font-size: 16px; }
+
+.small-icon {
+    font-size: 16px;
+}
 
 .queue-card {
     width: 90%;
