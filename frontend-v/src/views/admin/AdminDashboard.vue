@@ -108,6 +108,79 @@
                 </div>
             </div>
 
+            <!-- Surgery Room Queues -->
+            <div class="doctor-section" style="margin-bottom: 20px;">
+                <div class="section-header">
+                    <h2 class="section-title">🏥 คิวห้องผ่าตัดวันนี้</h2>
+                </div>
+
+                <div class="room-queue-wrap">
+                    <div v-if="loading" class="empty-state" style="padding: 30px">
+                        <p>กำลังโหลด...</p>
+                    </div>
+                    <div v-else-if="roomQueues.length === 0" class="empty-state" style="padding: 30px">
+                        <p>ไม่มีคิวผ่าตัดในขณะนี้</p>
+                    </div>
+
+                    <div v-else class="room-list">
+                        <div v-for="rq in roomQueues" :key="rq.room" class="room-card" @click="toggleRoom(rq.room)">
+
+                            <!-- หัวการ์ด: ห้อง + สถานะ + กำลังทำอะไร + จำนวนคิว/นาที -->
+                            <div class="room-summary">
+                                <div class="room-summary-left">
+                                    <span class="room-status-dot" :class="rq.status.class"></span>
+                                    <div>
+                                        <div class="room-name-row">
+                                            <span class="room-name">{{ rq.room }}</span>
+                                            <span class="room-status-text" :class="rq.status.class">{{ rq.status.label
+                                            }}</span>
+                                        </div>
+                                        <div class="room-current">
+                                            <span v-if="rq.current">
+                                                <span class="live-tag">🔴 กำลังผ่าตัด</span> {{ rq.current.procedureName
+                                                }}
+                                            </span>
+                                            <span v-else>ไม่มีคิว</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="room-summary-right">
+                                    <span class="room-count-badge">{{ rq.queues.length }} คิว</span>
+                                    <span class="room-min-badge">{{ rq.totalMinutes }} นาที</span>
+                                    <span class="material-icons expand-icon">
+                                        {{ expandedRoom === rq.room ? 'expand_less' : 'expand_more' }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- รายละเอียด: กางเมื่อคลิก -->
+                            <transition name="expand">
+                                <div v-if="expandedRoom === rq.room" class="room-detail" @click.stop>
+                                    <div v-for="(q, idx) in rq.queues" :key="idx" class="queue-row">
+                                        <span class="queue-order">#{{ idx + 1 }}</span>
+                                        <div class="queue-info">
+                                            <div class="queue-procedure-row">
+                                                <span class="queue-procedure">{{ q.procedureName }}</span>
+                                                <span class="queue-live-badge" :class="{ 'is-active': idx === 0 }">
+                                                    {{ idx === 0 ? '🔴 กำลังผ่าตัด' : '⏳ รอคิว' }}
+                                                </span>
+                                            </div>
+                                            <div class="queue-meta">
+                                                HN {{ q.hn }} · {{ q.patientName }}
+                                            </div>
+                                            <div class="queue-doctor-row">👨‍⚕️ {{ q.doctorName }}</div>
+                                        </div>
+                                        <span v-if="q.duration" class="queue-duration">{{ q.duration }} น.</span>
+                                    </div>
+                                </div>
+                            </transition>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
             <!-- Doctor Management Table -->
             <div class="doctor-section">
                 <div class="section-header">
@@ -158,13 +231,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { apiFetch } from '../../api/client'
 
 const router = useRouter()
 const userLicense = ref('Admin')
 const doctorList = ref([])
+const doctorMap = ref({})
 const bookings = ref([])
 const loading = ref(true)
 const isLogoutModalOpen = ref(false)
@@ -186,6 +260,65 @@ const cancelledCount = computed(() =>
         b => b.status === 'Cancelled'
     ).length
 )
+// 🏥 จัดกลุ่มคิวผ่าตัดตามห้อง (ไม่รวม Cancelled/Succeed) — อิงลำดับคิว (queueOrder) + นาทีจาก procedure
+const roomQueues = computed(() => {
+    const groups = {}
+
+    bookings.value
+        .filter(b =>
+            b.date === todayStr &&                        // ✅ ลบ .value ออก เพราะ todayStr เป็น string ธรรมดา
+            b.status !== 'Cancelled' &&
+            b.status !== 'Succeed'
+        )
+        .forEach(b => {
+            const roomKey = String(b.room || '').match(/(\d+)/)?.[1]
+            if (!roomKey) return
+
+            const durationMatch = b.procedure?.match(/(\d+)\s*min/)
+            const duration = durationMatch ? parseInt(durationMatch[1]) : null
+            const procedureName = (b.procedure || '-').replace(/\s*-\s*\d+\s*min[s]?.*$/i, '')
+
+            if (!groups[roomKey]) groups[roomKey] = []
+
+            groups[roomKey].push({
+                order: b.queueOrder || 999,
+                duration,
+                procedureName,
+                hn: b.hn,
+                patientName: b.fullName,
+                doctorName: doctorMap.value[b.doctorLicense] || b.doctorLicense || '-',
+            })
+        })
+
+    Object.values(groups).forEach(list => list.sort((a, b) => a.order - b.order))
+
+    return Object.entries(groups)
+        .map(([room, queues]) => {
+            const totalMinutes = queues.reduce((sum, q) => sum + (q.duration || 0), 0)
+            return {
+                room: `OR-${room}`,
+                queues,
+                totalMinutes,
+                status: getRoomStatus(totalMinutes),
+                current: queues[0] || null, // คิวแรกในลำดับ = กำลังผ่าตัดอยู่
+            }
+        })
+        .sort((a, b) => a.room.localeCompare(b.room, undefined, { numeric: true }))
+})
+
+// เก็บว่าห้องไหนถูกกางรายละเอียดอยู่ (คลิกซ้ำเพื่อพับ)
+const expandedRoom = ref(null)
+const toggleRoom = (room) => {
+    expandedRoom.value = expandedRoom.value === room ? null : room
+}
+
+// สถานะห้องแบบย่อ ใช้สีบอกสถานะทำนองเดียวกับหน้า Home (ว่าง/บางส่วน/เต็ม)
+const OR_MAX_MINUTES = 420 // 7 ชม. มาตรฐานต่อห้อง
+const getRoomStatus = (totalMinutes) => {
+    if (totalMinutes === 0) return { label: 'ว่าง', class: 'available' }
+    if (totalMinutes < OR_MAX_MINUTES) return { label: 'กำลังใช้งาน', class: 'partial' }
+    return { label: 'เต็ม', class: 'full' }
+}
 
 onMounted(async () => {
     const savedLicense = localStorage.getItem('userLicense')
@@ -213,12 +346,14 @@ onMounted(async () => {
         }
 
         doctorList.value = userArray
+        userArray.forEach(u => { doctorMap.value[u.license] = u.doctorName })
     } catch (e) {
         console.error('โหลดข้อมูลไม่สำเร็จ', e)
     } finally {
         loading.value = false
     }
 })
+
 const dialogOpen = ref(false)
 const dialogTitle = ref('')
 const dialogMessage = ref('')
@@ -651,5 +786,247 @@ const changeRole = async (license, newRole) => {
 .role-badge.multi-role {
     background: #ede9fe;
     color: #6b21a8;
+}
+
+.room-queue-wrap {
+    padding: 12px 20px 20px;
+}
+
+.room-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.room-card {
+    background: #f9fbff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 14px 16px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+
+.room-card:hover {
+    border-color: #4a6fa5;
+}
+
+.room-summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.room-summary-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.room-status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.room-status-dot.available {
+    background: #22c55e;
+}
+
+.room-status-dot.partial {
+    background: #f59e0b;
+}
+
+.room-status-dot.full {
+    background: #dc2626;
+}
+
+.room-name-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.room-name {
+    font-weight: 700;
+    color: #1a3a5f;
+    font-size: 15px;
+}
+
+.room-status-text {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 1px 8px;
+    border-radius: 10px;
+}
+
+.room-status-text.available {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.room-status-text.partial {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.room-status-text.full {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.room-current {
+    font-size: 13px;
+    color: #555;
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 260px;
+}
+
+.room-summary-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.room-count-badge {
+    background: #4a6fa5;
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 12px;
+    white-space: nowrap;
+}
+
+.room-min-badge {
+    background: #eef2f7;
+    color: #4a6fa5;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 12px;
+    white-space: nowrap;
+}
+
+.expand-icon {
+    color: #94a3b8;
+    font-size: 20px;
+}
+
+.room-detail {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.queue-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: white;
+    border-radius: 10px;
+    padding: 8px 10px;
+}
+
+.queue-order {
+    font-weight: 700;
+    color: #4a6fa5;
+    font-size: 12px;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+.queue-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.queue-procedure {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1a3a5f;
+}
+
+.queue-meta {
+    font-size: 12px;
+    color: #888;
+    margin-top: 2px;
+}
+
+.queue-doctor-row {
+    font-size: 12px;
+    color: #4a6fa5;
+    margin-top: 2px;
+}
+
+.queue-duration {
+    font-size: 12px;
+    color: #555;
+    font-weight: 600;
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+.expand-enter-active,
+.expand-leave-active {
+    transition: all 0.25s ease;
+}
+
+.expand-enter-from,
+.expand-leave-to {
+    opacity: 0;
+    transform: translateY(-6px);
+}
+
+.queue-procedure-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.queue-live-badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: #eef2f7;
+    color: #94a3b8;
+}
+
+.queue-live-badge.is-active {
+    background: #fee2e2;
+    color: #b91c1c;
+    animation: pulse-badge 1.5s infinite;
+}
+
+@keyframes pulse-badge {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.live-tag {
+    display: inline-block;
+    color: #dc2626;
+    font-weight: 700;
+    font-size: 12px;
+    margin-right: 4px;
 }
 </style>
