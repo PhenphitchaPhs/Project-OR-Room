@@ -40,21 +40,3 @@ npm run dev
 (ตั้งไว้ใน `vite.config.ts`) ไม่ต้องตั้งค่าอะไรเพิ่ม
 
 ---
-
-## 🔑 การยืนยันตัวตน
-
-ระบบใช้ JWT ที่ backend เซ็นด้วย `JWT_SECRET` ของตัวเอง หลัง login สำเร็จจะได้ token
-อายุ 8 ชั่วโมง และทุกคำขอที่ต้องยืนยันตัวตนต้องแนบ `Authorization: Bearer <token>`
-
-ตั้งค่า secret ก่อน deploy backend ครั้งแรก
-
-```bash
-cd backend
-# สร้างค่าสุ่มยาว ๆ
-node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
-# แล้ววางค่าที่ได้ตอนที่ถาม
-npx wrangler secret put JWT_SECRET
-```
-
-> ⚠️ ห้ามใส่ `JWT_SECRET` ลงใน `wrangler.toml` หรือ commit ลง repo
-> และห้ามเขียน license กับรหัสผ่านของบัญชีจริงไว้ในไฟล์นี้
