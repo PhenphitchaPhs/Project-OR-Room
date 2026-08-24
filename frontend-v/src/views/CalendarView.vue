@@ -132,43 +132,53 @@ const orRooms = Array.from({ length: 20 }, (_, i) => 201 + i)
 
 // 📍 ฟังก์ชันใหม่สำหรับดึงข้อมูลเฉพาะช่วงเวลา และแยกข้อมูลตารางกับข้อมูลของตัวเอง
 const fetchSchedule = async (year, month) => {
-    // หาขอบเขตวันที่ (ดึงแบบทั้งเดือน)
-    const startDate = `${year}-${String(month + 1).padStart(2, '0')}-01`
-    const lastDate = new Date(year, month + 1, 0).getDate()
-    const endDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDate).padStart(2, '0')}`
+  const startDate = `${year}-${String(month + 1).padStart(2, '0')}-01`
+  const lastDate = new Date(year, month + 1, 0).getDate()
+  const endDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDate).padStart(2, '0')}`
 
-    try {
-        // 1. ดึงตารางรวม (ไม่มีข้อมูล PI ผู้ป่วย)
-        const resSchedule = await apiFetch(`/api/schedule?from=${startDate}&to=${endDate}`)
-        const scheduleDataRaw = await resSchedule.json()
-        scheduleData.value = Array.isArray(scheduleDataRaw) ? scheduleDataRaw : []
+  try {
+    // 1. ดึงตารางห้อง (ไม่มีข้อมูลผู้ป่วย)
+    const resSchedule = await apiFetch(`/api/schedule?from=${startDate}&to=${endDate}`)
 
-        // 2. ดึงข้อมูลเต็มเฉพาะคิวของตัวเอง (Endpoint นี้ฝั่งเซิร์ฟเวอร์จะคืนเฉพาะคิวของ myLicense แล้ว ถ้าไม่ใช่ admin)
-        const resMyBookings = await apiFetch(`/api/bookings`)
-        const myBookings = await resMyBookings.json()
-        myBookingsMap.value = new Map(myBookings.map(b => [b.id, b]))
-    } catch (e) {
-        console.error('ดึงข้อมูลปฏิทินไม่สำเร็จ', e)
+    if (!resSchedule.ok) {
+      const errorText = await resSchedule.text()
+      console.error('❌ /api/schedule ไม่สำเร็จ:', resSchedule.status, errorText)
+
+      // ถ้า token หมดอายุให้ logout
+      if (resSchedule.status === 401) {
+        localStorage.removeItem('token')
+        localStorage.removeItem('userLicense')
+        localStorage.removeItem('userRole')
+        router.push('/login')
+        return
+      }
+
+      scheduleData.value = []
+      return
     }
+
+    const scheduleDataRaw = await resSchedule.json()
+    scheduleData.value = Array.isArray(scheduleDataRaw) ? scheduleDataRaw : []
+
+    // 2. ดึงเฉพาะคิวของตัวเอง (เพื่อเอาไปแสดงใน popup)
+    const resMyBookings = await apiFetch(`/api/bookings`)
+
+    if (!resMyBookings.ok) {
+      console.error('❌ /api/bookings ไม่สำเร็จ:', resMyBookings.status)
+      myBookingsMap.value = new Map()
+      return
+    }
+
+    const myBookings = await resMyBookings.json()
+    myBookingsMap.value = new Map(myBookings.map(b => [b.id, b]))
+
+    console.log(`✅ scheduleData: ${scheduleData.value.length} รายการ, myBookingsMap: ${myBookingsMap.value.size} รายการ`)
+  } catch (e) {
+    console.error('❌ fetchSchedule error:', e)
+    scheduleData.value = []
+    myBookingsMap.value = new Map()
+  }
 }
-
-onMounted(async () => {
-    await fetchSchedule(currentYear.value, currentMonth.value)
-
-    try {
-        const resHoliday = await apiFetch(`/api/holidays`)
-        const dataHoliday = await resHoliday.json()
-
-        if (dataHoliday.items) {
-            officialHolidays.value = dataHoliday.items.map(item => ({
-                date: item.start.date,
-                name: item.summary
-            }))
-        }
-    } catch (e) {
-        console.error('ดึงวันหยุดไม่สำเร็จ', e)
-    }
-})
 
 // เปลี่ยนชื่อเดือนเป็นภาษาไทย
 const monthNames = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"]
