@@ -53,7 +53,6 @@
                         🔒 ห้องผ่าตัดปิดทำการ
                     </p>
 
-
                     <!-- 📍 แสดงสถานะของห้องผ่าตัดทุกห้อง (OR-201 ถึง OR-220) พร้อมเวลาที่เหลือและสีบอกสถานะ -->
                     <div v-if="!isClosedDay(selectedFullDate)" class="room-grid">
                         <div v-for="r in orRooms" :key="r" class="room-chip"
@@ -72,7 +71,7 @@
                     </div>
 
                     <div v-for="b in selectedDateBookings" :key="b.id" class="booking-item">
-                        <template v-if="b.doctorLicense === myLicense">
+                        <template v-if="b.isMine">
                             <p><strong>Room:</strong> {{ b.room || '-' }}</p>
                             <p><strong>Patient:</strong> {{ b.fullName }}</p>
                             <p><strong>HN:</strong> {{ b.hn }}</p>
@@ -112,7 +111,6 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { apiFetch } from '../api/client'
 
-
 const router = useRouter()
 const now = new Date()
 const currentMonth = ref(now.getMonth())
@@ -121,29 +119,41 @@ const todayStr = ref(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart
 
 const selectedFullDate = ref(todayStr.value)
 const isDetailPopupOpen = ref(false)
-const selectedDateBookings = ref([])
 
-const bookings = ref([])
+// ✅ ใช้ scheduleData เป็นแหล่งข้อมูลหลัก (ไม่มีข้อมูลผู้ป่วย)
+const scheduleData = ref([])
+// ✅ เก็บเฉพาะคิวของตัวเอง (id → full record)
+const myBookingsMap = ref(new Map())
+
 const officialHolidays = ref([])
 const MAX_MINUTES = 420
-// 📍 license ของแพทย์ที่ login อยู่ ใช้เทียบว่าคิวนี้เป็นของตัวเองไหม
-const myLicense = localStorage.getItem('userLicense')
 // 📍 เลขห้องผ่าตัด OR-201 ถึง OR-220
 const orRooms = Array.from({ length: 20 }, (_, i) => 201 + i)
 
-onMounted(async () => {
-    const license = localStorage.getItem('userLicense')
+// 📍 ฟังก์ชันใหม่สำหรับดึงข้อมูลเฉพาะช่วงเวลา และแยกข้อมูลตารางกับข้อมูลของตัวเอง
+const fetchSchedule = async (year, month) => {
+    // หาขอบเขตวันที่ (ดึงแบบทั้งเดือน)
+    const startDate = `${year}-${String(month + 1).padStart(2, '0')}-01`
+    const lastDate = new Date(year, month + 1, 0).getDate()
+    const endDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDate).padStart(2, '0')}`
 
-    // 📍 ดึงคิวทั้งหมดของทุกแพทย์ (ไม่กรอง license) เพื่อใช้แสดงว่าห้องไหนถูกจองแล้วบ้าง
-    // ส่วนข้อมูลผู้ป่วยของคนอื่นจะถูกซ่อนตอนแสดงผล (เห็นแค่ว่าห้องถูกจองแล้ว)
     try {
-        const res = await apiFetch(`/api/bookings`)
-        const data = await res.json()
-        bookings.value = Array.isArray(data) ? data : []
-    } catch (e) {
-        console.error('ดึงคิวไม่สำเร็จ', e)
-    }
+        // 1. ดึงตารางรวม (ไม่มีข้อมูล PI ผู้ป่วย)
+        const resSchedule = await apiFetch(`/api/schedule?from=${startDate}&to=${endDate}`)
+        const scheduleDataRaw = await resSchedule.json()
+        scheduleData.value = Array.isArray(scheduleDataRaw) ? scheduleDataRaw : []
 
+        // 2. ดึงข้อมูลเต็มเฉพาะคิวของตัวเอง (Endpoint นี้ฝั่งเซิร์ฟเวอร์จะคืนเฉพาะคิวของ myLicense แล้ว ถ้าไม่ใช่ admin)
+        const resMyBookings = await apiFetch(`/api/bookings`)
+        const myBookings = await resMyBookings.json()
+        myBookingsMap.value = new Map(myBookings.map(b => [b.id, b]))
+    } catch (e) {
+        console.error('ดึงข้อมูลปฏิทินไม่สำเร็จ', e)
+    }
+}
+
+onMounted(async () => {
+    await fetchSchedule(currentYear.value, currentMonth.value)
 
     try {
         const resHoliday = await apiFetch(`/api/holidays`)
@@ -172,9 +182,7 @@ const isWeekend = (d) => {
 }
 const isClosedDay = (d) => isWeekend(d) || isOfficialHoliday(d)
 
-
-const canBookOnDate = (d) =>
-    !isClosedDay(d)
+const canBookOnDate = (d) => !isClosedDay(d)
 
 const sortByAgeThenFemaleFirst = (arr) => {
     return [...arr].sort((a, b) => {
@@ -187,22 +195,23 @@ const sortByAgeThenFemaleFirst = (arr) => {
     })
 }
 
-const getBookingsForDate = (d) => sortByAgeThenFemaleFirst(bookings.value.filter(b => b.date === d && b.status !== 'Succeed'))
+// ใช้ scheduleData เป็นหลัก
+const getBookingsForDate = (d) => {
+    return scheduleData.value.filter(b => b.date === d && b.status !== 'Succeed')
+}
 const hasBooking = (d) => getBookingsForDate(d).length > 0
 
-// 📍 ดึงเฉพาะตัวเลขห้องออกมาเทียบ กันกรณีข้อมูลเก่า/รูปแบบไม่ตรงเป๊ะ เช่น "OR-201", "OR201", "201"
+// 📍 ดึงเฉพาะตัวเลขห้องออกมาเทียบ
 const getRoomNumber = (roomStr) => {
     const match = String(roomStr || '').match(/(\d+)/)
     return match ? parseInt(match[1]) : null
 }
 
+// 📍 คำนวณจาก durationMinutes โดยใช้ scheduleData
 const getUsedMinutesForRoom = (d, roomNum) => {
-    return bookings.value
+    return scheduleData.value
         .filter(b => b.date === d && getRoomNumber(b.room) === roomNum && b.status !== 'Succeed' && b.status !== 'Cancelled')
-        .reduce((sum, b) => {
-            const match = b.procedure?.match(/(\d+)\s*min/)
-            return sum + (match ? parseInt(match[1]) : 0)
-        }, 0)
+        .reduce((sum, b) => sum + (b.durationMinutes || 0), 0)
 }
 const isRoomFull = (d, roomNum) => getUsedMinutesForRoom(d, roomNum) >= MAX_MINUTES
 // 📍 3 ระดับสี: ว่าง (0 นาที) / บางส่วน (> 0 และ < MAX) / เต็ม (≥ MAX)
@@ -230,6 +239,20 @@ const roomStatusColor = (d, roomStr) => {
     return '#43a047'                                    // เขียว = ว่าง
 }
 
+// 📍 สร้างรายการคิวสำหรับวันที่เลือก โดยผสานข้อมูลของตัวเองจาก myBookingsMap
+const selectedDateBookings = computed(() => {
+    const base = scheduleData.value.filter(b => b.date === selectedFullDate.value && b.status !== 'Succeed')
+    return base.map(b => {
+        const my = myBookingsMap.value.get(b.id)
+        if (my) {
+            // ใช้ข้อมูลเต็มจาก myBookings (มีชื่อ, HN, age, gender, procedure)
+            return { ...my, isMine: true }
+        }
+        // คิวของคนอื่น – มีแค่ข้อมูลตาราง
+        return { ...b, isMine: false }
+    })
+})
+
 const calendarDays = computed(() => {
     const days = []
     const startDay = new Date(currentYear.value, currentMonth.value, 1).getDay()
@@ -242,17 +265,23 @@ const calendarDays = computed(() => {
     return days
 })
 
-const goToToday = () => { currentMonth.value = now.getMonth(); currentYear.value = now.getFullYear(); selectedFullDate.value = todayStr.value }
-const changeMonth = (v) => {
+const goToToday = async () => {
+    currentMonth.value = now.getMonth();
+    currentYear.value = now.getFullYear();
+    selectedFullDate.value = todayStr.value
+    await fetchSchedule(currentYear.value, currentMonth.value)
+}
+
+const changeMonth = async (v) => {
     currentMonth.value += v
     if (currentMonth.value > 11) { currentMonth.value = 0; currentYear.value++ }
     else if (currentMonth.value < 0) { currentMonth.value = 11; currentYear.value-- }
+    await fetchSchedule(currentYear.value, currentMonth.value)
 }
 
 const handleDateClick = (date) => {
     if (!date.isCurrentMonth) return
     selectedFullDate.value = date.fullDate
-    selectedDateBookings.value = getBookingsForDate(date.fullDate)
     isDetailPopupOpen.value = true
 }
 
@@ -264,7 +293,7 @@ const goToBooking = (lockDate = null) => {
     }
 }
 
-// 📍 ไปหน้าแก้ไขคิว (เฉพาะคิวของตัวเอง เปลี่ยนวันที่/ห้อง/ข้อมูลผู้ป่วยได้)
+// 📍 ไปหน้าแก้ไขคิว
 const goToEditBooking = (bookingId) => {
     router.push(`/booking/${bookingId}`)
 }
@@ -421,8 +450,6 @@ const formatDateThai = (d) => {
 .has-booking {
     border-top: 3px solid #4a6fa5;
 }
-
-
 
 .day-number {
     font-size: 13px;

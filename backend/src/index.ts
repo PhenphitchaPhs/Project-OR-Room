@@ -1,9 +1,8 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { sign, verify } from 'hono/jwt'
-import bcrypt from 'bcryptjs' // 📍 เพิ่มตัวเข้ารหัสไว้บนสุด
+import bcrypt from 'bcryptjs'
 
-// 📍 อัปเดต Bindings ให้รองรับคีย์ของ EmailJS แทน Resend
 type Bindings = {
   DB: D1Database
   EMAILJS_SERVICE_ID: string
@@ -11,15 +10,9 @@ type Bindings = {
   EMAILJS_PUBLIC_KEY: string
   EMAILJS_PRIVATE_KEY: string
   HOLIDAY_API_KEY: string
-  /**
-   * 🔑 กุญแจสำหรับเซ็นและตรวจ JWT
-   * ตั้งด้วย `wrangler secret put JWT_SECRET` เท่านั้น
-   * ห้าม commit ลง repo หรือใส่ใน wrangler.toml เด็ดขาด
-   */
   JWT_SECRET: string
 }
 
-/** ข้อมูลตัวตนที่แกะจาก token แล้ว ใช้แทน x-user-license เดิมทั้งหมด */
 type AuthUser = {
   license: string
   role: string
@@ -31,16 +24,6 @@ type Variables = {
 
 const app = new Hono<{ Bindings: Bindings; Variables: Variables }>()
 
-/**
- * 🌐 CORS
- * ------------------------------------------------------------------
- * เดิมเปิด origin: '*' ซึ่งแปลว่าเว็บไหนก็เรียก API นี้จากเบราว์เซอร์ผู้ใช้ได้
- * เปลี่ยนเป็น allowlist เฉพาะโดเมนที่เป็นของระบบจริง
- *
- * ⚠️ ถ้ามีโดเมน preview ของ Vercel ที่ต้องใช้ ให้เพิ่มในลิสต์นี้
- *    (Vercel preview จะเป็น project-or-room-<hash>-<team>.vercel.app ซึ่งเดาล่วงหน้าไม่ได้
- *     ถ้าต้องใช้บ่อยค่อยเปลี่ยนเป็นตรวจด้วย regex ทีหลัง)
- */
 const ALLOWED_ORIGINS = [
   'https://project-or-room.vercel.app',
   'http://localhost:5173',
@@ -70,19 +53,7 @@ const hasAdminAccess = (role: string | null | undefined) => {
 // ==========================================
 // 🔑 JWT AUTHENTICATION
 // ==========================================
-
-/**
- * อายุ token 8 ชั่วโมง — ครอบคลุมกะทำงานหนึ่งกะพอดี หมดแล้วให้ login ใหม่
- * เลือกแบบไม่มี refresh token เพราะยังไม่คุ้มกับความซับซ้อนที่ต้องเพิ่ม
- * (ตาราง refresh_tokens, endpoint ต่ออายุ, การกัน race ตอน refresh พร้อมกันหลาย tab)
- */
 const TOKEN_TTL_SECONDS = 8 * 60 * 60
-
-/**
- * ⚠️ ต้องระบุ alg ให้ชัดทั้งตอน sign และ verify
- *    hono ตั้งแต่ v4.11 บังคับให้ verify ระบุ alg เอง ถ้าไม่ระบุจะ throw
- *    และการระบุให้ชัดยังกันการโจมตีแบบสลับ alg (เช่นยัด alg: none หรือสลับไป RS256) ด้วย
- */
 const JWT_ALG = 'HS256' as const
 
 const issueToken = async (secret: string, user: { license: string; role: string }) => {
@@ -99,15 +70,8 @@ const issueToken = async (secret: string, user: { license: string; role: string 
   )
 }
 
-/**
- * ตรวจ token ทุก request ที่ไม่ใช่ route สาธารณะ
- *
- * 📌 ตัวตนและ role มาจาก payload ที่ verify ลายเซ็นแล้วเท่านั้น
- *    ไม่มีการอ่าน header ที่ client ตั้งค่าเองได้อีกต่อไป
- */
 const authMiddleware = async (c: any, next: any) => {
   if (!c.env.JWT_SECRET) {
-    // ตั้ง secret ไม่ครบถือว่าระบบยังไม่พร้อม ปฏิเสธไปเลยดีกว่าปล่อยผ่านแบบไม่มีการตรวจ
     console.error('❌ ไม่ได้ตั้ง JWT_SECRET — ปฏิเสธทุก request ที่ต้องยืนยันตัวตน')
     return c.json({ error: 'เซิร์ฟเวอร์ตั้งค่าไม่ครบ กรุณาติดต่อผู้ดูแลระบบ' }, 500)
   }
@@ -120,7 +84,6 @@ const authMiddleware = async (c: any, next: any) => {
   }
 
   try {
-    // verify โยน error ทั้งกรณีลายเซ็นไม่ตรงและกรณี exp เลยเวลาแล้ว
     const payload = await verify(token, c.env.JWT_SECRET, JWT_ALG)
 
     if (!payload?.license) {
@@ -138,7 +101,6 @@ const authMiddleware = async (c: any, next: any) => {
   }
 }
 
-/** ใช้ต่อจาก authMiddleware สำหรับ route ที่เฉพาะ admin เท่านั้น */
 const requireAdmin = async (c: any, next: any) => {
   const user = c.get('user') as AuthUser | undefined
   if (!hasAdminAccess(user?.role)) {
@@ -147,11 +109,6 @@ const requireAdmin = async (c: any, next: any) => {
   await next()
 }
 
-/**
- * 🔓 Route สาธารณะ — ไม่ต้องมี token
- * นอกเหนือจากนี้ต้องผ่าน authMiddleware ทั้งหมด
- * เพิ่ม route ใหม่แล้วไม่ต้องทำอะไร มันจะถูกบังคับ auth ให้เองโดยอัตโนมัติ
- */
 const PUBLIC_PATHS = [
   '/api/login',
   '/api/register',
@@ -162,7 +119,6 @@ const PUBLIC_PATHS = [
 ]
 
 app.use('/api/*', async (c, next) => {
-  // preflight ต้องผ่านก่อนเสมอ ไม่งั้นเบราว์เซอร์จะเห็นเป็น CORS error แทน 401
   if (c.req.method === 'OPTIONS') return next()
   if (PUBLIC_PATHS.includes(new URL(c.req.url).pathname)) return next()
   return authMiddleware(c, next)
@@ -170,10 +126,8 @@ app.use('/api/*', async (c, next) => {
 
 
 // ==========================================
-// 🔐 1. AUTHENTICATION & OTP (ระบบยืนยันตัวตน)
+// 🔐 1. AUTHENTICATION & OTP
 // ==========================================
-
-// 🟢 ส่ง OTP ยืนยันอีเมล (ผ่าน EmailJS Backend)
 app.post('/api/send-otp', async (c) => {
   try {
     const { email } = await c.req.json()
@@ -182,17 +136,14 @@ app.post('/api/send-otp', async (c) => {
     const existingUser = await c.env.DB.prepare('SELECT email FROM users WHERE email = ?').bind(email).first()
     if (existingUser) return c.json({ error: 'อีเมลนี้ถูกใช้งานแล้ว' }, 400)
 
-    // สุ่มรหัส 6 หลัก และตั้งเวลาหมดอายุ 5 นาที
     const otp = Math.floor(100000 + Math.random() * 900000).toString()
     const expiry = Date.now() + 300000 
 
-    // บันทึกลงตาราง otps (ใช้ ON CONFLICT เพื่ออัปเดตรหัสใหม่ถ้าขอซ้ำ)
     await c.env.DB.prepare(`
       INSERT INTO otps (email, otp, expiry) VALUES (?, ?, ?)
       ON CONFLICT(email) DO UPDATE SET otp = excluded.otp, expiry = excluded.expiry
     `).bind(email, otp, expiry).run()
 
-    // ส่งอีเมลผ่าน EmailJS REST API
     const res = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
       method: 'POST',
       headers: {
@@ -223,7 +174,6 @@ app.post('/api/send-otp', async (c) => {
   }
 })
 
-// 🟢 สมัครสมาชิก (Register) - ตรวจสอบ OTP ก่อนบันทึก
 app.post('/api/register', async (c) => {
   try {
     const { license, doctorName, email, password, orNumber, otp } = await c.req.json()
@@ -232,7 +182,6 @@ app.post('/api/register', async (c) => {
       return c.json({ error: 'กรุณากรอกข้อมูลให้ครบถ้วน' }, 400)
     }
 
-    // 1. ตรวจสอบ OTP
     const otpRecord = await c.env.DB.prepare('SELECT * FROM otps WHERE email = ?').bind(email).first()
     if (!otpRecord || String(otpRecord.otp) !== String(otp)) {
       return c.json({ error: 'รหัส OTP ไม่ถูกต้อง หรือยังไม่ได้กดส่งรหัส' }, 400)
@@ -241,18 +190,15 @@ app.post('/api/register', async (c) => {
       return c.json({ error: 'รหัส OTP หมดอายุแล้ว กรุณาขอใหม่' }, 400)
     }
 
-    // 2. ตรวจสอบข้อมูลซ้ำ
     const existingUser = await c.env.DB.prepare('SELECT * FROM users WHERE license = ? OR email = ?').bind(license, email).first()
     if (existingUser) return c.json({ error: 'License หรือ Email นี้ถูกใช้งานแล้ว' }, 400)
 
-    // 3. เข้ารหัสรหัสผ่านและบันทึกลง Database
     const hashedPassword = bcrypt.hashSync(password, 10)
     await c.env.DB.prepare(`
       INSERT INTO users (license, doctorName, email, password, orNumber, role) 
       VALUES (?, ?, ?, ?, ?, 'user')
     `).bind(license, doctorName, email, hashedPassword, orNumber).run()
 
-    // 4. ลบ OTP ทิ้งหลังใช้งานเสร็จ
     await c.env.DB.prepare('DELETE FROM otps WHERE email = ?').bind(email).run()
 
     return c.json({ success: true, message: 'สมัครสมาชิกสำเร็จ' }, 201)
@@ -262,15 +208,12 @@ app.post('/api/register', async (c) => {
   }
 })
 
-// 🟢 เข้าสู่ระบบ (Login) - เปลี่ยนมาใช้ Email และรองรับ Lazy Migration ให้บัญชีเก่า
 app.post('/api/login', async (c) => {
   try {
     const { email, password, license } = await c.req.json()
-    // 📍 รองรับทั้งหน้า user (ส่ง email) และหน้า admin (ส่ง license)
     const identifier = email ?? license
     if (!identifier) return c.json({ error: 'กรุณากรอกอีเมล/เลขใบอนุญาต และรหัสผ่าน' }, 400)
 
-    // ค้นหาผู้ใช้ด้วย email หรือ license
     const user = await c.env.DB.prepare('SELECT * FROM users WHERE email = ? OR license = ?').bind(identifier, identifier).first()
     if (!user) {
       return c.json({ error: 'อีเมล หรือ รหัสผ่านไม่ถูกต้อง!' }, 401)
@@ -280,14 +223,10 @@ app.post('/api/login', async (c) => {
     let isPasswordMatch = false
 
     if (dbPassword.startsWith('$2a$') || dbPassword.startsWith('$2b$')) {
-      // เคสบัญชีที่เข้ารหัสรหัสผ่านแล้ว
       isPasswordMatch = bcrypt.compareSync(password, dbPassword)
     } else {
-      // เคสบัญชีเก่า (Plain Text)
       if (password === dbPassword) {
         isPasswordMatch = true
-        
-        // Lazy Migration: เข้ารหัสรหัสผ่านแล้วเซฟทับให้ทันที (ใช้ license ที่มีเสมอ)
         const hashedNewPassword = bcrypt.hashSync(password, 10)
         await c.env.DB.prepare('UPDATE users SET password = ? WHERE license = ?')
           .bind(hashedNewPassword, user.license).run()
@@ -308,8 +247,6 @@ app.post('/api/login', async (c) => {
       role: String(user.role || 'user'),
     })
 
-    // 🔒 ไม่ส่ง password hash และ reset token กลับไปให้ client
-    //    ของเดิมส่ง user ทั้งแถวซึ่งมีสองอย่างนี้ติดไปด้วย
     const safeUser = {
       license: user.license,
       doctorName: user.doctorName,
@@ -325,7 +262,6 @@ app.post('/api/login', async (c) => {
   }
 })
 
-// 🟢 ลืมรหัสผ่าน
 app.post('/api/forgot-password', async (c) => {
   const { email } = await c.req.json()
   try {
@@ -346,7 +282,6 @@ app.post('/api/forgot-password', async (c) => {
   }
 })
 
-// 🟢 ตั้งรหัสผ่านใหม่ด้วย token
 app.post('/api/reset-password', async (c) => {
   try {
     const { token, newPassword } = await c.req.json()
@@ -374,11 +309,9 @@ app.post('/api/reset-password', async (c) => {
   }
 })
 
-
 // ==========================================
-// 👤 2. USERS MANAGEMENT (จัดการผู้ใช้งาน)
+// 👤 2. USERS MANAGEMENT
 // ==========================================
-
 app.get('/api/users', requireAdmin, async (c) => {
   try {
     const { results } = await c.env.DB.prepare('SELECT license, doctorName, email, orNumber, role FROM users').all()
@@ -426,8 +359,6 @@ app.put('/api/users/:license/role', requireAdmin, async (c) => {
     return c.json({ error: `Role ไม่ถูกต้อง ต้องเป็นหนึ่งใน ${allowedRoles.join(', ')}` }, 400)
   }
 
-  // 🛡️ กัน privilege escalation — แก้ role ของตัวเองไม่ได้ ต้องให้ admin คนอื่นแก้ให้
-  //    ไม่งั้นบัญชีที่หลุดมือไปหนึ่งบัญชีจะยกตัวเองขึ้น ๆ ลง ๆ ได้ตามใจ
   if (c.get('user').license === license) {
     return c.json({ error: 'ไม่อนุญาตให้แก้ไข Role ของบัญชีตัวเอง ต้องให้แอดมินท่านอื่นดำเนินการ' }, 403)
   }
@@ -460,40 +391,58 @@ app.delete('/api/users/:license', requireAdmin, async (c) => {
   }
 })
 
-
 // ==========================================
 // 🏥 3. BOOKINGS (จัดการคิวผ่าตัด)
 // ==========================================
 
-app.get('/api/bookings', async (c) => {
-  const license = c.req.query('license')
-  const requester = c.get('user')
+// 📍 Endpoint ใหม่: ดึงเฉพาะข้อมูลตาราง (ไม่ดึง PI) สำหรับใช้ที่หน้า Calendar / นับคิวพรุ่งนี้ / เช็คความจุ
+app.get('/api/schedule', async (c) => {
+  const from = c.req.query('from')
+  const to = c.req.query('to')
 
-  // 🛡️ กันการดึง (และ export) ข้อมูลของแพทย์ท่านอื่น
-  // ขอเจาะจง license ที่ไม่ใช่ของตัวเอง ต้องเป็น admin เท่านั้นจึงผ่าน
-  if (license && license !== requester.license && !hasAdminAccess(requester.role)) {
-    return c.json({ error: 'ไม่มีสิทธิ์เข้าถึงข้อมูลการจองของแพทย์ท่านอื่น' }, 403)
+  if (!from || !to) {
+    return c.json({ error: 'กรุณาระบุวันที่ from และ to' }, 400)
   }
 
-  // ⚠️ ไม่ระบุ license = ได้คิวทั้งระบบ ซึ่งหน้า Calendar และ Booking ฝั่ง user ยังต้องใช้
-  //    เพื่อเช็คว่าห้องและเวลาชนกับของแพทย์ท่านอื่นหรือไม่
-  //    ตอนนี้จึงยังจำกัดให้เห็นเฉพาะของตัวเองไม่ได้ ต้องแยก endpoint เช็คคิวชนออกมาก่อน
-  //    (ดู issue เรื่องแยก endpoint เช็คคิวชน) แล้วค่อยล็อกตรงนี้ให้แคบลง
   try {
-    const { results } = license
-      ? await c.env.DB.prepare('SELECT * FROM bookings WHERE doctorLicense = ? ORDER BY date ASC').bind(license).all()
-      : await c.env.DB.prepare('SELECT * FROM bookings ORDER BY date ASC').all()
+    const { results } = await c.env.DB.prepare(`
+      SELECT
+        b.id,
+        b.date,
+        b.room,
+        b.status,
+        b.durationMinutes,
+        u.orNumber as orNumber
+      FROM bookings b
+      LEFT JOIN users u ON b.doctorLicense = u.license
+      WHERE b.date >= ? AND b.date <= ?
+      ORDER BY b.date ASC, b.room ASC
+    `).bind(from, to).all()
+
     return c.json(results)
+  } catch (e) {
+    console.error('❌ /api/schedule error:', e)
+    return c.json({ error: 'DB Fetch Error' }, 500)
+  }
+})
+
+// 📍 แก้ไข: จำกัด scope ให้เห็นแค่คิวตัวเอง (Admin เห็นหมด) ไม่ปล่อยให้ดึงข้ามสิทธิ์อีกต่อไป
+app.get('/api/bookings', async (c) => {
+  const requester = c.get('user')
+
+  try {
+    if (hasAdminAccess(requester.role)) {
+      const { results } = await c.env.DB.prepare('SELECT * FROM bookings ORDER BY date ASC').all()
+      return c.json(results)
+    } else {
+      const { results } = await c.env.DB.prepare('SELECT * FROM bookings WHERE doctorLicense = ? ORDER BY date ASC').bind(requester.license).all()
+      return c.json(results)
+    }
   } catch (e) {
     return c.json({ error: 'DB Fetch Error' }, 500)
   }
 })
 
-// ==========================================
-// 📤 Export รายการจองทั้งระบบ (เฉพาะ admin)
-// แยก endpoint ออกมาเพื่อบังคับสิทธิ์ได้เต็มที่
-// โดยไม่กระทบ GET /api/bookings ที่หน้า Calendar / Booking ฝั่ง user ยังต้องใช้
-// ==========================================
 app.get('/api/bookings/export', requireAdmin, async (c) => {
   try {
     const splitList = (value: string | undefined) =>
@@ -509,7 +458,6 @@ app.get('/api/bookings/export', requireAdmin, async (c) => {
     const conditions: string[] = []
     const params: (string | number)[] = []
 
-    // ใช้ placeholder ตามจำนวนสมาชิกจริง ค่าทุกตัว bind เข้าไป ไม่ต่อ string เอง
     if (id) {
       conditions.push('id = ?')
       params.push(id)
@@ -536,26 +484,40 @@ app.get('/api/bookings/export', requireAdmin, async (c) => {
     }
 
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''
-
-    // 📌 เรียงแค่ date เหมือน GET /api/bookings เดิม เพื่อไม่ให้พึ่งคอลัมน์ที่ฐานข้อมูลจริงอาจยังไม่มี
-    //    (การเรียงตามห้อง/ลำดับคิว ทำต่อที่ฝั่ง frontend ใน sortForExport อยู่แล้ว)
     const sql = `SELECT * FROM bookings ${where} ORDER BY date ASC`
     const stmt = c.env.DB.prepare(sql)
 
-    // ไม่เรียก .bind() ตอนไม่มีพารามิเตอร์ กัน D1 บางเวอร์ชันโวยเรื่องจำนวน binding
     const { results } = params.length > 0
       ? await stmt.bind(...params).all()
       : await stmt.all()
 
     return c.json(results)
   } catch (e: any) {
-    // ⚠️ ส่งข้อความจริงกลับไปด้วย จะได้รู้ว่าพังเพราะอะไร
-    //    เมื่อแก้เสร็จแล้วควรเอา detail ออก ไม่ให้ข้อมูลภายในหลุดไปหา client
     console.error('❌ /api/bookings/export ล้มเหลว:', e)
     return c.json(
       { error: 'Export failed', detail: String(e?.message || e) },
       500
     )
+  }
+})
+
+// 📍 Endpoint ใหม่: ดึงคิวเดี่ยวมาเช็คสิทธิ์ (ใช้ตอนกดแก้ไขคิว)
+app.get('/api/bookings/:id', async (c) => {
+  const id = c.req.param('id')
+  const requester = c.get('user')
+
+  try {
+    const { results } = await c.env.DB.prepare('SELECT * FROM bookings WHERE id = ?').bind(id).all()
+    if (results.length === 0) return c.json({ error: 'ไม่พบคิวนี้ในระบบ' }, 404)
+    
+    const booking = results[0]
+    if (booking.doctorLicense !== requester.license && !hasAdminAccess(requester.role)) {
+      return c.json({ error: 'Forbidden: คุณไม่มีสิทธิ์เข้าถึงคิวนี้' }, 403)
+    }
+    
+    return c.json(booking)
+  } catch (e) {
+    return c.json({ error: 'DB Fetch Error' }, 500)
   }
 })
 
@@ -567,26 +529,24 @@ app.post('/api/bookings', async (c) => {
     return c.json({ error: 'ไม่มีสิทธิ์จองคิวแทนแพทย์ท่านอื่น' }, 403)
   }
 
-  // ไม่ส่ง doctorLicense มาก็ถือว่าจองในนามตัวเอง กันเคสที่เดิมบันทึกเป็น null แล้วคิวไม่มีเจ้าของ
   const doctorLicense = b.doctorLicense || requester.license
 
   try {
+    // 📍 เพิ่มการเก็บฟิลด์ durationMinutes
     await c.env.DB.prepare(`
       INSERT INTO bookings (
-        hn, fullName, dob, age, gender, procedure, date, underlying, diagnosis, 
+        hn, fullName, dob, age, gender, procedure, durationMinutes, date, underlying, diagnosis, 
         cxrDate, cxrNote, ecgDate, ecgNote, labDate, labNote, admDate, admNote, 
         notes, status, room, doctorLicense, createdAt
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now', '+7 hours'))
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now', '+7 hours'))
     `).bind(
-      b.hn, b.fullName, b.dob, b.age, b.gender, b.procedure, 
+      b.hn, b.fullName, b.dob, b.age, b.gender, b.procedure, b.durationMinutes || 0,
       b.date, b.underlying, b.diagnosis, 
       b.cxrDate, b.cxrNote, b.ecgDate, b.ecgNote, b.labDate, b.labNote, b.admDate, b.admNote, 
       b.notes, 'Upcoming', b.room || 'OR-01', doctorLicense
     ).run()
 
-    // 📍 บันทึก/อัปเดตข้อมูลผู้ป่วยลงตาราง patients (แยกจากตารางการจอง)
-    //    ทำให้ลบรายการจองได้โดยข้อมูลผู้ป่วยยังคงอยู่
     if (b.hn && b.fullName) {
       await c.env.DB.prepare(`
         INSERT INTO patients (hn, fullName, dob, gender, underlying, updatedAt)
@@ -607,12 +567,6 @@ app.post('/api/bookings', async (c) => {
   }
 })
 
-/**
- * ⚠️ ต้องประกาศก่อน PUT /api/bookings/:id เสมอ
- * hono จับคู่ route ตามลำดับที่ประกาศ ถ้า /:id มาก่อน คำขอ /api/bookings/reorder
- * จะถูกจับเป็น id = "reorder" แล้วตกไปที่ handler แก้ไขคิวแทน ซึ่งหาไม่เจอและคืน 404
- * (บั๊กนี้มีมาก่อนหน้านี้ ทำให้การลากจัดลำดับคิวไม่เคยถูกบันทึกลงฐานข้อมูลจริง)
- */
 app.put('/api/bookings/reorder', async (c) => {
   const requester = c.get('user')
   const { updates } = await c.req.json()
@@ -622,8 +576,6 @@ app.put('/api/bookings/reorder', async (c) => {
   }
 
   try {
-    // 🛡️ ตรวจความเป็นเจ้าของทุกคิวก่อนเขียน ไม่งั้นแพทย์คนหนึ่งสลับลำดับคิวของอีกคนได้
-    //    ของเดิมเช็คแค่ว่า "มี role อะไรสักอย่าง" ซึ่งผ่านหมดทุกคนที่ login อยู่
     if (!hasAdminAccess(requester.role)) {
       const ids = updates.map((u: any) => u.id)
       const placeholders = ids.map(() => '?').join(',')
@@ -654,12 +606,10 @@ app.put('/api/bookings/reorder', async (c) => {
 // 😷 4. PATIENTS (ข้อมูลผู้ป่วย)
 // ==========================================
 
-// 🔒 ก่อนหน้านี้ endpoint นี้ไม่มีการตรวจสิทธิ์เลย ใครรู้ HN ก็ดึงข้อมูลผู้ป่วยได้
-//    ตอนนี้ถูกบังคับ auth โดย middleware ที่ครอบ /api/* ไว้แล้ว
-
 app.put('/api/bookings/:id', async (c) => {
   const id = c.req.param('id')
   const b = await c.req.json()
+  
   try {
     const existing = await c.env.DB.prepare('SELECT id, doctorLicense FROM bookings WHERE id = ?').bind(id).first()
     if (!existing) return c.json({ error: 'ไม่พบคิวนี้ในระบบ' }, 404)
@@ -669,20 +619,19 @@ app.put('/api/bookings/:id', async (c) => {
       return c.json({ error: 'ไม่มีสิทธิ์แก้ไขคิวนี้' }, 403)
     }
 
+    // 📍 เพิ่มการเก็บฟิลด์ durationMinutes
     await c.env.DB.prepare(`
       UPDATE bookings SET
-        hn = ?, fullName = ?, age = ?, gender = ?, procedure = ?, date = ?, room = ?, underlying = ?, diagnosis = ?,
+        hn = ?, fullName = ?, age = ?, gender = ?, procedure = ?, durationMinutes = ?, date = ?, room = ?, underlying = ?, diagnosis = ?,
         cxrDate = ?, cxrNote = ?, ecgDate = ?, ecgNote = ?, labDate = ?, labNote = ?, admDate = ?, admNote = ?,
         notes = ?
       WHERE id = ?
     `).bind(
-      b.hn, b.fullName, b.age, b.gender, b.procedure, b.date, b.room || 'OR-01', b.underlying, b.diagnosis,
+      b.hn, b.fullName, b.age, b.gender, b.procedure, b.durationMinutes || 0, b.date, b.room || 'OR-01', b.underlying, b.diagnosis,
       b.cxrDate, b.cxrNote, b.ecgDate, b.ecgNote, b.labDate, b.labNote, b.admDate, b.admNote,
       b.notes, id
     ).run()
 
-    // 📍 บันทึก/อัปเดตข้อมูลผู้ป่วยลงตาราง patients (แยกจากตารางการจอง)
-    //    ทำให้ลบรายการจองได้โดยข้อมูลผู้ป่วยยังคงอยู่
     if (b.hn && b.fullName) {
       await c.env.DB.prepare(`
         INSERT INTO patients (hn, fullName, dob, gender, underlying, updatedAt)
@@ -695,7 +644,6 @@ app.put('/api/bookings/:id', async (c) => {
           updatedAt = excluded.updatedAt
       `).bind(b.hn, b.fullName, b.dob ?? null, b.gender ?? null, b.underlying ?? null).run()
     }
-
 
     return c.json({ success: true, message: 'อัปเดตคิวสำเร็จ' })
   } catch (e) {
@@ -726,7 +674,6 @@ app.patch('/api/bookings/:id/status', async (c) => {
 app.get('/api/patients/:hn', async (c) => {
   const hn = c.req.param('hn')
   try {
-    // 📍 อ่านจากตาราง patients เป็นหลัก ถ้าไม่พบจึงย้อนไปหาในตาราง bookings (ข้อมูลเก่าก่อน migrate)
     let patient = await c.env.DB.prepare(`
       SELECT hn, fullName, dob, gender, underlying 
       FROM patients WHERE hn = ?
@@ -748,7 +695,7 @@ app.get('/api/patients/:hn', async (c) => {
 
 
 // ==========================================
-// 📅 5. HOLIDAYS (จัดการวันหยุดราชการ - มี Cache)
+// 📅 5. HOLIDAYS
 // ==========================================
 
 app.get('/api/holidays', async (c) => {
