@@ -407,8 +407,9 @@ const checkValidDate = async () => {
         const res = await apiFetch('/api/bookings')
         const allBookings = await res.json()
 
+        // ✅ เปลี่ยน Succeed → Completed
         const sameDayBookings = allBookings.filter(
-            b => b.date === form.date && b.room === form.room && b.status !== 'Succeed' && b.status !== 'Cancelled'
+            b => b.date === form.date && b.room === form.room && b.status !== 'Completed' && b.status !== 'Cancelled'
         )
 
         const usedMinutes = sameDayBookings.reduce((sum, b) => {

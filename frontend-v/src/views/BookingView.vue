@@ -164,7 +164,6 @@
 <script setup>
 import { reactive, ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { createRouter, createWebHistory } from 'vue-router'
 import { apiFetch } from '../api/client'
 
 const router = useRouter()
@@ -179,10 +178,8 @@ const remainingTimeMsg = ref('')
 const isOverCapacity = ref(false)
 const isDateLocked = ref(false)
 
-
 const apiHolidays = ref({})
 
-// 📍 ใส่ isSuccess = true เวลาแจ้งความสำเร็จ จะได้โชว์ไอคอน ✅ แทน ❌
 const showAlert = (message, isSuccess = false) => {
     alertMessage.value = message
     isAlertSuccess.value = isSuccess
@@ -198,7 +195,6 @@ const form = reactive({
     admDate: '', admNote: ''
 })
 
-// 📍 เลขห้องผ่าตัด OR-201 ถึง OR-220 ให้เลือกตอนจอง/แก้คิว
 const orRooms = Array.from({ length: 20 }, (_, i) => 201 + i)
 
 const procedureGroups = ref([
@@ -292,57 +288,46 @@ const maxDate = ref(max.toISOString().split('T')[0])
 
 onMounted(async () => {
     const myLicense = localStorage.getItem('userLicense')
-    // 📍 เช็ค role จาก localStorage — ถ้าเป็น admin ให้ข้ามการตรวจสอบสิทธิ์เจ้าของคิว
-    const myRole = localStorage.getItem('userRole')
 
-    // 🌟 ดึงข้อมูลเก่ามาใส่ฟอร์มถ้าเป็นการ Edit (มี bookingId)
     if (bookingId) {
         try {
-            const res = await apiFetch('/api/bookings')
+            // 📍 แก้ไข: ยิงขอแค่คิวที่ต้องการ ถ้าไม่มีสิทธิ์ Server จะคืน 403
+            const res = await apiFetch(`/api/bookings/${bookingId}`)
 
             if (res.ok) {
-                const allBookings = await res.json()
-                const booking = allBookings.find(b => String(b.id) === String(bookingId))
+                const booking = await res.json()
+                form.hn = booking.hn || ''
+                form.fullName = booking.fullName || ''
+                form.age = booking.age || ''
+                form.gender = booking.gender || ''
+                form.disease = booking.underlying || ''
+                form.diagnosis = booking.diagnosis || ''
+                form.procedure = booking.procedure || ''
+                form.date = booking.date || ''
+                form.room = booking.room || ''
+                form.notes = booking.notes || ''
 
-                if (booking) {
-                    // 📍 เช็คสิทธิ์: แอดมินแก้ได้ทุกคิว, แพทย์ทั่วไปแก้ได้เฉพาะคิวตัวเอง
-                    const isAdmin = myRole === 'admin'
-                    if (!isAdmin && booking.doctorLicense !== myLicense) {
-                        showAlert('คุณไม่มีสิทธิ์แก้ไขคิวนี้ เพราะไม่ใช่คิวของคุณครับ')
-                        const isAdminReject = localStorage.getItem('userRole') === 'admin'
-                        setTimeout(() => { router.push(isAdminReject ? '/admin-home' : '/home') }, 1500)
-                        return
-                    }
+                form.cxrDate = booking.cxrDate || ''
+                form.cxrNote = booking.cxrNote || ''
 
-                    form.hn = booking.hn || ''
-                    form.fullName = booking.fullName || ''
-                    form.age = booking.age || ''
-                    form.gender = booking.gender || ''
-                    form.disease = booking.underlying || ''
-                    form.diagnosis = booking.diagnosis || ''
-                    form.procedure = booking.procedure || ''
-                    form.date = booking.date || ''
-                    form.room = booking.room || ''
-                    form.notes = booking.notes || ''
+                form.ecgDate = booking.ecgDate || ''
+                form.ecgNote = booking.ecgNote || ''
 
-                    form.cxrDate = booking.cxrDate || ''
-                    form.cxrNote = booking.cxrNote || ''
+                form.labDate = booking.labDate || ''
+                form.labNote = booking.labNote || ''
 
-                    form.ecgDate = booking.ecgDate || ''
-                    form.ecgNote = booking.ecgNote || ''
-
-                    form.labDate = booking.labDate || ''
-                    form.labNote = booking.labNote || ''
-
-                    form.admDate = booking.admDate || ''
-                    form.admNote = booking.admNote || ''
-                }
+                form.admDate = booking.admDate || ''
+                form.admNote = booking.admNote || ''
+            } else if (res.status === 403) {
+                showAlert('คุณไม่มีสิทธิ์แก้ไขคิวนี้ เพราะไม่ใช่คิวของคุณครับ')
+                const isAdminReject = localStorage.getItem('userRole') === 'admin'
+                setTimeout(() => { router.push(isAdminReject ? '/admin-home' : '/home') }, 1500)
+                return
             }
         } catch (err) {
             console.error('โหลดข้อมูลสำหรับแก้ไขไม่สำเร็จ:', err)
         }
     } else if (myLicense) {
-        // 📍 ถ้าเป็นการจองใหม่ (ไม่ใช่ edit) ตั้งค่าห้องเริ่มต้นเป็นห้องประจำของแพทย์คนนี้
         try {
             const res = await apiFetch(`/api/users/${myLicense}`)
             if (res.ok) {
@@ -354,7 +339,6 @@ onMounted(async () => {
         }
     }
 
-    // ... (โค้ดดึง route.query.date, tomorrowCount และ apiHolidays คงไว้เหมือนเดิม) ...
     if (route.query.date) {
         form.date = route.query.date
         isDateLocked.value = true
@@ -364,10 +348,12 @@ onMounted(async () => {
         const tomorrow = new Date()
         tomorrow.setDate(tomorrow.getDate() + 1)
         const tomStr = tomorrow.toISOString().split('T')[0]
-        const res = await apiFetch('/api/bookings')
+        
+        // 📍 แก้ไข: ดึงตารางแค่วันพรุ่งนี้ ไม่ดึงทั้งหมด ไม่โหลดข้อมูลผู้ป่วย
+        const res = await apiFetch(`/api/schedule?from=${tomStr}&to=${tomStr}`)
         if (res.ok) {
             const data = await res.json()
-            tomorrowCount.value = data.filter(b => b.date === tomStr).length
+            tomorrowCount.value = data.length
         }
     } catch (e) { console.error("Reminder failed", e) }
 
@@ -441,20 +427,13 @@ const checkValidDate = async () => {
     isOverCapacity.value = false
 
     if (!form.date) return
-
-    // รอให้กรอกวันที่ให้ครบก่อน
     if (form.date.length !== 10) return
 
     const testDate = new Date(form.date)
-
-    // ป้องกันวันที่ไม่สมบูรณ์
     if (isNaN(testDate.getTime())) return
 
     if (!validateHolidayAndWeekend(form.date)) return
 
-    // 📍 ไม่ต้องเช็ค "วันทำงาน" ของแพทย์อีกแล้ว เพราะระบบเปลี่ยนจากเลือกวันทำงานเป็นเลือกห้อง OR ประจำแทน
-
-    // ยังไม่ได้เลือกห้อง รอให้เลือกก่อนค่อยเช็คความจุ
     if (!form.room) {
         remainingTimeMsg.value = ''
         isOverCapacity.value = false
@@ -462,70 +441,63 @@ const checkValidDate = async () => {
     }
 
     try {
-        const res = await apiFetch(
-            '/api/bookings'
-        )
+        // 📍 แก้ไข: ยิงหา /api/schedule เฉพาะวันที่ต้องการ
+        const res = await apiFetch(`/api/schedule?from=${form.date}&to=${form.date}`)
+        
+        if (res.ok) {
+            const dailySchedule = await res.json()
 
-        const allBookings = await res.json()
+            // ✅ เปลี่ยน Succeed → Completed
+            const sameDayBookings = dailySchedule.filter(
+                b =>
+                    b.room === form.room &&
+                    b.status !== 'Completed' &&
+                    b.status !== 'Cancelled' &&
+                    String(b.id) !== String(bookingId)
+            )
 
-        // 📍 เช็คความจุของ "ห้องที่เลือก" เท่านั้น ไม่รวมห้องอื่น และไม่นับคิวตัวเองตอนแก้ไข (กันนับซ้ำ)
-        const sameDayBookings = allBookings.filter(
-            b =>
-                b.date === form.date &&
-                b.room === form.room &&
-                b.status !== 'Succeed' &&
-                b.status !== 'Cancelled' &&
-                String(b.id) !== String(bookingId)
-        )
+            // 📍 แก้ไข: ใช้ข้อมูล durationMinutes ที่แนบมากับ Endpoint ได้เลย
+            const usedMinutes = sameDayBookings.reduce((sum, b) => sum + (b.durationMinutes || 0), 0)
 
-        const usedMinutes = sameDayBookings.reduce((sum, b) => {
-            const match = b.procedure?.match(/(\d+)\s*min/)
-            return sum + (match ? parseInt(match[1]) : 0)
-        }, 0)
+            const MAX_MINUTES = 420
+            const remainingMinutes = MAX_MINUTES - usedMinutes
 
-        // 📍 เปลี่ยนเป็น 420 นาที (7 ชม.) ให้ตรงกับมาตรฐานเดียวกับหน้า Home
-        const MAX_MINUTES = 420
-        const remainingMinutes = MAX_MINUTES - usedMinutes
-
-        if (remainingMinutes <= 0) {
-            const exceededMin = Math.abs(remainingMinutes)
-            const exHrs = Math.floor(exceededMin / 60)
-            const exMins = exceededMin % 60
-            isOverCapacity.value = true
-            remainingTimeMsg.value =
-                `ห้อง ${form.room} เกินเวลาที่กำหนดแล้ว ${exHrs} ชม. ` +
-                (exMins > 0 ? `${exMins} นาที ` : '') +
-                '(ยังสามารถจองต่อได้)'
-        } else {
-            const hrs = Math.floor(remainingMinutes / 60)
-            const mins = remainingMinutes % 60
-
-            isOverCapacity.value = false
-            remainingTimeMsg.value =
-                `ห้อง ${form.room} เหลือเวลาว่างอีก ${hrs} ชม. ` +
-                (mins > 0 ? `${mins} นาที` : '')
-        }
-
-        // 📍 ไม่บล็อกการจองอีกต่อไป แม้เวลารวมจะเกิน MAX_MINUTES ก็ยังจองได้
-        // แค่อัปเดตข้อความให้รู้ว่าจะเกินไปเท่าไหร่ (เหมือนพฤติกรรมบาร์เวลาในหน้า Home)
-        if (form.procedure) {
-            const matchProc = form.procedure.match(/(\d+)\s*min/)
-            const newProcMin = matchProc
-                ? parseInt(matchProc[1])
-                : 0
-
-            const totalAfterAdd = usedMinutes + newProcMin
-
-            if (totalAfterAdd > MAX_MINUTES) {
-                const overBy = totalAfterAdd - MAX_MINUTES
-                const overHrs = Math.floor(overBy / 60)
-                const overMins = overBy % 60
-
+            if (remainingMinutes <= 0) {
+                const exceededMin = Math.abs(remainingMinutes)
+                const exHrs = Math.floor(exceededMin / 60)
+                const exMins = exceededMin % 60
                 isOverCapacity.value = true
                 remainingTimeMsg.value =
-                    `ห้อง ${form.room} วันที่ ${form.date} เวลารวมจะเกิน ${MAX_MINUTES / 60} ชม. ไป ${overHrs} ชม. ` +
-                    (overMins > 0 ? `${overMins} นาที ` : '') +
+                    `ห้อง ${form.room} เกินเวลาที่กำหนดแล้ว ${exHrs} ชม. ` +
+                    (exMins > 0 ? `${exMins} นาที ` : '') +
                     '(ยังสามารถจองต่อได้)'
+            } else {
+                const hrs = Math.floor(remainingMinutes / 60)
+                const mins = remainingMinutes % 60
+
+                isOverCapacity.value = false
+                remainingTimeMsg.value =
+                    `ห้อง ${form.room} เหลือเวลาว่างอีก ${hrs} ชม. ` +
+                    (mins > 0 ? `${mins} นาที` : '')
+            }
+
+            if (form.procedure) {
+                const matchProc = form.procedure.match(/(\d+)\s*min/)
+                const newProcMin = matchProc ? parseInt(matchProc[1]) : 0
+
+                const totalAfterAdd = usedMinutes + newProcMin
+
+                if (totalAfterAdd > MAX_MINUTES) {
+                    const overBy = totalAfterAdd - MAX_MINUTES
+                    const overHrs = Math.floor(overBy / 60)
+                    const overMins = overBy % 60
+
+                    isOverCapacity.value = true
+                    remainingTimeMsg.value =
+                        `ห้อง ${form.room} วันที่ ${form.date} เวลารวมจะเกิน ${MAX_MINUTES / 60} ชม. ไป ${overHrs} ชม. ` +
+                        (overMins > 0 ? `${overMins} นาที ` : '') +
+                        '(ยังสามารถจองต่อได้)'
+                }
             }
         }
     } catch (e) {
@@ -541,12 +513,17 @@ const submitForm = async () => {
 
     if (!validateHolidayAndWeekend(form.date)) return
 
+    // 📍 แกะหา durationMinutes เพื่อส่งไปบันทึกลง Database
+    const matchProc = form.procedure.match(/(\d+)\s*min/)
+    const durationMinutes = matchProc ? parseInt(matchProc[1]) : 0
+
     const payload = {
         hn: form.hn,
         fullName: form.fullName,
         age: form.age,
         gender: form.gender || '',
         procedure: form.procedure,
+        durationMinutes: durationMinutes, // ส่งให้ Backend เก็บลงฐานข้อมูลโดยตรง
         date: form.date,
         room: form.room,
         underlying: form.disease || '',
@@ -561,7 +538,6 @@ const submitForm = async () => {
     }
 
     try {
-        // 🌟 แยก URL และ Method ให้ถูกต้อง
         const url = bookingId
             ? `/api/bookings/${bookingId}`
             : '/api/bookings'
@@ -579,7 +555,6 @@ const submitForm = async () => {
         if (res.ok) {
             showAlert(bookingId ? 'อัปเดตคิวสำเร็จ!' : 'จองคิวสำเร็จ!', true)
             setTimeout(() => {
-                // 📍 แอดมินกลับหน้า Admin Home, แพทย์ทั่วไปกลับหน้า Home
                 const isAdmin = localStorage.getItem('userRole') === 'admin'
                 if (isAdmin) {
                     router.push('/admin-home')
@@ -631,9 +606,6 @@ const goHome = () => {
     font-size: 14px;
 }
 
-/* ---------------------------------
-   ส่วน Header และ Back Button ฉบับแก้ให้ตรงรูป
-   --------------------------------- */
 .header-row {
     display: flex;
     align-items: center;
@@ -643,7 +615,6 @@ const goHome = () => {
 
 .header-spacer {
     width: 40px;
-    /* ขยายความกว้างให้สมดุลกับปุ่ม */
     flex-shrink: 0;
 }
 
@@ -652,7 +623,6 @@ const goHome = () => {
     text-align: center;
     font-size: 24px;
     font-family: 'Times New Roman', Times, serif;
-    /* เพิ่มฟอนต์มีหัวให้เหมือนในรูปเป๊ะ */
     font-weight: bold;
     margin-bottom: 0;
     flex: 1;
@@ -661,14 +631,10 @@ const goHome = () => {
 
 .back-btn {
     width: 40px;
-    /* ปรับขนาดความกว้างปุ่ม */
     height: 40px;
-    /* ปรับขนาดความสูงปุ่มให้รับกับตัวอักษร */
     border-radius: 12px;
-    /* เปลี่ยนจากวงกลม 50% เป็นสี่เหลี่ยมขอบมนแบบในรูป */
     border: none;
     background: #f0f4f8;
-    /* สีพื้นหลังเทาอมฟ้า */
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -680,8 +646,6 @@ const goHome = () => {
 .back-btn:hover {
     background-color: #e2e8f0;
 }
-
-/* --------------------------------- */
 
 .notes-grid {
     display: grid;
@@ -886,5 +850,4 @@ const goHome = () => {
     font-weight: 700;
     margin-left: 4px;
 }
-
 </style>

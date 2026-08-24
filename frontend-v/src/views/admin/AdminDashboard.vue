@@ -276,12 +276,14 @@ const activeSection = ref('dashboard') // 'dashboard' | 'fiscal' | 'doctors'
 const tzOffset = new Date().getTimezoneOffset() * 60000
 const todayStr = new Date(Date.now() - tzOffset).toISOString().split('T')[0]
 
+// ✅ เปลี่ยน Succeed → Completed
 const upcomingCount = computed(() => bookings.value.filter(b => b.status === 'Upcoming' || !b.status).length)
-const succeedCount = computed(() => bookings.value.filter(b => b.status === 'Succeed').length)
+const succeedCount = computed(() => bookings.value.filter(b => b.status === 'Completed').length)
+// ✅ เปลี่ยน Succeed → Completed
 const todayCount = computed(() =>
     bookings.value.filter(
         b => b.date === todayStr &&
-            b.status !== 'Succeed'
+            b.status !== 'Completed'
     ).length
 )
 const cancelledCount = computed(() =>
@@ -298,7 +300,8 @@ const roomQueues = computed(() => {
         .filter(b =>
             b.date === todayStr &&
             b.status !== 'Cancelled' &&
-            b.status !== 'Succeed'
+            // ✅ เปลี่ยน Succeed → Completed
+            b.status !== 'Completed'
         )
         .forEach(b => {
             const roomKey = String(b.room || '').match(/(\d+)/)?.[1]

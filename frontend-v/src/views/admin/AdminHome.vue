@@ -85,7 +85,7 @@
             <button class="logout-btn" @click="isLogoutModalOpen = true">
                 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24">
                     <path fill="white"
-                        d="M5 21q-.825 0-1.412-.587T3 19V5q0-.825.588-1.412T5 3h6q.425 0 .713.288T12 4t-.288.713T11 5H5v14h6q.425 0 .713.288T12 20t-.288.713T11 21zm12.175-8H10q-.425 0-.712-.288T9 12t.288-.712T10 11h7.175L15.3 9.125q-.275-.275-.275-.675t.275-.7.7-.313t.725.288L20.3 11.3q.3.3.3.7t-.3.7l-3.575 3.575q-.3.3-.712.288t-.713-.313q-.275-.3-.262-.712t.287-.688z" />
+                        d="M5 21q-.825 0-1.412-.587T3 19V5q0-.825.588-1.412T5 3h6q.425 0 .713.288T12 4t-.288.713T11 5H5v14h6q.425 0 .713.288T12 20t-.288.713T11 21zm12.175-8H10q-.425 0-.712-.288T9 12t.288-.712T10 11h7.175L15.3 9.125q-.275-.275-.275-.675t.275-.7.7-.313.725.288L20.3 11.3q.3.3.3.7t-.3.7l-3.575 3.575q-.3.3-.712.288t-.713-.313q-.275-.3-.262-.712t.287-.688z" />
                 </svg>
             </button>
         </header>
@@ -837,7 +837,8 @@ const getUsedMinutesForRoom = (todayStr, roomNum) => {
         .filter(b => {
             const rNum = String(b.room || '').match(/(\d+)/)?.[1]
             return b.date === todayStr && Number(rNum) === roomNum &&
-                b.status !== 'Succeed' && b.status !== 'Cancelled'
+                // ✅ เปลี่ยน Succeed → Completed
+                b.status !== 'Completed' && b.status !== 'Cancelled'
         })
         .reduce((sum, b) => {
             const match = b.procedure?.match(/(\d+)\s*min/)
@@ -983,14 +984,15 @@ onMounted(async () => {
 
         bookings.value = Array.isArray(data) ? data : []
 
-        // ย้ายเคสที่เลยวันและยังไม่ Cancel ไป Succeed อัตโนมัติ
+        // ✅ เปลี่ยน Succeed → Completed
+        // ย้ายเคสที่เลยวันและยังไม่ Cancel ไป Completed อัตโนมัติ
         for (const item of bookings.value) {
             if (
                 item.date < todayStr &&
                 item.status !== 'Cancelled' &&
-                item.status !== 'Succeed'
+                item.status !== 'Completed'
             ) {
-                item.status = 'Succeed'
+                item.status = 'Completed'
 
                 await apiFetch(
                     `/api/bookings/${item.id}/status`,
@@ -1000,7 +1002,7 @@ onMounted(async () => {
                             'Content-Type': 'application/json',
                         },
                         body: JSON.stringify({
-                            status: 'Succeed'
+                            status: 'Completed'
                         })
                     }
                 )
@@ -1081,9 +1083,10 @@ const exportModes = [
     { value: 'single', label: 'คิวเดียว' }
 ]
 
+// ✅ เปลี่ยน Succeed → Completed
 const statusOptions = [
     { value: 'Upcoming', label: 'รอผ่าตัด' },
-    { value: 'Succeed', label: 'ผ่าตัดแล้ว' },
+    { value: 'Completed', label: 'ผ่าตัดแล้ว' },
     { value: 'Cancelled', label: 'ยกเลิก' }
 ]
 
@@ -1544,11 +1547,12 @@ const upcomingCases = computed(() =>
     )
 )
 
+// ✅ เปลี่ยน Succeed → Completed
 const completedCases = computed(() =>
     sortCases(
         bookings.value.filter(
             item =>
-                item.status === 'Succeed' &&
+                item.status === 'Completed' &&
                 matchSearch(item)
         )
     )

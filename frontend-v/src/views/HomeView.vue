@@ -1907,41 +1907,22 @@ const deleteCase = (id) => {
 }
 const markAsSucceed = async (id) => {
     try {
+        // ✅ เปลี่ยน Succeed → Completed
         const res = await apiFetch(`/api/bookings/${id}/status`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: 'Succeed' })
+            body: JSON.stringify({ status: 'Completed' })
         })
         if (!res.ok) throw new Error()
 
         // อัปเดต UI
         const target = bookings.value.find(item => item.id === id)
-        if (target) { target.status = FILTERS.SUCCEED; filter.value = FILTERS.SUCCEED; }
+        if (target) { target.status = FILTERS.COMPLETE; filter.value = FILTERS.SUCCEED; }
     } catch (e) {
         showMessageDialog('❌ อัปเดต status ไม่สำเร็จ')
     }
 }
 </script>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 <style scoped>
 @import url('https://fonts.googleapis.com/icon?family=Material+Icons');

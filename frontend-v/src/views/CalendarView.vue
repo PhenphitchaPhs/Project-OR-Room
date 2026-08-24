@@ -210,9 +210,9 @@ const sortByAgeThenFemaleFirst = (arr) => {
     })
 }
 
-// ใช้ scheduleData เป็นหลัก
+// ✅ เปลี่ยน Succeed → Completed
 const getBookingsForDate = (d) => {
-    return scheduleData.value.filter(b => b.date === d && b.status !== 'Succeed')
+    return scheduleData.value.filter(b => b.date === d && b.status !== 'Completed')
 }
 const hasBooking = (d) => getBookingsForDate(d).length > 0
 
@@ -221,9 +221,10 @@ const getRoomNumber = (roomStr) => {
     return match ? parseInt(match[1]) : null
 }
 
+// ✅ เปลี่ยน Succeed → Completed
 const getUsedMinutesForRoom = (d, roomNum) => {
     return scheduleData.value
-        .filter(b => b.date === d && getRoomNumber(b.room) === roomNum && b.status !== 'Succeed' && b.status !== 'Cancelled')
+        .filter(b => b.date === d && getRoomNumber(b.room) === roomNum && b.status !== 'Completed' && b.status !== 'Cancelled')
         .reduce((sum, b) => sum + (b.durationMinutes || 0), 0)
 }
 const isRoomFull = (d, roomNum) => getUsedMinutesForRoom(d, roomNum) >= MAX_MINUTES
@@ -249,8 +250,9 @@ const roomStatusColor = (d, roomStr) => {
     return '#43a047'
 }
 
+// ✅ เปลี่ยน Succeed → Completed
 const selectedDateBookings = computed(() => {
-    const base = scheduleData.value.filter(b => b.date === selectedFullDate.value && b.status !== 'Succeed')
+    const base = scheduleData.value.filter(b => b.date === selectedFullDate.value && b.status !== 'Completed')
     return base.map(b => {
         const my = myBookingsMap.value.get(b.id)
         if (my) {

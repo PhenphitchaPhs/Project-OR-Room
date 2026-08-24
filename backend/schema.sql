@@ -63,3 +63,6 @@ CREATE TABLE IF NOT EXISTS otps (
   otp TEXT NOT NULL,
   expiry INTEGER NOT NULL           -- เวลาหมดอายุ (epoch ms) อายุ 5 นาที
 );
+
+-- เพิ่มคอลัมน์ durationMinutes ในตาราง bookings
+ALTER TABLE bookings ADD COLUMN durationMinutes INTEGER DEFAULT 0;

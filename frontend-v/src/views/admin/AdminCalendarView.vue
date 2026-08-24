@@ -184,7 +184,8 @@ const isWeekend = (d) => {
 }
 const isClosedDay = (d) => isWeekend(d) || isOfficialHoliday(d)
 
-const getBookingsForDate = (d) => bookings.value.filter(b => b.date === d && b.status !== 'Succeed')
+// ✅ เปลี่ยน Succeed → Completed
+const getBookingsForDate = (d) => bookings.value.filter(b => b.date === d && b.status !== 'Completed')
 const hasBooking = (d) => getBookingsForDate(d).length > 0
 
 // 📍 เลขห้องผ่าตัด OR-201 ถึง OR-220 และฟังก์ชันคำนวณความจุต่อห้อง (เหมือนฝั่งแพทย์ทุกอย่าง)
@@ -196,9 +197,10 @@ const getRoomNumber = (roomStr) => {
     return match ? parseInt(match[1]) : null
 }
 
+// ✅ เปลี่ยน Succeed → Completed
 const getUsedMinutesForRoom = (d, roomNum) => {
     return bookings.value
-        .filter(b => b.date === d && getRoomNumber(b.room) === roomNum && b.status !== 'Succeed' && b.status !== 'Cancelled')
+        .filter(b => b.date === d && getRoomNumber(b.room) === roomNum && b.status !== 'Completed' && b.status !== 'Cancelled')
         .reduce((sum, b) => {
             const match = b.procedure?.match(/(\d+)\s*min/)
             return sum + (match ? parseInt(match[1]) : 0)
