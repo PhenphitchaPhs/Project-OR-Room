@@ -53,7 +53,6 @@
                         🔒 ห้องผ่าตัดปิดทำการ
                     </p>
 
-                    <!-- 📍 แสดงสถานะของห้องผ่าตัดทุกห้อง (OR-201 ถึง OR-220) พร้อมเวลาที่เหลือและสีบอกสถานะ -->
                     <div v-if="!isClosedDay(selectedFullDate)" class="room-grid">
                         <div v-for="r in orRooms" :key="r" class="room-chip"
                             :class="{
@@ -120,32 +119,36 @@ const todayStr = ref(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart
 const selectedFullDate = ref(todayStr.value)
 const isDetailPopupOpen = ref(false)
 
-// ✅ ใช้ scheduleData เป็นแหล่งข้อมูลหลัก (ไม่มีข้อมูลผู้ป่วย)
 const scheduleData = ref([])
-// ✅ เก็บเฉพาะคิวของตัวเอง (id → full record)
 const myBookingsMap = ref(new Map())
 
 const officialHolidays = ref([])
 const MAX_MINUTES = 420
-// 📍 เลขห้องผ่าตัด OR-201 ถึง OR-220
 const orRooms = Array.from({ length: 20 }, (_, i) => 201 + i)
 
-// 📍 ฟังก์ชันใหม่สำหรับดึงข้อมูลเฉพาะช่วงเวลา และแยกข้อมูลตารางกับข้อมูลของตัวเอง
+// 📍 ฟังก์ชันหลักพร้อม console.log สำหรับดีบั๊ก
 const fetchSchedule = async (year, month) => {
+  console.log('🔥 fetchSchedule ถูกเรียก!', year, month)
+
   const startDate = `${year}-${String(month + 1).padStart(2, '0')}-01`
   const lastDate = new Date(year, month + 1, 0).getDate()
   const endDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDate).padStart(2, '0')}`
 
+  console.log('📅 ช่วงวันที่:', startDate, 'ถึง', endDate)
+
   try {
-    // 1. ดึงตารางห้อง (ไม่มีข้อมูลผู้ป่วย)
-    const resSchedule = await apiFetch(`/api/schedule?from=${startDate}&to=${endDate}`)
+    // 1. ดึงตารางห้อง
+    const url = `/api/schedule?from=${startDate}&to=${endDate}`
+    console.log('📡 กำลังเรียก:', url)
+    const resSchedule = await apiFetch(url)
+    console.log('📡 Response status:', resSchedule.status)
 
     if (!resSchedule.ok) {
       const errorText = await resSchedule.text()
       console.error('❌ /api/schedule ไม่สำเร็จ:', resSchedule.status, errorText)
 
-      // ถ้า token หมดอายุให้ logout
       if (resSchedule.status === 401) {
+        console.warn('⏳ Token หมดอายุ กำลัง logout...')
         localStorage.removeItem('token')
         localStorage.removeItem('userLicense')
         localStorage.removeItem('userRole')
@@ -158,10 +161,12 @@ const fetchSchedule = async (year, month) => {
     }
 
     const scheduleDataRaw = await resSchedule.json()
+    console.log('✅ /api/schedule ได้รับข้อมูล:', scheduleDataRaw)
     scheduleData.value = Array.isArray(scheduleDataRaw) ? scheduleDataRaw : []
 
-    // 2. ดึงเฉพาะคิวของตัวเอง (เพื่อเอาไปแสดงใน popup)
+    // 2. ดึงเฉพาะคิวของตัวเอง
     const resMyBookings = await apiFetch(`/api/bookings`)
+    console.log('📡 /api/bookings status:', resMyBookings.status)
 
     if (!resMyBookings.ok) {
       console.error('❌ /api/bookings ไม่สำเร็จ:', resMyBookings.status)
@@ -211,20 +216,17 @@ const getBookingsForDate = (d) => {
 }
 const hasBooking = (d) => getBookingsForDate(d).length > 0
 
-// 📍 ดึงเฉพาะตัวเลขห้องออกมาเทียบ
 const getRoomNumber = (roomStr) => {
     const match = String(roomStr || '').match(/(\d+)/)
     return match ? parseInt(match[1]) : null
 }
 
-// 📍 คำนวณจาก durationMinutes โดยใช้ scheduleData
 const getUsedMinutesForRoom = (d, roomNum) => {
     return scheduleData.value
         .filter(b => b.date === d && getRoomNumber(b.room) === roomNum && b.status !== 'Succeed' && b.status !== 'Cancelled')
         .reduce((sum, b) => sum + (b.durationMinutes || 0), 0)
 }
 const isRoomFull = (d, roomNum) => getUsedMinutesForRoom(d, roomNum) >= MAX_MINUTES
-// 📍 3 ระดับสี: ว่าง (0 นาที) / บางส่วน (> 0 และ < MAX) / เต็ม (≥ MAX)
 const isRoomEmpty = (d, roomNum) => getUsedMinutesForRoom(d, roomNum) === 0
 const isRoomPartial = (d, roomNum) => {
     const used = getUsedMinutesForRoom(d, roomNum)
@@ -237,28 +239,23 @@ const roomRemainingLabel = (d, roomNum) => {
     const mins = remain % 60
     return `${hrs}ชม${mins > 0 ? ' ' + mins + 'น' : ''}`
 }
-// 📍 จำนวนห้องที่ยังว่างอยู่ในวันนั้น (จาก 20 ห้อง) ใช้แสดง badge สรุปในตารางปฏิทิน
 const availableRoomsCount = (d) => orRooms.filter(r => !isRoomFull(d, r)).length
 
-// 📍 สีจุดบนปฏิทินให้ตรงกับสีห้องในป๊อปอัป (เขียว/เหลือง/แดง)
 const roomStatusColor = (d, roomStr) => {
     const roomNum = getRoomNumber(roomStr)
-    if (roomNum === null) return '#b0b8c1' // ไม่มีข้อมูลห้อง ใช้สีเทา
-    if (isRoomFull(d, roomNum)) return '#e53935'      // แดง = เต็ม
-    if (isRoomPartial(d, roomNum)) return '#f59e0b'   // เหลือง = บางส่วน
-    return '#43a047'                                    // เขียว = ว่าง
+    if (roomNum === null) return '#b0b8c1'
+    if (isRoomFull(d, roomNum)) return '#e53935'
+    if (isRoomPartial(d, roomNum)) return '#f59e0b'
+    return '#43a047'
 }
 
-// 📍 สร้างรายการคิวสำหรับวันที่เลือก โดยผสานข้อมูลของตัวเองจาก myBookingsMap
 const selectedDateBookings = computed(() => {
     const base = scheduleData.value.filter(b => b.date === selectedFullDate.value && b.status !== 'Succeed')
     return base.map(b => {
         const my = myBookingsMap.value.get(b.id)
         if (my) {
-            // ใช้ข้อมูลเต็มจาก myBookings (มีชื่อ, HN, age, gender, procedure)
             return { ...my, isMine: true }
         }
-        // คิวของคนอื่น – มีแค่ข้อมูลตาราง
         return { ...b, isMine: false }
     })
 })
@@ -303,17 +300,34 @@ const goToBooking = (lockDate = null) => {
     }
 }
 
-// 📍 ไปหน้าแก้ไขคิว
 const goToEditBooking = (bookingId) => {
     router.push(`/booking/${bookingId}`)
 }
 
-// อัปเดตฟังก์ชันเพื่อแสดงผล วัน เดือน ปี (พ.ศ.) ในภาษาไทย
 const formatDateThai = (d) => {
     if (!d) return ''
     const dt = new Date(d + 'T00:00:00')
     return `${dt.getDate()} ${monthNames[dt.getMonth()]} ${dt.getFullYear() + 543}`
 }
+
+onMounted(async () => {
+    console.log('🔥 onMounted ถูกเรียก!')
+    await fetchSchedule(currentYear.value, currentMonth.value)
+
+    try {
+        const resHoliday = await apiFetch(`/api/holidays`)
+        const dataHoliday = await resHoliday.json()
+
+        if (dataHoliday.items) {
+            officialHolidays.value = dataHoliday.items.map(item => ({
+                date: item.start.date,
+                name: item.summary
+            }))
+        }
+    } catch (e) {
+        console.error('ดึงวันหยุดไม่สำเร็จ', e)
+    }
+})
 </script>
 
 <style scoped>
@@ -331,7 +345,6 @@ const formatDateThai = (d) => {
     font-family: 'Segoe UI', sans-serif;
 }
 
-/* NAVBAR */
 .calendar-navbar {
     background: linear-gradient(135deg, #174983, #1a3a5f);
     height: 70px;
@@ -399,7 +412,6 @@ const formatDateThai = (d) => {
     background: rgba(255, 255, 255, 0.3);
 }
 
-/* WEEKDAY */
 .weekday-row {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
@@ -418,7 +430,6 @@ const formatDateThai = (d) => {
     color: #c0392b;
 }
 
-/* GRID */
 .calendar-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
@@ -526,7 +537,6 @@ const formatDateThai = (d) => {
     font-weight: 600;
 }
 
-/* POPUP */
 .overlay-modal {
     position: fixed;
     inset: 0;
@@ -674,7 +684,6 @@ const formatDateThai = (d) => {
     font-size: 14px;
 }
 
-/* FAB */
 .fab-btn {
     position: fixed;
     bottom: 30px;
