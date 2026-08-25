@@ -37,6 +37,35 @@
                 </div>
             </div>
         </Transition>
+        <Transition name="fade">
+            <div v-if="isCancelledModalOpen" class="modal-overlay-center" @click.self="isCancelledModalOpen = false">
+                <div class="white-modal-card cancelled-modal-card">
+                    <h2 class="modal-msg-title">🗑️ เคสที่ถูกยกเลิก ({{ cancelledList.length }})</h2>
+
+                    <div v-if="cancelledList.length === 0" class="empty-state" style="padding: 20px">
+                        <p>ไม่มีเคสที่ถูกยกเลิก</p>
+                    </div>
+
+                    <div v-else class="cancelled-list">
+                        <div v-for="(c, idx) in cancelledList" :key="idx" class="cancelled-row">
+                            <div class="cancelled-row-top">
+                                <span class="cancelled-room-badge">{{ c.room }}</span>
+                                <span class="cancelled-date">{{ c.date }}</span>
+                            </div>
+                            <div class="cancelled-procedure">{{ c.procedureName }}</div>
+                            <div class="cancelled-meta">HN {{ c.hn }} · {{ c.patientName }}</div>
+                            <div class="cancelled-meta">👨‍⚕️ {{ c.doctorName }}</div>
+                        </div>
+                    </div>
+
+                    <div class="modal-button-group" style="margin-top:16px">
+                        <button class="btn-confirm-green" style="flex:none; padding:10px 24px"
+                            @click="isCancelledModalOpen = false">close</button>
+                    </div>
+                </div>
+            </div>
+        </Transition>
+
 
         <!-- Top Nav -->
         <header class="top-nav">
@@ -121,7 +150,7 @@
                             <div class="formal-stat-foot">รายการที่ยังไม่ถึงวันผ่าตัด</div>
                         </div>
 
-                        <div class="formal-stat-card accent-red">
+                        <div class="formal-stat-card accent-red clickable" @click="isCancelledModalOpen = true">
                             <div class="formal-stat-top">
                                 <span class="formal-stat-label">เคสที่ถูกยกเลิก</span>
                                 <span class="formal-stat-icon-badge red">
@@ -129,7 +158,7 @@
                                 </span>
                             </div>
                             <div class="formal-stat-number">{{ cancelledCount }}</div>
-                            <div class="formal-stat-foot">รายการที่ถูกยกเลิกทั้งหมด</div>
+                            <div class="formal-stat-foot">คลิกเพื่อดูรายละเอียด</div>
                         </div>
                     </div>
 
@@ -383,6 +412,21 @@ const cancelledCount = computed(() =>
     bookings.value.filter(
         b => b.status === 'Cancelled'
     ).length
+)
+// 📋 รายละเอียดเคสที่ถูกยกเลิก
+const isCancelledModalOpen = ref(false)
+const cancelledList = computed(() =>
+    bookings.value
+        .filter(b => b.status === 'Cancelled')
+        .map(b => ({
+            hn: b.hn,
+            patientName: b.fullName,
+            room: b.room,
+            date: b.date,
+            doctorName: doctorMap.value[b.doctorLicense] || b.doctorLicense || '-',
+            procedureName: (b.procedure || '-').replace(/\s*-\s*\d+\s*min[s]?.*$/i, ''),
+        }))
+        .sort((a, b) => (b.date || '').localeCompare(a.date || ''))
 )
 
 // 🏥 จัดกลุ่มคิวผ่าตัดตามห้อง (ไม่รวม Cancelled/Succeed) — อิงลำดับคิว (queueOrder) + นาทีจาก procedure
@@ -1418,5 +1462,72 @@ const changeRole = async (license, newRole) => {
     .admin-search-box input {
         font-size: 13px;
     }
+}
+
+.formal-stat-card.clickable {
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.formal-stat-card.clickable:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(15, 42, 71, 0.1);
+}
+
+.cancelled-modal-card {
+    width: 380px;
+    max-width: 90vw;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.cancelled-list {
+    overflow-y: auto;
+    max-height: 55vh;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    text-align: left;
+}
+
+.cancelled-row {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 10px;
+    padding: 10px 12px;
+}
+
+.cancelled-row-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.cancelled-room-badge {
+    background: #b91c1c;
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+
+.cancelled-date {
+    font-size: 11px;
+    color: #888;
+}
+
+.cancelled-procedure {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1a3a5f;
+}
+
+.cancelled-meta {
+    font-size: 12px;
+    color: #666;
+    margin-top: 2px;
 }
 </style>
