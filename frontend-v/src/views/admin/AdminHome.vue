@@ -712,14 +712,37 @@
                         </span>
                     </label>
 
-                    <div class="export-chip-box">
-                        <button v-for="doctor in doctorList" :key="doctor.license"
-                            :class="['export-chip', { active: selectedDoctors.includes(doctor.license) }]"
-                            @click="toggleFrom(selectedDoctors, doctor.license)">
-                            {{ doctor.doctorName || doctor.license }}
+                    <div class="export-dropdown" :class="{ open: isDoctorDropdownOpen }" ref="doctorDropdownRef">
+                        <button type="button" class="export-dropdown-toggle"
+                            @click="isDoctorDropdownOpen = !isDoctorDropdownOpen">
+                            <span class="export-dropdown-toggle-text">
+                                {{ selectedDoctorNamesText }}
+                            </span>
+                            <span class="export-dropdown-arrow">{{ isDoctorDropdownOpen ? '▴' : '▾' }}</span>
                         </button>
 
-                        <p v-if="doctorList.length === 0" class="export-hint">ยังไม่มีรายชื่อแพทย์</p>
+                        <div v-if="isDoctorDropdownOpen" class="export-dropdown-panel">
+                            <input v-if="sortedDoctorList.length" v-model="doctorSearchQuery" type="text"
+                                class="export-dropdown-search" placeholder="ค้นหาชื่อแพทย์..." @click.stop
+                                @keydown.stop />
+
+                            <label v-if="filteredDoctorList.length" class="export-dropdown-item export-dropdown-item-all"
+                                @click="toggleAllFilteredDoctors">
+                                <input type="checkbox" :checked="areAllFilteredDoctorsSelected"
+                                    @click.prevent />
+                                <span>{{ doctorSearchQuery ? 'เลือกทั้งหมด (ที่ค้นเจอ)' : 'เลือกทั้งหมด' }}</span>
+                            </label>
+
+                            <label v-for="doctor in filteredDoctorList" :key="doctor.license"
+                                class="export-dropdown-item">
+                                <input type="checkbox" :checked="selectedDoctors.includes(doctor.license)"
+                                    @change="toggleFrom(selectedDoctors, doctor.license)" />
+                                <span>{{ doctor.doctorName || doctor.license }}</span>
+                            </label>
+
+                            <p v-if="sortedDoctorList.length === 0" class="export-hint">ยังไม่มีรายชื่อแพทย์</p>
+                            <p v-else-if="filteredDoctorList.length === 0" class="export-hint">ไม่พบแพทย์ที่ค้นหา</p>
+                        </div>
                     </div>
                 </div>
 
@@ -787,7 +810,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCsvExport } from '../../composables/useCsvExport'
 import {
@@ -1122,6 +1145,69 @@ const toggleFrom = (list, value) => {
     else list.splice(index, 1)
 }
 
+// เรียงรายชื่อแพทย์ตามตัวอักษร (ก-ฮ / A-Z) ให้หา-เลือกในดรอปดาวน์ได้ง่ายขึ้น
+const sortedDoctorList = computed(() =>
+    [...doctorList.value].sort((a, b) =>
+        (a.doctorName || a.license || '').localeCompare(b.doctorName || b.license || '', 'th')
+    )
+)
+
+// ดรอปดาวน์เลือกแพทย์แบบเลือกได้หลายคน (multi-select) + ค้นหาชื่อ
+const isDoctorDropdownOpen = ref(false)
+const doctorDropdownRef = ref(null)
+const doctorSearchQuery = ref('')
+
+const selectedDoctorNamesText = computed(() => {
+    if (!selectedDoctors.value.length) return 'เลือกแพทย์...'
+    return selectedDoctors.value
+        .map(license => doctorMap.value[license] || license)
+        .join(', ')
+})
+
+// กรองรายชื่อแพทย์ตามคำค้นหา (ค้นได้ทั้งชื่อและเลขใบประกอบ)
+const filteredDoctorList = computed(() => {
+    const q = doctorSearchQuery.value.trim().toLowerCase()
+    if (!q) return sortedDoctorList.value
+    return sortedDoctorList.value.filter(doctor =>
+        (doctor.doctorName || '').toLowerCase().includes(q) ||
+        (doctor.license || '').toLowerCase().includes(q)
+    )
+})
+
+const areAllFilteredDoctorsSelected = computed(() =>
+    filteredDoctorList.value.length > 0 &&
+    filteredDoctorList.value.every(doctor => selectedDoctors.value.includes(doctor.license))
+)
+
+// "เลือกทั้งหมด" จะทำงานเฉพาะกับรายชื่อที่ค้นเจอ (ไม่แตะรายชื่อที่ถูกซ่อนอยู่จากการค้นหา)
+const toggleAllFilteredDoctors = () => {
+    if (areAllFilteredDoctorsSelected.value) {
+        selectedDoctors.value = selectedDoctors.value.filter(
+            license => !filteredDoctorList.value.some(doctor => doctor.license === license)
+        )
+    } else {
+        const toAdd = filteredDoctorList.value
+            .map(doctor => doctor.license)
+            .filter(license => !selectedDoctors.value.includes(license))
+        selectedDoctors.value = [...selectedDoctors.value, ...toAdd]
+    }
+}
+
+const handleDoctorDropdownOutsideClick = (event) => {
+    if (isDoctorDropdownOpen.value && doctorDropdownRef.value && !doctorDropdownRef.value.contains(event.target)) {
+        isDoctorDropdownOpen.value = false
+        doctorSearchQuery.value = ''
+    }
+}
+
+onMounted(() => {
+    document.addEventListener('click', handleDoctorDropdownOutsideClick)
+})
+
+onBeforeUnmount(() => {
+    document.removeEventListener('click', handleDoctorDropdownOutsideClick)
+})
+
 // แปลงโหมดที่เลือกเป็นช่วงวันที่จริง
 const exportDateRange = computed(() => {
     if (exportDateMode.value === 'day') {
@@ -1307,6 +1393,8 @@ const resetExportFilters = () => {
     selectedDoctors.value = []
     selectedStatuses.value = []
     exportError.value = ''
+    isDoctorDropdownOpen.value = false
+    doctorSearchQuery.value = ''
 }
 
 const openExportDialog = () => {
@@ -2811,6 +2899,126 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
     margin: 0;
     color: #94a3b8;
     font-size: 12px;
+}
+
+.export-dropdown {
+    position: relative;
+}
+
+.export-dropdown-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+
+    min-height: 40px;
+    padding: 8px 12px;
+
+    background: #ffffff;
+    color: #1e293b;
+    border: 1px solid #dbe3ec;
+    border-radius: 12px;
+
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.15s;
+    text-align: left;
+}
+
+.export-dropdown-toggle:hover {
+    border-color: #1e3a8a;
+}
+
+.export-dropdown.open .export-dropdown-toggle {
+    border-color: #1e3a8a;
+    box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.12);
+}
+
+.export-dropdown-toggle-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #475569;
+}
+
+.export-dropdown-arrow {
+    flex-shrink: 0;
+    color: #94a3b8;
+    font-size: 11px;
+}
+
+.export-dropdown-panel {
+    position: absolute;
+    z-index: 20;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+
+    max-height: 220px;
+    overflow-y: auto;
+
+    padding: 6px;
+    background: #ffffff;
+    border: 1px solid #e6ecf4;
+    border-radius: 12px;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+}
+
+.export-dropdown-search {
+    width: 100%;
+    box-sizing: border-box;
+
+    margin-bottom: 6px;
+    padding: 8px 10px;
+
+    background: #f8fafc;
+    color: #1e293b;
+    border: 1px solid #e6ecf4;
+    border-radius: 8px;
+
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.export-dropdown-search:focus {
+    outline: none;
+    border-color: #1e3a8a;
+    background: #ffffff;
+}
+
+.export-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    padding: 8px 10px;
+    border-radius: 8px;
+
+    font-size: 12px;
+    font-weight: 600;
+    color: #475569;
+    cursor: pointer;
+    transition: 0.15s;
+}
+
+.export-dropdown-item:hover {
+    background: #f1f5f9;
+}
+
+.export-dropdown-item input[type="checkbox"] {
+    width: 15px;
+    height: 15px;
+    accent-color: #1e3a8a;
+    cursor: pointer;
+}
+
+.export-dropdown-item-all {
+    border-bottom: 1px solid #e6ecf4;
+    border-radius: 8px 8px 0 0;
+    margin-bottom: 4px;
+    color: #1e3a8a;
 }
 
 .export-preview {
