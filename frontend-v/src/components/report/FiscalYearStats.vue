@@ -340,11 +340,11 @@ const fiscalYearRangeLabel = computed(() => {
     return `${fmt(start)} – ${fmt(end)}`
 })
 
-// เคสที่เสร็จสิ้น (Succeed) ในปีงบประมาณปัจจุบันเท่านั้น
+// เคสที่เสร็จสิ้น (Completed) ในปีงบประมาณปัจจุบันเท่านั้น
 const fiscalYearBookings = computed(() => {
     const { start, end } = fiscalYearInfo.value
     return props.bookings.filter(b => {
-        if (b.status !== 'Succeed' || !b.date) return false
+        if (b.status !== 'Completed' || !b.date) return false
         const d = new Date(b.date)
         return d >= start && d <= end
     })
@@ -541,7 +541,7 @@ const selectedMonthlyRoomBookings = computed(() => {
     return props.bookings.filter(b => {
 
         if (
-            b.status !== 'Succeed' ||
+            b.status !== 'Completed' ||
             !b.date
         ) {
             return false
