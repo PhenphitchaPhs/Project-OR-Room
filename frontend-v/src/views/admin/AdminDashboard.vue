@@ -97,6 +97,16 @@
                 <!-- ===== Section: Admin Dashboard ===== -->
                 <div v-if="activeSection === 'dashboard'">
                     <h1 class="main-title">📊 Admin Dashboard</h1>
+                    <div class="admin-search-box">
+                        <span class="material-icons">search</span>
+
+                        <input v-model="searchQuery" type="text"
+                            placeholder="Search HN, Patient, Doctor, Room, Date..." />
+
+                        <button v-if="searchQuery" class="search-clear-btn" @click="searchQuery = ''">
+                            ✕
+                        </button>
+                    </div>
 
                     <!-- Stats Cards: เคสที่กำลังจะมาถึง / เคสที่ถูกยกเลิก (ดีไซน์ทางการ) -->
                     <div class="formal-stats-row">
@@ -225,7 +235,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr v-for="doc in doctorList" :key="doc.license">
+                                    <tr v-for="doc in filteredDoctorList" :key="doc.license">
                                         <td>{{ doc.license }}</td>
                                         <td>{{ doc.doctorName }}</td>
                                         <td>
@@ -271,6 +281,89 @@ const loading = ref(true)
 const isLogoutModalOpen = ref(false)
 const activeSection = ref('dashboard') // 'dashboard' | 'fiscal' | 'doctors'
 
+const searchQuery = ref('')
+
+const matchSearch = (item) => {
+    if (!searchQuery.value.trim()) return true
+
+    const q = searchQuery.value
+        .toLowerCase()
+        .replace(/[-\s]/g, '')
+        .trim()
+
+    const doctorName =
+        doctorMap.value[item.doctorLicense] || ''
+
+    const dateFormats = []
+
+    if (item.date) {
+        const d = new Date(item.date)
+
+        const yyyy = d.getFullYear()
+        const mm = String(d.getMonth() + 1).padStart(2, '0')
+        const dd = String(d.getDate()).padStart(2, '0')
+
+        dateFormats.push(
+            `${yyyy}-${mm}-${dd}`,
+            `${dd}/${mm}/${yyyy}`,
+            `${dd}-${mm}-${yyyy}`
+        )
+    }
+
+    const roomText = item.room
+        ? item.room.toLowerCase().replace(/[-\s]/g, '')
+        : ''
+
+    const genderText =
+        item.gender === 'male'
+            ? 'male ชาย เพศชาย'
+            : 'female หญิง เพศหญิง'
+
+    const searchableText = [
+        item.hn,
+        item.fullName,
+        item.procedure,
+        item.age,
+        item.room,
+        roomText,
+        genderText,
+        doctorName,
+        item.doctorLicense,
+        item.status,
+        ...dateFormats
+    ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+        .replace(/[-\s]/g, '')
+
+    return searchableText.includes(q)
+}
+const filteredDoctorList = computed(() => {
+    if (!searchQuery.value.trim()) {
+        return doctorList.value
+    }
+
+    const q = searchQuery.value
+        .toLowerCase()
+        .replace(/[-\s]/g, '')
+        .trim()
+
+    return doctorList.value.filter(doc => {
+        const text = [
+            doc.license,
+            doc.doctorName,
+            doc.role
+        ]
+            .filter(Boolean)
+            .join(' ')
+            .toLowerCase()
+            .replace(/[-\s]/g, '')
+
+        return text.includes(q)
+    })
+})
+
 
 // 🐛 Fix: ปรับปรุงการดึงวันที่ปัจจุบันให้ตรงกับ Local Timezone (แก้ปัญหา UTC offset)
 const tzOffset = new Date().getTimezoneOffset() * 60000
@@ -301,7 +394,8 @@ const roomQueues = computed(() => {
             b.date === todayStr &&
             b.status !== 'Cancelled' &&
             // ✅ เปลี่ยน Succeed → Completed
-            b.status !== 'Completed'
+            b.status !== 'Completed' &&
+            matchSearch(b)
         )
         .forEach(b => {
             const roomKey = String(b.room || '').match(/(\d+)/)?.[1]
@@ -1219,5 +1313,110 @@ const changeRole = async (license, newRole) => {
     font-weight: 700;
     font-size: 12px;
     margin-right: 4px;
+}
+
+/* =========================
+   Admin Search
+   ========================= */
+
+.admin-search-box {
+    width: 100%;
+    max-width: 875px;
+    height: 46px;
+    margin: 0 0 24px 0;
+
+    display: flex;
+    align-items: center;
+
+    background: #ffffff;
+    border: 1px solid #d9e1ea;
+    border-radius: 10px;
+
+    padding: 0 12px;
+
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.admin-search-box:focus-within {
+    border-color: #1a3a5f;
+    box-shadow: 0 0 0 3px rgba(26, 58, 95, 0.10);
+}
+
+/* Search icon */
+.admin-search-box .material-icons {
+    font-size: 22px;
+    color: #718096;
+    margin-right: 10px;
+    flex-shrink: 0;
+}
+
+/* Input */
+.admin-search-box input {
+    flex: 1;
+
+    width: 100%;
+    height: 100%;
+
+    border: none;
+    outline: none;
+
+    background: transparent;
+
+    font-size: 14px;
+    color: #1f2937;
+
+    font-family: inherit;
+}
+
+.admin-search-box input::placeholder {
+    color: #9aa6b2;
+}
+
+/* Clear button */
+.search-clear-btn {
+    width: 30px;
+    height: 30px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: none;
+    border-radius: 50%;
+
+    background: transparent;
+    color: #8a96a3;
+
+    font-size: 15px;
+    cursor: pointer;
+
+    transition:
+        background 0.2s ease,
+        color 0.2s ease;
+}
+
+.search-clear-btn:hover {
+    background: #eef2f6;
+    color: #1a3a5f;
+}
+
+/* =========================
+   Responsive
+   ========================= */
+
+@media (max-width: 768px) {
+    .admin-search-box {
+        max-width: 100%;
+        height: 44px;
+        margin-bottom: 20px;
+    }
+
+    .admin-search-box input {
+        font-size: 13px;
+    }
 }
 </style>
