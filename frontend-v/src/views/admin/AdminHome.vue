@@ -222,7 +222,7 @@
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                        }}</div>
+                                            }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
                                             item.cxrNote || '-' }}</div>
@@ -325,7 +325,7 @@
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                        }}</div>
+                                            }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
                                             item.cxrNote || '-' }}</div>
@@ -424,7 +424,7 @@
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                        }}</div>
+                                            }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
                                             item.cxrNote || '-' }}</div>
@@ -509,7 +509,7 @@
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                            }}</div>
+                                        }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
                                             item.cxrNote || '-' }}</div>
@@ -619,7 +619,8 @@
                     <span class="material-icons">picture_as_pdf</span>
                     <span class="sheet-option-text">
                         <strong>PDF</strong>
-                        <small>{{ isExportingCase ? 'กำลังสร้างไฟล์…' : 'ใบสรุปคิว พร้อมพิมพ์ออกมาใช้ได้ทันที' }}</small>
+                        <small>{{ isExportingCase ? 'กำลังสร้างไฟล์…' : 'ใบสรุปคิว พร้อมพิมพ์ออกมาใช้ได้ทันที'
+                            }}</small>
                     </span>
                 </button>
 
@@ -1021,6 +1022,25 @@ onMounted(async () => {
             users.forEach(u => { doctorMap.value[u.license] = u.doctorName })
         }
     } catch (e) { console.error('ดึงรายชื่อหมอไม่สำเร็จ', e) }
+    for (const item of bookings.value) {
+        const shouldComplete =
+            (item.date < todayStr || isPastCutoffToday(item)) &&
+            item.status !== 'Cancelled' &&
+            item.status !== 'Completed'
+
+        if (shouldComplete) {
+            item.status = 'Completed'
+
+            await apiFetch(
+                `/api/bookings/${item.id}/status`,
+                {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: 'Completed' })
+                }
+            )
+        }
+    }
 })
 
 // ================= Export CSV ทั้งระบบ (Admin) =================
@@ -1526,12 +1546,18 @@ const sortCases = (arr) => {
 }
 const todayStr = new Date().toISOString().split('T')[0]
 
+// ⏰ เคสของวันนี้ที่เลย 18:00 แล้ว ให้ถือว่า Completed
+const CUTOFF_HOUR = 18
+const isPastCutoffToday = (item) =>
+    item.date === todayStr && new Date().getHours() >= CUTOFF_HOUR
+
 const todayCases = computed(() =>
     sortCases(
         bookings.value.filter(
             item =>
                 item.date === todayStr &&
                 (item.status === FILTERS.UPCOMING || !item.status) &&
+                !isPastCutoffToday(item) &&
                 matchSearch(item)
         )
     )
@@ -1552,7 +1578,8 @@ const completedCases = computed(() =>
     sortCases(
         bookings.value.filter(
             item =>
-                item.status === 'Completed' &&
+                (item.status === 'Completed' || isPastCutoffToday(item)) &&
+                item.status !== 'Cancelled' &&
                 matchSearch(item)
         )
     )
