@@ -29,7 +29,7 @@
 import type { Booking } from '../../composables/useCsvExport'
 import {
   sortForExport,
-  sortForAdminExport,
+  // ✅ ลบ sortForAdminExport ออก ใช้ sortForExport เดียวกันหมด
   toDateKey,
   statusLabel,
   genderLabel,
@@ -221,10 +221,9 @@ export function renderReport(
   doc.registerFont('TH-Bold', new Uint8Array(fonts.bold))
   doc.font('TH')
 
-  // 📌 ฝั่ง admin เรียง วัน → ห้อง → ลำดับคิว ตามที่รายงานต้องการ
-  //    และนับเลขคิวใหม่ทุก (วัน+ห้อง) เพราะไฟล์เดียวรวมหลายห้อง
-  const prepared: ExportedRow[] =
-    meta.mode === 'admin' ? sortForAdminExport(rows) : sortForExport(rows)
+  // ✅ ใช้ sortForExport เดียวกันทุกกรณี (ทั้ง admin และ user)
+  //    เลขลำดับคิวจะเรียง 1 ถึง n ต่อเนื่องทั้งไฟล์ ไม่เริ่มใหม่ตามวันหรือห้อง
+  const prepared: ExportedRow[] = sortForExport(rows)
 
   drawHeader(doc, meta)
 

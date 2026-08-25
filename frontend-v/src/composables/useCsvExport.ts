@@ -137,9 +137,12 @@ export const downloadStamp = (now: Date = new Date()): string => {
 }
 
 /**
- * เรียงลำดับให้ตรงกับที่ผู้ใช้เห็นบนหน้าจอ (ตรรกะเดียวกับ sortCases ใน HomeView)
- * วันผ่าตัด → ลำดับที่ผู้ใช้ลากจัดเอง → อายุมากก่อน → เพศหญิงก่อน
- * แล้วใส่เลขลำดับคิวโดยเริ่มนับใหม่ทุกวัน
+ * ✅ แก้ไข: เรียงลำดับให้ตรงกับที่ผู้ใช้เห็นบนหน้าจอ และใช้ตัวนับเดียวทั่วทั้งไฟล์
+ * 
+ * ลำดับการเรียง: วันผ่าตัด → ลำดับที่ผู้ใช้ลากจัดเอง → อายุมากก่อน → เพศหญิงก่อน
+ * เลขลำดับคิว: เริ่มนับ 1 ถึง n ต่อเนื่องทั้งไฟล์ (ไม่เริ่มใหม่ตามวัน/ห้อง)
+ * 
+ * ใช้ได้ทั้งฝั่ง user และ admin เพราะทุกแถวถูกเรียงตามกฎเดียวกัน
  */
 export const sortForExport = (rows: Booking[]): ExportRow[] => {
   const sorted = [...rows].sort((a, b) => {
@@ -159,52 +162,11 @@ export const sortForExport = (rows: Booking[]): ExportRow[] => {
     return 0
   })
 
-  const counterByDate: Record<string, number> = {}
-  return sorted.map((row) => {
-    const dateKey = toDateKey(row.date)
-    counterByDate[dateKey] = (counterByDate[dateKey] || 0) + 1
-    return { ...row, __queueNo: counterByDate[dateKey] }
-  })
+  // ✅ ใช้ตัวนับเดียวตลอดทั้งไฟล์ (ไม่แยกตามวัน/ห้อง)
+  return sorted.map((row, index) => ({ ...row, __queueNo: index + 1 }))
 }
 
-/**
- * เรียงสำหรับรายงานระดับระบบ (Admin): วัน → ห้อง → ลำดับคิว → อายุมากก่อน → หญิงก่อน
- *
- * ต่างจาก sortForExport ตรงที่แทรก "ห้อง" เป็นลำดับที่สอง และนับเลขคิวใหม่ทุก (วัน + ห้อง)
- * เพราะรายงานฝั่ง admin รวมทุกห้องไว้ในไฟล์เดียว ถ้านับต่อวันอย่างเดียว
- * เลขคิวจะไหลข้ามห้องจนอ่านไม่รู้เรื่องว่าเป็นคิวที่เท่าไรของห้องนั้น
- *
- * เรียงห้องด้วย localeCompare + numeric เพื่อให้ OR-2 มาก่อน OR-10 (ไม่ใช่เรียงแบบ string ล้วน)
- */
-export const sortForAdminExport = (rows: Booking[]): ExportRow[] => {
-  const sorted = [...rows].sort((a, b) => {
-    const dateA = toDateKey(a.date)
-    const dateB = toDateKey(b.date)
-    if (dateA !== dateB) return dateA < dateB ? -1 : 1
-
-    const roomA = String(a.room || '')
-    const roomB = String(b.room || '')
-    if (roomA !== roomB) return roomA.localeCompare(roomB, 'en', { numeric: true })
-
-    const orderA = Number(a.queueOrder) || 999
-    const orderB = Number(b.queueOrder) || 999
-    if (orderA !== orderB) return orderA - orderB
-
-    const ageA = parseInt(String(a.age)) || 0
-    const ageB = parseInt(String(b.age)) || 0
-    if (ageA !== ageB) return ageB - ageA
-
-    if (a.gender !== b.gender) return a.gender === 'female' ? -1 : 1
-    return 0
-  })
-
-  const counterByDateRoom: Record<string, number> = {}
-  return sorted.map((row) => {
-    const key = `${toDateKey(row.date)}|${String(row.room || '')}`
-    counterByDateRoom[key] = (counterByDateRoom[key] || 0) + 1
-    return { ...row, __queueNo: counterByDateRoom[key] }
-  })
-}
+// ✅ ลบ sortForAdminExport ออก เพราะตอนนี้ใช้ sortForExport เดียวกันทุกกรณี
 
 /** เก็บเฉพาะรายการของแพทย์เจ้าของ license ที่ระบุ (defense in depth ฝั่ง frontend) */
 export const filterOwnBookings = (rows: Booking[], license: string): Booking[] => {
@@ -434,7 +396,7 @@ export function useCsvExport() {
     filterOwnBookings,
     filterByDateRange,
     sortForExport,
-    sortForAdminExport,
+    // ✅ ลบ sortForAdminExport ออก
     buildRangeFileName,
     buildSingleFileName,
     buildAdminFileName,
