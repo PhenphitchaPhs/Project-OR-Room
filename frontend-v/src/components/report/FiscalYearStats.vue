@@ -4,6 +4,7 @@
             <h2 class="section-title">📅 สถิติปีงบประมาณ {{ fiscalYearLabel }}</h2>
         </div>
 
+
         <div class="fiscal-summary-row">
             <div class="fiscal-summary-card">
                 <span class="formal-stat-icon-badge green">
@@ -16,13 +17,27 @@
                     </div>
                 </div>
             </div>
+
+            <div class="fiscal-summary-card">
+                <span class="formal-stat-icon-badge red">
+                    <span class="material-icons">cancel</span>
+                </span>
+                <div>
+                    <div class="fiscal-summary-number">{{ fiscalYearCancelledTotal }}</div>
+                    <div class="fiscal-summary-label">
+                        เคสที่ถูกยกเลิกทั้งหมด · {{ fiscalYearRangeLabel }}
+                    </div>
+                </div>
+            </div>
         </div>
+
+
 
         <!-- ===== แผนภูมิแท่ง + เส้นกราฟแนวโน้ม รายเดือน ===== -->
         <div class="fiscal-chart-wrap">
             <div class="chart-legend">
-                <span class="legend-item"><span class="legend-dot bar-dot"></span> จำนวนเคส (แท่ง)</span>
-                <span class="legend-item"><span class="legend-dot line-dot"></span> แนวโน้ม (เส้น)</span>
+                <span class="legend-item"><span class="legend-dot bar-dot"></span>Completed</span>
+                <span class="legend-item"><span class="legend-dot line-dot"></span> Cancelled</span>
             </div>
 
             <svg :viewBox="`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`" class="bar-chart-svg"
@@ -49,11 +64,11 @@
                     </text>
                 </g>
 
-                <!-- เส้นแนวโน้ม -->
-                <polyline :points="linePoints" class="chart-trend-line" />
-                <circle v-for="d in barChartData" :key="'pt-' + d.key" :cx="d.cx" :cy="d.cy" r="3.2"
+                <!-- เส้นแนวโน้ม: จำนวนเคสที่ยกเลิกรายเดือน -->
+                <polyline :points="cancelledLinePoints" class="chart-trend-line" />
+                <circle v-for="d in barChartData" :key="'pt-' + d.key" :cx="d.cx" :cy="d.cancelledCy" r="3.2"
                     class="chart-trend-point">
-                    <title>{{ d.label }} — {{ d.count }} เคส</title>
+                    <title>{{ d.label }} — ยกเลิก {{ d.cancelledCount }} เคส</title>
                 </circle>
             </svg>
         </div>
@@ -349,6 +364,17 @@ const fiscalYearBookings = computed(() => {
         return d >= start && d <= end
     })
 })
+// เคสที่ถูกยกเลิก ในปีงบประมาณปัจจุบัน
+const fiscalYearCancelledBookings = computed(() => {
+    const { start, end } = fiscalYearInfo.value
+    return props.bookings.filter(b => {
+        if (b.status !== 'Cancelled' || !b.date) return false
+        const d = new Date(b.date)
+        return d >= start && d <= end
+    })
+})
+
+const fiscalYearCancelledTotal = computed(() => fiscalYearCancelledBookings.value.length)
 
 const fiscalYearTotal = computed(() => fiscalYearBookings.value.length)
 
@@ -376,17 +402,34 @@ const CHART_PADDING = 32
 
 const barChartData = computed(() => {
     const data = fiscalMonthlyBreakdown.value
+    const { startYear } = fiscalYearInfo.value
     const n = data.length || 1
     const innerWidth = CHART_WIDTH - CHART_PADDING * 2
     const innerHeight = CHART_HEIGHT - CHART_PADDING * 2
     const step = innerWidth / n
     const barWidth = step * 0.5
-    const maxCount = Math.max(1, ...data.map(d => d.count))
+
+    // นับจำนวนยกเลิกรายเดือน ด้วย index ปีงบประมาณเดียวกับแท่ง
+    const cancelledCounts = data.map((_, idx) => {
+        const realMonth = (9 + idx) % 12
+        const realYear = idx <= 2 ? startYear : startYear + 1
+        return fiscalYearCancelledBookings.value.filter(b => {
+            const d = new Date(b.date)
+            return d.getMonth() === realMonth && d.getFullYear() === realYear
+        }).length
+    })
+
+    // ใช้ scale เดียวกันทั้งแท่งและเส้น จะได้เทียบสัดส่วนกันได้ตรง ๆ
+    const maxCount = Math.max(1, ...data.map(d => d.count), ...cancelledCounts)
 
     return data.map((d, i) => {
-        const barHeight = maxCount > 0 ? (d.count / maxCount) * innerHeight : 0
+        const barHeight = (d.count / maxCount) * innerHeight
         const x = CHART_PADDING + step * i + (step - barWidth) / 2
         const y = CHART_HEIGHT - CHART_PADDING - barHeight
+
+        const cancelledCount = cancelledCounts[i]
+        const cancelledCy = CHART_HEIGHT - CHART_PADDING - (cancelledCount / maxCount) * innerHeight
+
         return {
             ...d,
             x,
@@ -394,13 +437,15 @@ const barChartData = computed(() => {
             barWidth,
             barHeight,
             cx: x + barWidth / 2,
-            cy: y
+            cy: y,
+            cancelledCount,
+            cancelledCy
         }
     })
 })
 
-const linePoints = computed(() =>
-    barChartData.value.map(d => `${d.cx},${d.cy}`).join(' ')
+const cancelledLinePoints = computed(() =>
+    barChartData.value.map(d => `${d.cx},${d.cancelledCy}`).join(' ')
 )
 
 // เส้นกริดแนวนอน 4 เส้นแบ่งพื้นที่กราฟเท่าๆ กัน ไว้ช่วยกะสัดส่วนด้วยสายตา
@@ -689,6 +734,9 @@ const selectedMonthlyTotalMinutes = computed(() => {
 
 .fiscal-summary-row {
     padding: 16px 20px 4px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
 }
 
 .fiscal-summary-card {
@@ -766,7 +814,7 @@ const selectedMonthlyTotalMinutes = computed(() => {
 }
 
 .legend-dot.line-dot {
-    background: #f59e0b;
+    background: #f50b0b;
     border-radius: 50%;
 }
 
@@ -1398,7 +1446,7 @@ const selectedMonthlyTotalMinutes = computed(() => {
 .chart-trend-line {
     fill: none;
 
-    stroke: #f59e0b;
+    stroke: #f50b0b;
     stroke-width: 2;
 
     stroke-linejoin: round;
@@ -1429,7 +1477,7 @@ const selectedMonthlyTotalMinutes = computed(() => {
 ====================================================== */
 
 .chart-trend-point {
-    fill: #f59e0b;
+    fill: #f50b0b;
 
     stroke: white;
     stroke-width: 1.5;
@@ -1548,5 +1596,10 @@ const selectedMonthlyTotalMinutes = computed(() => {
     .chart-value-label {
         animation: none !important;
     }
+}
+
+.formal-stat-icon-badge.red {
+    background: #fee2e2;
+    color: #b91c1c;
 }
 </style>
