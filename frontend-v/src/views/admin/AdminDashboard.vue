@@ -143,7 +143,7 @@
                             <div class="formal-stat-top">
                                 <span class="formal-stat-label">เคสที่กำลังจะมาถึง</span>
                                 <span class="formal-stat-icon-badge blue">
-                                    <span class="material-icons">event_upcoming</span>
+                                    <span class="material-icons">schedule</span>
                                 </span>
                             </div>
                             <div class="formal-stat-number">{{ upcomingCount }}</div>
