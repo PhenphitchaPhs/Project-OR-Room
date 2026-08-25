@@ -1231,11 +1231,14 @@ const exportDateRange = computed(() => {
     return { from: '', to: '' }
 })
 
-// กรอกครบพอที่จะ export หรือยัง (กันกรณีเลือกโหมดแล้วไม่กรอกวัน แล้วได้ข้อมูลทั้งหมดมาโดยไม่ตั้งใจ)
+// ✅ แก้ไข: ตรวจสอบช่วงวันที่ให้ถูกต้อง (from <= to)
 const isDateInputReady = computed(() => {
     if (exportDateMode.value === 'day') return !!exportDay.value
     if (exportDateMode.value === 'month') return !!exportMonth.value
-    if (exportDateMode.value === 'range') return !!(exportFrom.value && exportTo.value)
+    if (exportDateMode.value === 'range') {
+        if (!exportFrom.value || !exportTo.value) return false
+        return exportFrom.value <= exportTo.value
+    }
     if (exportDateMode.value === 'single') return !!exportCaseId.value
     return true
 })
@@ -1269,10 +1272,16 @@ const exportRows = computed(() => {
 
 const canExport = computed(() => exportRows.value.length > 0)
 
+// ✅ แก้ไข: เพิ่มข้อความแจ้งเตือนเมื่อ from > to
 const exportPreviewText = computed(() => {
     if (!isDateInputReady.value) {
         if (exportDateMode.value === 'single') return 'เลือกคิวที่ต้องการ export'
-        if (exportDateMode.value === 'range') return 'เลือกวันเริ่มต้นและวันสิ้นสุด'
+        if (exportDateMode.value === 'range') {
+            if (exportFrom.value && exportTo.value && exportFrom.value > exportTo.value) {
+                return '⚠️ กรุณาเลือกวันเริ่มต้นก่อนวันสิ้นสุด'
+            }
+            return 'เลือกวันเริ่มต้นและวันสิ้นสุด'
+        }
         return 'เลือกวันที่ที่ต้องการ export'
     }
 
