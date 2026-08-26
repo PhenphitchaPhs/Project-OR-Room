@@ -126,22 +126,15 @@ const officialHolidays = ref([])
 const MAX_MINUTES = 420
 const orRooms = Array.from({ length: 20 }, (_, i) => 201 + i)
 
-// 📍 ฟังก์ชันหลักพร้อม console.log สำหรับดีบั๊ก
 const fetchSchedule = async (year, month) => {
-  console.log('🔥 fetchSchedule ถูกเรียก!', year, month)
-
   const startDate = `${year}-${String(month + 1).padStart(2, '0')}-01`
   const lastDate = new Date(year, month + 1, 0).getDate()
   const endDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDate).padStart(2, '0')}`
 
-  console.log('📅 ช่วงวันที่:', startDate, 'ถึง', endDate)
-
   try {
     // 1. ดึงตารางห้อง
     const url = `/api/schedule?from=${startDate}&to=${endDate}`
-    console.log('📡 กำลังเรียก:', url)
     const resSchedule = await apiFetch(url)
-    console.log('📡 Response status:', resSchedule.status)
 
     if (!resSchedule.ok) {
       const errorText = await resSchedule.text()
@@ -161,12 +154,10 @@ const fetchSchedule = async (year, month) => {
     }
 
     const scheduleDataRaw = await resSchedule.json()
-    console.log('✅ /api/schedule ได้รับข้อมูล:', scheduleDataRaw)
     scheduleData.value = Array.isArray(scheduleDataRaw) ? scheduleDataRaw : []
 
     // 2. ดึงเฉพาะคิวของตัวเอง
     const resMyBookings = await apiFetch(`/api/bookings`)
-    console.log('📡 /api/bookings status:', resMyBookings.status)
 
     if (!resMyBookings.ok) {
       console.error('❌ /api/bookings ไม่สำเร็จ:', resMyBookings.status)
@@ -176,8 +167,6 @@ const fetchSchedule = async (year, month) => {
 
     const myBookings = await resMyBookings.json()
     myBookingsMap.value = new Map(myBookings.map(b => [b.id, b]))
-
-    console.log(`✅ scheduleData: ${scheduleData.value.length} รายการ, myBookingsMap: ${myBookingsMap.value.size} รายการ`)
   } catch (e) {
     console.error('❌ fetchSchedule error:', e)
     scheduleData.value = []
@@ -313,7 +302,6 @@ const formatDateThai = (d) => {
 }
 
 onMounted(async () => {
-    console.log('🔥 onMounted ถูกเรียก!')
     await fetchSchedule(currentYear.value, currentMonth.value)
 
     try {
