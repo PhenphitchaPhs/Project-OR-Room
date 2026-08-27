@@ -251,7 +251,8 @@ const CSV_COLUMNS: ColumnDef[] = [
   { header: 'หัตถการ', value: (row) => dash(row.procedure) },
   { header: 'ห้อง', value: (row) => dash(row.room) },
   { header: 'วันผ่าตัด', value: (row) => dash(toDateKey(row.date)) },
-  { header: 'สถานะ', value: (row) => statusLabel(row.status) },
+  // ✅ แก้ไข: ใช้ค่า raw status แทน statusLabel()
+  { header: 'สถานะ', value: (row) => dash(row.status) },
   { header: 'CXR (วันที่/หมายเหตุ)', value: (row) => pairLabel(row.cxrDate, row.cxrNote) },
   { header: 'ECG (วันที่/หมายเหตุ)', value: (row) => pairLabel(row.ecgDate, row.ecgNote) },
   { header: 'Lab (วันที่/หมายเหตุ)', value: (row) => pairLabel(row.labDate, row.labNote) },
