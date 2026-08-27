@@ -1543,8 +1543,20 @@ const clearExportRange = () => {
     exportTo.value = ''
 }
 
+// ✅ แก้ไข: isDateInputReady ตรวจสอบ from <= to
+const isDateInputReady = computed(() => {
+    if (exportMode.value === 'single') {
+        return !!exportCaseId.value
+    }
+    // range mode
+    if (!exportFrom.value || !exportTo.value) return false
+    return exportFrom.value <= exportTo.value
+})
+
 // รายการที่จะถูกเขียนลงไฟล์จริง ใช้ทั้งตอน preview และตอนกดยืนยัน
 const exportRows = computed(() => {
+    if (!isDateInputReady.value) return []
+
     if (exportMode.value === 'single') {
         if (!exportCaseId.value) return []
         const found = ownBookings.value.find(
@@ -1560,6 +1572,7 @@ const exportRows = computed(() => {
 
 const canExport = computed(() => exportRows.value.length > 0)
 
+// ✅ แก้ไข: เพิ่มข้อความแจ้งเตือนเมื่อ from > to
 const exportPreviewText = computed(() => {
     if (exportMode.value === 'single') {
         return exportCaseId.value
@@ -1567,12 +1580,18 @@ const exportPreviewText = computed(() => {
             : 'เลือกคิวที่ต้องการ export'
     }
 
-    const { from, to } = exportRangeKeys.value
-    if (!from) return 'เลือกช่วงวันที่ที่ต้องการ export'
+    // range mode
+    if (!exportFrom.value || !exportTo.value) {
+        return 'เลือกช่วงวันที่ที่ต้องการ export'
+    }
+
+    if (exportFrom.value > exportTo.value) {
+        return '⚠️ กรุณาเลือกวันเริ่มต้นก่อนวันสิ้นสุด'
+    }
 
     const count = exportRows.value.length
-    if (count === 0) return `ไม่พบรายการจองระหว่าง ${from} ถึง ${to}`
-    return `จะ export ${count} รายการ (${from} ถึง ${to})`
+    if (count === 0) return `ไม่พบรายการจองระหว่าง ${exportFrom.value} ถึง ${exportTo.value}`
+    return `จะ export ${count} รายการ (${exportFrom.value} ถึง ${exportTo.value})`
 })
 
 const openExportDialog = () => {
