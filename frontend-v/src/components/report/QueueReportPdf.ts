@@ -29,9 +29,9 @@
 import type { Booking } from '../../composables/useCsvExport'
 import {
   sortForExport,
-  // ✅ ลบ sortForAdminExport ออก ใช้ sortForExport เดียวกันหมด
+  // ✅ ใช้ sortForExport เดียวกันหมด
   toDateKey,
-  statusLabel,
+  // ✅ ไม่ต้องใช้ statusLabel แล้ว (ใช้ dash แทน)
   genderLabel,
 } from '../../composables/useCsvExport'
 
@@ -172,7 +172,8 @@ const USER_COLUMNS: ColumnDef[] = [
   { header: 'หัตถการ', width: 84, value: (row) => dash(row.procedure) },
   { header: 'วันผ่าตัด', width: 52, value: (row) => formatThaiDate(row.date) },
   { header: 'ห้อง', width: 34, value: (row) => dash(row.room) },
-  { header: 'สถานะ', width: 48, value: (row) => statusLabel(row.status) },
+  // ✅ เปลี่ยนเป็น raw status (ภาษาอังกฤษ)
+  { header: 'สถานะ', width: 48, value: (row) => dash(row.status) },
 ]
 
 /**
@@ -194,7 +195,8 @@ const ADMIN_COLUMNS: ColumnDef[] = [
   { header: 'วันผ่าตัด', width: 54, value: (row) => formatThaiDate(row.date) },
   { header: 'ห้อง', width: 36, value: (row) => dash(row.room) },
   { header: 'ชื่อแพทย์', width: 66, value: (row, meta) => doctorNameOf(row, meta) },
-  { header: 'สถานะ', width: 42, value: (row) => statusLabel(row.status) },
+  // ✅ เปลี่ยนเป็น raw status (ภาษาอังกฤษ)
+  { header: 'สถานะ', width: 42, value: (row) => dash(row.status) },
 ]
 
 const columnsFor = (mode: ReportMode): ColumnDef[] =>
@@ -340,7 +342,8 @@ function drawSummary(doc: any, rows: ExportedRow[], meta: ReportMeta) {
     doc.moveDown(0.2)
   }
 
-  const byStatus = [...countBy(rows, (row) => statusLabel(row.status)).entries()].sort(byCountDesc)
+  // ✅ เปลี่ยนเป็นใช้ raw status (ภาษาอังกฤษ) เพื่อให้สอดคล้องกับข้อมูลในตาราง
+  const byStatus = [...countBy(rows, (row) => dash(row.status)).entries()].sort(byCountDesc)
   write('แยกตามสถานะ', joinCounts(byStatus))
 
   if (isAdmin) {
@@ -514,7 +517,8 @@ function drawSingleCase(doc: any, row: ExportedRow) {
     ['หัตถการ', dash(row.procedure)],
     ['วันผ่าตัด', formatThaiDate(row.date)],
     ['ห้องผ่าตัด', dash(row.room)],
-    ['สถานะ', statusLabel(row.status)],
+    // ✅ เปลี่ยนเป็น raw status (ภาษาอังกฤษ)
+    ['สถานะ', dash(row.status)],
     ['CXR', pair(row.cxrDate, row.cxrNote)],
     ['ECG', pair(row.ecgDate, row.ecgNote)],
     ['Lab', pair(row.labDate, row.labNote)],
