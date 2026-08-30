@@ -176,7 +176,7 @@
                                     <div class="grid-row"><span><strong>Patient:</strong> {{ item.fullName }}</span>
                                     </div>
                                     <div class="grid-row single"><span><strong>Procedure:</strong> {{ item.procedure
-                                    }}</span></div>
+                                            }}</span></div>
                                 </div>
 
                                 <transition name="expand">
@@ -189,7 +189,7 @@
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                        }}</div>
+                                            }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
                                             item.cxrNote || '-' }}</div>
@@ -221,7 +221,7 @@
 
                                 <div class="see-more-toggle">
                                     <span class="see-more-text">{{ expandedId === item.id ? 'See less' : 'See more'
-                                    }}</span>
+                                        }}</span>
                                     <span class="material-icons see-more-icon">{{ expandedId === item.id ? 'expand_less'
                                         : 'expand_more' }}</span>
                                 </div>
@@ -471,7 +471,7 @@
                                                 <div v-if="expandedId === item.id" class="case-detail">
                                                     <div class="detail-row"><strong>HN:</strong> {{ item.hn }}</div>
                                                     <div class="detail-row"><strong>Full Name:</strong> {{ item.fullName
-                                                    }}
+                                                        }}
                                                     </div>
                                                     <div class="detail-row"><strong>Age:</strong> {{ item.age }}</div>
                                                     <div>
@@ -482,19 +482,19 @@
                                                         item.underlying || '-' }}</div>
                                                     <div class="detail-row"><strong>Proposed Procedure:</strong> {{
                                                         item.procedure
-                                                    }}</div>
+                                                        }}</div>
                                                     <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
 
                                                     <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-'
-                                                    }}
+                                                        }}
                                                         | {{
                                                             item.cxrNote || '-' }}</div>
                                                     <div class="detail-row"><strong>ECG:</strong> {{ item.ecgDate || '-'
-                                                    }}
+                                                        }}
                                                         | {{
                                                             item.ecgNote || '-' }}</div>
                                                     <div class="detail-row"><strong>Lab:</strong> {{ item.labDate || '-'
-                                                    }}
+                                                        }}
                                                         | {{
                                                             item.labNote || '-' }}</div>
                                                     <div class="detail-row"><strong>Admission:</strong> {{ item.admDate
@@ -504,7 +504,7 @@
 
 
                                                     <div class="detail-row"><strong>Notes:</strong> {{ item.notes || '-'
-                                                    }}
+                                                        }}
                                                     </div>
 
                                                 </div>
@@ -993,7 +993,7 @@
                     <span class="sheet-option-text">
                         <strong>PDF</strong>
                         <small>{{ isExportingCase ? 'กำลังสร้างไฟล์…' : 'ใบสรุปคิว พร้อมพิมพ์ออกมาใช้ได้ทันที'
-                            }}</small>
+                        }}</small>
                     </span>
                 </button>
 
@@ -1169,7 +1169,7 @@ const FILTERS = {
     UPCOMING: 'Upcoming',
     TODAY: 'Today',
     SUCCEED: 'Pass',
-    COMPLETE: 'Complete',
+    COMPLETE: 'Completed',
     NOT_COMPLETE: 'Cancelled'
 }
 
