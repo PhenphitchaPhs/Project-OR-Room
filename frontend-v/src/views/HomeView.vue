@@ -39,8 +39,16 @@
 
                 <div class="search-box">
                     <span class="material-icons search-icon">search</span>
-                    <input type="text" v-model="searchHN" placeholder="Search patient, HN, procedure" />
+                    <input type="text" v-model="searchHN" placeholder="Search patient, HN, procedure"
+                        @keyup.enter="performGlobalSearch" />
+                    <button v-if="searchHN" class="btn-clear-search" @click="clearGlobalSearch" title="ล้างคำค้นหา">
+                        <span class="material-icons">close</span>
+                    </button>
+
                 </div>
+                <button class="btn-search-confirm" @click="performGlobalSearch">
+                    <span class="material-icons">search</span> ค้นหา
+                </button>
             </div>
 
             <h1 class="main-title">ORchestrator</h1>
@@ -107,7 +115,15 @@
             </div>
 
             <div class="queue-card">
-                <div class="queue-filter">
+                <div v-if="isSearchMode" class="search-mode-header">
+                    <span class="material-icons">manage_search</span>
+                    <span>รายการค้นหา</span>
+                    <button class="btn-back-to-tabs" @click="clearGlobalSearch">
+                        <span class="material-icons">close</span> ปิดการค้นหา
+                    </button>
+                </div>
+
+                <div v-else class="queue-filter">
                     <button :class="{ active: filter === FILTERS.TODAY }" @click="filter = FILTERS.TODAY">
                         Today
                     </button>
@@ -124,494 +140,450 @@
                 </div>
 
                 <div class="tab-content-wrapper">
-                    <div v-if="filter === FILTERS.TODAY">
 
-                        <div v-if="todayCases.length === 0" class="empty-state">
+                    <div v-if="isSearchMode" class="global-search-results">
 
-                            <div class="icon-wrap">
-                                <span class="material-icons">today</span>
-                            </div>
-
-                            <h3>No surgeries scheduled today</h3>
-
-                            <p class="sub-text">
-                                Cases for surgery dates will appear in today.
-                            </p>
-
+                        <div v-if="searchResults.length === 0" class="empty-state">
+                            <div class="icon-wrap"><span class="material-icons">search_off</span></div>
+                            <h3>ไม่พบรายการที่ค้นหา</h3>
+                            <p class="sub-text">ลองค้นด้วยชื่อ, HN, หรือหัตถการ</p>
                         </div>
 
                         <div v-else>
-                            <div class="reset-wrapper">
-                                <button class="btn-reset" @click="resetQueue">
-                                    <span class="material-icons">refresh</span> รีเซ็ตลำดับคิว
-                                </button>
+                            <p class="search-result-count">พบ {{ searchResults.length }} รายการ </p>
+
+                            <div v-for="item in searchResults" :key="item.id + '-' + item.__statusLabel"
+                                class="case-card search-result-item" :class="{
+                                    'card-cancelled': item.__statusLabel === 'Cancelled',
+                                    'card-completed': item.__statusLabel === 'Completed'
+                                }" @click="toggleDetail(item.id)">
+
+                                <div class="status-badge" :class="'badge-' + item.__statusLabel.toLowerCase()">
+                                    {{ item.__statusLabel }}
+                                </div>
+
+                                <div class="case-grid">
+                                    <div class="grid-row row-date-room">
+                                        <span><strong>Surgery Date:</strong> {{ item.date }}</span>
+                                    </div>
+                                    <span v-if="item.room" class="room-tag-floating">
+                                        <span class="material-icons">meeting_room</span>{{ item.room }}
+                                    </span>
+                                    <div class="grid-row">
+                                        <span><strong>HN:</strong> {{ item.hn }}</span>
+                                        <span><strong>Age:</strong> {{ item.age }} ปี</span>
+                                    </div>
+                                    <div class="grid-row"><span><strong>Patient:</strong> {{ item.fullName }}</span>
+                                    </div>
+                                    <div class="grid-row single"><span><strong>Procedure:</strong> {{ item.procedure
+                                    }}</span></div>
+                                </div>
+
+                                <transition name="expand">
+                                    <div v-if="expandedId === item.id" class="case-detail">
+                                        <div class="detail-row"><strong>HN:</strong> {{ item.hn }}</div>
+                                        <div class="detail-row"><strong>Full Name:</strong> {{ item.fullName }}</div>
+                                        <div class="detail-row"><strong>Age:</strong> {{ item.age }}</div>
+                                        <div class="detail-row"><strong>Gender:</strong> {{ item.gender === 'male' ?
+                                            'ชาย' : 'หญิง' }}</div>
+                                        <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
+                                            item.underlying || '-' }}</div>
+                                        <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
+                                        }}</div>
+                                        <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
+                                        <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
+                                            item.cxrNote || '-' }}</div>
+                                        <div class="detail-row"><strong>ECG:</strong> {{ item.ecgDate || '-' }} | {{
+                                            item.ecgNote || '-' }}</div>
+                                        <div class="detail-row"><strong>Lab:</strong> {{ item.labDate || '-' }} | {{
+                                            item.labNote || '-' }}</div>
+                                        <div class="detail-row"><strong>Admission:</strong> {{ item.admDate || '-' }} |
+                                            {{ item.admNote || '-' }}</div>
+                                        <div class="detail-row"><strong>Notes:</strong> {{ item.notes || '-' }}</div>
+                                    </div>
+                                </transition>
+
+                                <div class="case-actions">
+                                    <template
+                                        v-if="item.__statusLabel === 'Today' || item.__statusLabel === 'Upcoming'">
+                                        <button class="btn-edit" @click.stop="editCase(item.id)">Edit</button>
+                                        <button class="btn-delete" @click.stop="deleteCase(item.id)">Cancel</button>
+                                    </template>
+                                    <button v-if="item.__statusLabel === 'Cancelled'" class="btn-restore"
+                                        @click.stop="restoreCase(item.id)">
+                                        <span class="material-icons">restore</span> Back to Upcoming
+                                    </button>
+                                    <button class="btn-export-case" title="Export คิวนี้"
+                                        @click.stop="openCaseExport(item)">
+                                        <span class="material-icons">download</span> Export
+                                    </button>
+                                </div>
+
+                                <div class="see-more-toggle">
+                                    <span class="see-more-text">{{ expandedId === item.id ? 'See less' : 'See more'
+                                    }}</span>
+                                    <span class="material-icons see-more-icon">{{ expandedId === item.id ? 'expand_less'
+                                        : 'expand_more' }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-else>
+                        <div v-if="filter === FILTERS.TODAY">
+
+                            <div v-if="todayCases.length === 0" class="empty-state">
+
+                                <div class="icon-wrap">
+                                    <span class="material-icons">today</span>
+                                </div>
+
+                                <h3>No surgeries scheduled today</h3>
+
+                                <p class="sub-text">
+                                    Cases for surgery dates will appear in today.
+                                </p>
+
                             </div>
 
-                            <draggable :model-value="filterBySearch(draggableToday)"
-                                @update:modelValue="val => draggableToday = val" item-key="id"
-                                ghost-class="sortable-ghost" chosen-class="sortable-chosen" drag-class="sortable-drag"
-                                handle=".drag-handle" :animation="300" :force-fallback="true"
-                                fallback-class="sortable-drag" @end="saveOrder">
+                            <div v-else>
+                                <div class="reset-wrapper">
+                                    <button class="btn-reset" @click="resetQueue">
+                                        <span class="material-icons">refresh</span> รีเซ็ตลำดับคิว
+                                    </button>
+                                </div>
 
-                                <template #item="{ element: item }">
-                                    <div class="case-card drag-item" @click="toggleDetail(item.id)">
+                                <draggable :model-value="filterBySearch(draggableToday)"
+                                    @update:modelValue="val => draggableToday = val" item-key="id"
+                                    ghost-class="sortable-ghost" chosen-class="sortable-chosen"
+                                    drag-class="sortable-drag" handle=".drag-handle" :animation="300"
+                                    :force-fallback="true" fallback-class="sortable-drag" @end="saveOrder">
+
+                                    <template #item="{ element: item }">
+                                        <div class="case-card drag-item" @click="toggleDetail(item.id)">
 
 
 
-                                        <div class="case-grid">
+                                            <div class="case-grid">
+                                                <div class="drag-handle">
+                                                    <span class="material-icons">more_horiz</span>
+
+                                                </div>
+
+                                                <div class="grid-row row-date-room">
+                                                    <span><strong>Surgery Date:</strong> {{ item.date }}</span>
+
+                                                    <span v-if="item.room"
+                                                        style="color: #1e3a8a; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;">
+                                                        <span class="material-icons"
+                                                            style="font-size: 16px;">meeting_room</span>
+                                                        {{ item.room }}
+                                                    </span>
+                                                </div>
+
+                                                <div class="grid-row">
+                                                    <span><strong>HN:</strong> {{ item.hn }}</span>
+                                                    <span><strong>Age:</strong> {{ item.age }} ปี</span>
+
+                                                </div>
+
+                                                <div class="grid-row">
+                                                    <span><strong>Patient:</strong> {{ item.fullName }}</span>
+                                                </div>
+
+                                                <div class="grid-row single">
+                                                    <span><strong>Procedure:</strong> {{ item.procedure }}</span>
+                                                </div>
+
+
+                                            </div>
+
+
+
+                                            <transition name="expand">
+
+                                                <div v-if="expandedId === item.id" class="case-detail">
+
+                                                    <div class="detail-row">
+                                                        <strong>HN:</strong> {{ item.hn }}
+                                                    </div>
+
+                                                    <div class="detail-row">
+                                                        <strong>Full Name:</strong> {{ item.fullName }}
+                                                    </div>
+
+                                                    <div class="detail-row">
+                                                        <strong>Age:</strong> {{ item.age }}
+                                                    </div>
+
+                                                    <div class="detail-row">
+                                                        <strong>Gender:</strong>
+                                                        {{ item.gender === 'male' ? 'ชาย' : 'หญิง' }}
+                                                    </div>
+
+                                                    <div class="detail-row">
+                                                        <strong>Underlying Disease(s):</strong>
+                                                        {{ item.underlying || '-' }}
+                                                    </div>
+
+                                                    <div class="detail-row">
+                                                        <strong>Proposed Procedure:</strong>
+                                                        {{ item.procedure }}
+                                                    </div>
+
+                                                    <div class="detail-row">
+                                                        <strong>Date:</strong>
+                                                        {{ item.date }}
+                                                    </div>
+
+                                                    <div class="detail-row">
+                                                        <strong>CXR:</strong>
+                                                        {{ item.cxrDate || '-' }} |
+                                                        {{ item.cxrNote || '-' }}
+                                                    </div>
+
+                                                    <div class="detail-row">
+                                                        <strong>ECG:</strong>
+                                                        {{ item.ecgDate || '-' }} |
+                                                        {{ item.ecgNote || '-' }}
+                                                    </div>
+
+                                                    <div class="detail-row">
+                                                        <strong>Lab:</strong>
+                                                        {{ item.labDate || '-' }} |
+                                                        {{ item.labNote || '-' }}
+                                                    </div>
+
+                                                    <div class="detail-row">
+                                                        <strong>Admission:</strong>
+                                                        {{ item.admDate || '-' }} |
+                                                        {{ item.admNote || '-' }}
+                                                    </div>
+
+                                                    <div class="detail-row">
+                                                        <strong>Notes:</strong>
+                                                        {{ item.notes || '-' }}
+                                                    </div>
+
+                                                </div>
+
+                                            </transition>
+                                            <div class="case-actions">
+                                                <button class="btn-edit"
+                                                    @click.stop="router.push(`/booking/${item.id}`)">
+                                                    Edit
+                                                </button>
+
+                                                <button class="btn-delete" @click.stop="deleteCase(item.id)">
+                                                    Cancel
+                                                </button>
+
+                                                <button class="btn-export-case" title="Export คิวนี้"
+                                                    @click.stop="openCaseExport(item)">
+                                                    <span class="material-icons">download</span>
+                                                    Export
+                                                </button>
+                                            </div>
+                                            <div class="see-more-toggle">
+                                                <span class="see-more-text">
+                                                    {{ expandedId === item.id ? 'See less' : 'See more' }}
+                                                </span>
+                                                <span class="material-icons see-more-icon">
+                                                    {{ expandedId === item.id ? 'expand_less' : 'expand_more' }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </template>
+
+
+                                </draggable>
+
+
+
+                            </div>
+
+                        </div>
+
+
+                        <div v-if="filter === FILTERS.UPCOMING">
+
+                            <div v-if="upcomingCases.length === 0" class="empty-state">
+                                <div class="icon-wrap">
+                                    <span class="material-icons">assignment</span>
+                                </div>
+                                <h3>No upcoming surgery cases</h3>
+                                <p class="sub-text">Please ensure all patient records are updated.</p>
+                            </div>
+
+                            <div v-else>
+                                <div class="reset-wrapper">
+                                    <button class="btn-reset" @click="resetQueue">
+                                        <span class="material-icons">refresh</span> รีเซ็ตลำดับคิว
+                                    </button>
+                                </div>
+
+                                <!-- อันนี้ที่เลื่อนก้าดของอัพคัมมิ่ง -->
+
+                                <draggable :model-value="filterBySearch(draggableUpcoming)"
+                                    @update:modelValue="val => draggableUpcoming = val" item-key="id"
+                                    ghost-class="sortable-ghost" chosen-class="sortable-chosen"
+                                    drag-class="sortable-drag" handle=".drag-handle" :animation="300"
+                                    :force-fallback="true" fallback-class="sortable-drag" @end="saveOrder">
+
+                                    <template #item="{ element: item }">
+
+                                        <div class="case-card drag-item" @click="toggleDetail(item.id)">
                                             <div class="drag-handle">
                                                 <span class="material-icons">more_horiz</span>
-
-                                            </div>
-
-                                            <div class="grid-row row-date-room">
-                                                <span><strong>Surgery Date:</strong> {{ item.date }}</span>
-
-                                                <span v-if="item.room"
-                                                    style="color: #1e3a8a; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;">
-                                                    <span class="material-icons"
-                                                        style="font-size: 16px;">meeting_room</span>
-                                                    {{ item.room }}
-                                                </span>
-                                            </div>
-
-                                            <div class="grid-row">
-                                                <span><strong>HN:</strong> {{ item.hn }}</span>
-                                                <span><strong>Age:</strong> {{ item.age }} ปี</span>
-
-                                            </div>
-
-                                            <div class="grid-row">
-                                                <span><strong>Patient:</strong> {{ item.fullName }}</span>
-                                            </div>
-
-                                            <div class="grid-row single">
-                                                <span><strong>Procedure:</strong> {{ item.procedure }}</span>
                                             </div>
 
 
-                                        </div>
+                                            <!-- เคสการ์ด -->
 
+                                            <div class="case-grid">
+                                                <div class="grid-row row-date-room">
+                                                    <span><strong>Surgery Date:</strong> {{ item.date }}</span>
 
-
-                                        <transition name="expand">
-
-                                            <div v-if="expandedId === item.id" class="case-detail">
-
-                                                <div class="detail-row">
-                                                    <strong>HN:</strong> {{ item.hn }}
+                                                    <span v-if="item.room"
+                                                        style="color: #1e3a8a; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;">
+                                                        <span class="material-icons"
+                                                            style="font-size: 16px;">meeting_room</span>
+                                                        {{ item.room }}
+                                                    </span>
                                                 </div>
 
-                                                <div class="detail-row">
-                                                    <strong>Full Name:</strong> {{ item.fullName }}
+                                                <div class="grid-row">
+                                                    <span><strong>HN:</strong> {{ item.hn }}</span>
+                                                    <span><strong>Age:</strong> {{ item.age }} ปี</span>
                                                 </div>
 
-                                                <div class="detail-row">
-                                                    <strong>Age:</strong> {{ item.age }}
+                                                <div class="grid-row">
+                                                    <span><strong>Patient:</strong> {{ item.fullName }}</span>
                                                 </div>
 
-                                                <div class="detail-row">
-                                                    <strong>Gender:</strong>
-                                                    {{ item.gender === 'male' ? 'ชาย' : 'หญิง' }}
+                                                <div class="grid-row single">
+                                                    <span><strong>Procedure:</strong> {{ item.procedure }}</span>
                                                 </div>
-
-                                                <div class="detail-row">
-                                                    <strong>Underlying Disease(s):</strong>
-                                                    {{ item.underlying || '-' }}
-                                                </div>
-
-                                                <div class="detail-row">
-                                                    <strong>Proposed Procedure:</strong>
-                                                    {{ item.procedure }}
-                                                </div>
-
-                                                <div class="detail-row">
-                                                    <strong>Date:</strong>
-                                                    {{ item.date }}
-                                                </div>
-
-                                                <div class="detail-row">
-                                                    <strong>CXR:</strong>
-                                                    {{ item.cxrDate || '-' }} |
-                                                    {{ item.cxrNote || '-' }}
-                                                </div>
-
-                                                <div class="detail-row">
-                                                    <strong>ECG:</strong>
-                                                    {{ item.ecgDate || '-' }} |
-                                                    {{ item.ecgNote || '-' }}
-                                                </div>
-
-                                                <div class="detail-row">
-                                                    <strong>Lab:</strong>
-                                                    {{ item.labDate || '-' }} |
-                                                    {{ item.labNote || '-' }}
-                                                </div>
-
-                                                <div class="detail-row">
-                                                    <strong>Admission:</strong>
-                                                    {{ item.admDate || '-' }} |
-                                                    {{ item.admNote || '-' }}
-                                                </div>
-
-                                                <div class="detail-row">
-                                                    <strong>Notes:</strong>
-                                                    {{ item.notes || '-' }}
-                                                </div>
-
                                             </div>
 
-                                        </transition>
-                                        <div class="case-actions">
-                                            <button class="btn-edit" @click.stop="router.push(`/booking/${item.id}`)">
-                                                Edit
-                                            </button>
 
-                                            <button class="btn-delete" @click.stop="deleteCase(item.id)">
-                                                Cancel
-                                            </button>
-
-                                            <button class="btn-export-case" title="Export คิวนี้"
-                                                @click.stop="openCaseExport(item)">
-                                                <span class="material-icons">download</span>
-                                                Export
-                                            </button>
-                                        </div>
-                                        <div class="see-more-toggle">
-                                            <span class="see-more-text">
-                                                {{ expandedId === item.id ? 'See less' : 'See more' }}
-                                            </span>
-                                            <span class="material-icons see-more-icon">
-                                                {{ expandedId === item.id ? 'expand_less' : 'expand_more' }}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </template>
-
-
-                            </draggable>
-
-
-
-                        </div>
-
-                    </div>
-
-
-                    <div v-if="filter === FILTERS.UPCOMING">
-
-                        <div v-if="upcomingCases.length === 0" class="empty-state">
-                            <div class="icon-wrap">
-                                <span class="material-icons">assignment</span>
-                            </div>
-                            <h3>No upcoming surgery cases</h3>
-                            <p class="sub-text">Please ensure all patient records are updated.</p>
-                        </div>
-
-                        <div v-else>
-                            <div class="reset-wrapper">
-                                <button class="btn-reset" @click="resetQueue">
-                                    <span class="material-icons">refresh</span> รีเซ็ตลำดับคิว
-                                </button>
-                            </div>
-
-                            <!-- อันนี้ที่เลื่อนก้าดของอัพคัมมิ่ง -->
-
-                            <draggable :model-value="filterBySearch(draggableUpcoming)"
-                                @update:modelValue="val => draggableUpcoming = val" item-key="id"
-                                ghost-class="sortable-ghost" chosen-class="sortable-chosen" drag-class="sortable-drag"
-                                handle=".drag-handle" :animation="300" :force-fallback="true"
-                                fallback-class="sortable-drag" @end="saveOrder">
-
-                                <template #item="{ element: item }">
-
-                                    <div class="case-card drag-item" @click="toggleDetail(item.id)">
-                                        <div class="drag-handle">
-                                            <span class="material-icons">more_horiz</span>
-                                        </div>
-
-
-                                        <!-- เคสการ์ด -->
-
-                                        <div class="case-grid">
-                                            <div class="grid-row row-date-room">
-                                                <span><strong>Surgery Date:</strong> {{ item.date }}</span>
-
-                                                <span v-if="item.room"
-                                                    style="color: #1e3a8a; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;">
-                                                    <span class="material-icons"
-                                                        style="font-size: 16px;">meeting_room</span>
-                                                    {{ item.room }}
-                                                </span>
-                                            </div>
-
-                                            <div class="grid-row">
-                                                <span><strong>HN:</strong> {{ item.hn }}</span>
-                                                <span><strong>Age:</strong> {{ item.age }} ปี</span>
-                                            </div>
-
-                                            <div class="grid-row">
-                                                <span><strong>Patient:</strong> {{ item.fullName }}</span>
-                                            </div>
-
-                                            <div class="grid-row single">
-                                                <span><strong>Procedure:</strong> {{ item.procedure }}</span>
-                                            </div>
-                                        </div>
-
-
-                                        <transition name="expand">
-                                            <div v-if="expandedId === item.id" class="case-detail">
-                                                <div class="detail-row"><strong>HN:</strong> {{ item.hn }}</div>
-                                                <div class="detail-row"><strong>Full Name:</strong> {{ item.fullName }}
-                                                </div>
-                                                <div class="detail-row"><strong>Age:</strong> {{ item.age }}</div>
-                                                <div>
-                                                    <strong>Gender:</strong>
-                                                    {{ item.gender === 'male' ? 'ชาย' : 'หญิง' }}
-                                                </div>
-                                                <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
-                                                    item.underlying || '-' }}</div>
-                                                <div class="detail-row"><strong>Proposed Procedure:</strong> {{
-                                                    item.procedure
+                                            <transition name="expand">
+                                                <div v-if="expandedId === item.id" class="case-detail">
+                                                    <div class="detail-row"><strong>HN:</strong> {{ item.hn }}</div>
+                                                    <div class="detail-row"><strong>Full Name:</strong> {{ item.fullName
+                                                    }}
+                                                    </div>
+                                                    <div class="detail-row"><strong>Age:</strong> {{ item.age }}</div>
+                                                    <div>
+                                                        <strong>Gender:</strong>
+                                                        {{ item.gender === 'male' ? 'ชาย' : 'หญิง' }}
+                                                    </div>
+                                                    <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
+                                                        item.underlying || '-' }}</div>
+                                                    <div class="detail-row"><strong>Proposed Procedure:</strong> {{
+                                                        item.procedure
                                                     }}</div>
-                                                <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
+                                                    <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
 
-                                                <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }}
-                                                    | {{
-                                                        item.cxrNote || '-' }}</div>
-                                                <div class="detail-row"><strong>ECG:</strong> {{ item.ecgDate || '-' }}
-                                                    | {{
-                                                        item.ecgNote || '-' }}</div>
-                                                <div class="detail-row"><strong>Lab:</strong> {{ item.labDate || '-' }}
-                                                    | {{
-                                                        item.labNote || '-' }}</div>
-                                                <div class="detail-row"><strong>Admission:</strong> {{ item.admDate ||
-                                                    '-' }} |
-                                                    {{ item.admNote || '-' }}</div>
+                                                    <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-'
+                                                    }}
+                                                        | {{
+                                                            item.cxrNote || '-' }}</div>
+                                                    <div class="detail-row"><strong>ECG:</strong> {{ item.ecgDate || '-'
+                                                    }}
+                                                        | {{
+                                                            item.ecgNote || '-' }}</div>
+                                                    <div class="detail-row"><strong>Lab:</strong> {{ item.labDate || '-'
+                                                    }}
+                                                        | {{
+                                                            item.labNote || '-' }}</div>
+                                                    <div class="detail-row"><strong>Admission:</strong> {{ item.admDate
+                                                        ||
+                                                        '-' }} |
+                                                        {{ item.admNote || '-' }}</div>
 
 
-                                                <div class="detail-row"><strong>Notes:</strong> {{ item.notes || '-' }}
+                                                    <div class="detail-row"><strong>Notes:</strong> {{ item.notes || '-'
+                                                    }}
+                                                    </div>
+
                                                 </div>
+                                            </transition>
 
+                                            <div class="case-actions">
+                                                <button class="btn-edit" @click.stop="editCase(item.id)">
+                                                    Edit
+                                                </button>
+
+                                                <button class="btn-delete" @click.stop="deleteCase(item.id)">
+                                                    Cancel
+                                                </button>
+
+                                                <button class="btn-export-case" title="Export คิวนี้"
+                                                    @click.stop="openCaseExport(item)">
+                                                    <span class="material-icons">download</span>
+                                                    Export
+                                                </button>
                                             </div>
-                                        </transition>
+                                            <div class="see-more-toggle">
+                                                <span class="see-more-text">
+                                                    {{ expandedId === item.id ? 'See less' : 'See more' }}
+                                                </span>
+                                                <span class="material-icons see-more-icon">
+                                                    {{ expandedId === item.id ? 'expand_less' : 'expand_more' }}
+                                                </span>
+                                            </div>
 
-                                        <div class="case-actions">
-                                            <button class="btn-edit" @click.stop="editCase(item.id)">
-                                                Edit
-                                            </button>
 
-                                            <button class="btn-delete" @click.stop="deleteCase(item.id)">
-                                                Cancel
-                                            </button>
-
-                                            <button class="btn-export-case" title="Export คิวนี้"
-                                                @click.stop="openCaseExport(item)">
-                                                <span class="material-icons">download</span>
-                                                Export
-                                            </button>
                                         </div>
-                                        <div class="see-more-toggle">
-                                            <span class="see-more-text">
-                                                {{ expandedId === item.id ? 'See less' : 'See more' }}
-                                            </span>
-                                            <span class="material-icons see-more-icon">
-                                                {{ expandedId === item.id ? 'expand_less' : 'expand_more' }}
-                                            </span>
-                                        </div>
+                                    </template>
+                                </draggable>
+                            </div>
 
 
-                                    </div>
-                                </template>
-                            </draggable>
+
                         </div>
 
 
+                        <div v-if="filter === FILTERS.SUCCEED">
 
-                    </div>
+                            <!-- SUB TAB -->
+                            <div class="queue-filter sub-filter">
 
+                                <button :class="{
+                                    active: succeedTab === FILTERS.COMPLETE,
+                                    'complete-active': succeedTab === FILTERS.COMPLETE
+                                }" @click="succeedTab = FILTERS.COMPLETE">
+                                    Completed
+                                </button>
 
-                    <div v-if="filter === FILTERS.SUCCEED">
-
-                        <!-- SUB TAB -->
-                        <div class="queue-filter sub-filter">
-
-                            <button :class="{
-                                active: succeedTab === FILTERS.COMPLETE,
-                                'complete-active': succeedTab === FILTERS.COMPLETE
-                            }" @click="succeedTab = FILTERS.COMPLETE">
-                                Completed
-                            </button>
-
-                            <button :class="{
-                                active: succeedTab === FILTERS.NOT_COMPLETE,
-                                'cancelled-active': succeedTab === FILTERS.NOT_COMPLETE
-                            }" @click="succeedTab = FILTERS.NOT_COMPLETE">
-                                {{ FILTERS.NOT_COMPLETE }}
-                            </button>
-
-                        </div>
-
-                        <!-- COMPLETE -->
-                        <div v-if="succeedTab === FILTERS.COMPLETE">
-
-                            <div v-if="completeCases.length === 0" class="empty-state">
-
-                                <div class="icon-wrap">
-                                    <span class="material-icons">check_circle</span>
-                                </div>
-
-                                <h3>No completed surgery cases</h3>
+                                <button :class="{
+                                    active: succeedTab === FILTERS.NOT_COMPLETE,
+                                    'cancelled-active': succeedTab === FILTERS.NOT_COMPLETE
+                                }" @click="succeedTab = FILTERS.NOT_COMPLETE">
+                                    {{ FILTERS.NOT_COMPLETE }}
+                                </button>
 
                             </div>
 
-                            <div v-else>
+                            <!-- COMPLETE -->
+                            <div v-if="succeedTab === FILTERS.COMPLETE">
 
-                                <div v-for="item in filterBySearch(completeCases)" :key="item.id"
-                                    :ref="el => setCaseRef(el, item, FILTERS.COMPLETE)" class="case-card succeed-item"
-                                    @click="toggleDetail(item.id)">
+                                <div v-if="completeCases.length === 0" class="empty-state">
 
-                                    <div class="case-grid">
-                                        <div class="grid-row row-date-room">
-                                            <span><strong>Surgery Date:</strong> {{ item.date }}</span>
-
-                                            <span v-if="item.room"
-                                                style="color: #1e3a8a; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;">
-                                                <span class="material-icons"
-                                                    style="font-size: 16px;">meeting_room</span>
-                                                {{ item.room }}
-                                            </span>
-                                        </div>
-
-                                        <div class="grid-row">
-                                            <span><strong>HN:</strong> {{ item.hn }}</span>
-                                            <span><strong>Age:</strong> {{ item.age }} ปี</span>
-                                        </div>
-
-                                        <div class="grid-row">
-                                            <span><strong>Patient:</strong> {{ item.fullName }}</span>
-                                        </div>
-
-                                        <div class="grid-row single">
-                                            <span><strong>Procedure:</strong> {{ item.procedure }}</span>
-                                        </div>
-                                    </div>
-                                    <div class="see-more-toggle">
-                                        <span class="see-more-text">
-                                            {{ expandedId === item.id ? 'See less' : 'See more' }}
-                                        </span>
-                                        <span class="material-icons see-more-icon">
-                                            {{ expandedId === item.id ? 'expand_less' : 'expand_more' }}
-                                        </span>
+                                    <div class="icon-wrap">
+                                        <span class="material-icons">check_circle</span>
                                     </div>
 
-                                    <!-- DETAIL -->
-                                    <transition name="expand">
-
-                                        <div v-if="expandedId === item.id" class="case-detail">
-
-                                            <div class="detail-row">
-                                                <strong>HN:</strong> {{ item.hn }}
-                                            </div>
-
-                                            <div class="detail-row">
-                                                <strong>Full Name:</strong> {{ item.fullName }}
-                                            </div>
-
-                                            <div class="detail-row">
-                                                <strong>Age:</strong> {{ item.age }}
-                                            </div>
-
-                                            <div class="detail-row">
-                                                <strong>Gender:</strong>
-                                                {{ item.gender === 'male' ? 'ชาย' : 'หญิง' }}
-                                            </div>
-
-                                            <div class="detail-row">
-                                                <strong>Underlying Disease(s):</strong>
-                                                {{ item.underlying || '-' }}
-                                            </div>
-
-                                            <div class="detail-row">
-                                                <strong>Proposed Procedure:</strong>
-                                                {{ item.procedure }}
-                                            </div>
-
-                                            <div class="detail-row">
-                                                <strong>Date:</strong>
-                                                {{ item.date }}
-                                            </div>
-
-                                            <div class="detail-row">
-                                                <strong>CXR:</strong>
-                                                {{ item.cxrDate || '-' }} |
-                                                {{ item.cxrNote || '-' }}
-                                            </div>
-
-                                            <div class="detail-row">
-                                                <strong>ECG:</strong>
-                                                {{ item.ecgDate || '-' }} |
-                                                {{ item.ecgNote || '-' }}
-                                            </div>
-
-                                            <div class="detail-row">
-                                                <strong>Lab:</strong>
-                                                {{ item.labDate || '-' }} |
-                                                {{ item.labNote || '-' }}
-                                            </div>
-
-                                            <div class="detail-row">
-                                                <strong>Admission:</strong>
-                                                {{ item.admDate || '-' }} |
-                                                {{ item.admNote || '-' }}
-                                            </div>
-
-                                            <div class="detail-row">
-                                                <strong>Notes:</strong>
-                                                {{ item.notes || '-' }}
-                                            </div>
-
-                                        </div>
-
-                                    </transition>
-
-                                    <!-- การ์ดกลุ่มนี้เดิมไม่มีแถบปุ่มเลย ทำให้ export เฉพาะเคสไม่ได้ -->
-                                    <div class="case-actions">
-                                        <button class="btn-export-case" title="Export คิวนี้"
-                                            @click.stop="openCaseExport(item)">
-                                            <span class="material-icons">download</span>
-                                            Export
-                                        </button>
-                                    </div>
+                                    <h3>No completed surgery cases</h3>
 
                                 </div>
 
-                            </div>
+                                <div v-else>
 
-                        </div>
-
-                        <!-- NOT COMPLETE -->
-                        <div v-if="succeedTab === FILTERS.NOT_COMPLETE">
-
-                            <div v-if="notCompleteCases.length === 0" class="empty-state">
-
-                                <div class="icon-wrap">
-                                    <span class="material-icons">event_busy</span>
-                                </div>
-
-                                <h3>No incomplete surgery cases</h3>
-
-                            </div>
-
-                            <div v-else>
-
-                                <div v-for="item in filterBySearch(notCompleteCases)" :key="item.id"
-                                    :ref="el => setCaseRef(el, item, FILTERS.NOT_COMPLETE)"
-                                    class="case-card not-complete-item" @click="toggleDetail(item.id)">
-
-
-                                    <div class="case-grid">
+                                    <div v-for="item in filterBySearch(completeCases)" :key="item.id"
+                                        :ref="el => setCaseRef(el, item, FILTERS.COMPLETE)"
+                                        class="case-card succeed-item" @click="toggleDetail(item.id)">
 
                                         <div class="case-grid">
                                             <div class="grid-row row-date-room">
@@ -638,8 +610,14 @@
                                                 <span><strong>Procedure:</strong> {{ item.procedure }}</span>
                                             </div>
                                         </div>
-
-
+                                        <div class="see-more-toggle">
+                                            <span class="see-more-text">
+                                                {{ expandedId === item.id ? 'See less' : 'See more' }}
+                                            </span>
+                                            <span class="material-icons see-more-icon">
+                                                {{ expandedId === item.id ? 'expand_less' : 'expand_more' }}
+                                            </span>
+                                        </div>
 
                                         <!-- DETAIL -->
                                         <transition name="expand">
@@ -711,35 +689,172 @@
 
                                         </transition>
 
+                                        <!-- การ์ดกลุ่มนี้เดิมไม่มีแถบปุ่มเลย ทำให้ export เฉพาะเคสไม่ได้ -->
+                                        <div class="case-actions">
+                                            <button class="btn-export-case" title="Export คิวนี้"
+                                                @click.stop="openCaseExport(item)">
+                                                <span class="material-icons">download</span>
+                                                Export
+                                            </button>
+                                        </div>
+
                                     </div>
 
-                                    <!-- ACTION -->
-                                    <div class="case-actions">
+                                </div>
 
-                                        <button class="btn-restore" @click.stop="restoreCase(item.id)">
+                            </div>
 
-                                            <span class="material-icons">
-                                                restore
+                            <!-- NOT COMPLETE -->
+                            <div v-if="succeedTab === FILTERS.NOT_COMPLETE">
+
+                                <div v-if="notCompleteCases.length === 0" class="empty-state">
+
+                                    <div class="icon-wrap">
+                                        <span class="material-icons">event_busy</span>
+                                    </div>
+
+                                    <h3>No incomplete surgery cases</h3>
+
+                                </div>
+
+                                <div v-else>
+
+                                    <div v-for="item in filterBySearch(notCompleteCases)" :key="item.id"
+                                        :ref="el => setCaseRef(el, item, FILTERS.NOT_COMPLETE)"
+                                        class="case-card not-complete-item" @click="toggleDetail(item.id)">
+
+
+                                        <div class="case-grid">
+
+                                            <div class="case-grid">
+                                                <div class="grid-row row-date-room">
+                                                    <span><strong>Surgery Date:</strong> {{ item.date }}</span>
+
+                                                    <span v-if="item.room"
+                                                        style="color: #1e3a8a; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;">
+                                                        <span class="material-icons"
+                                                            style="font-size: 16px;">meeting_room</span>
+                                                        {{ item.room }}
+                                                    </span>
+                                                </div>
+
+                                                <div class="grid-row">
+                                                    <span><strong>HN:</strong> {{ item.hn }}</span>
+                                                    <span><strong>Age:</strong> {{ item.age }} ปี</span>
+                                                </div>
+
+                                                <div class="grid-row">
+                                                    <span><strong>Patient:</strong> {{ item.fullName }}</span>
+                                                </div>
+
+                                                <div class="grid-row single">
+                                                    <span><strong>Procedure:</strong> {{ item.procedure }}</span>
+                                                </div>
+                                            </div>
+
+
+
+                                            <!-- DETAIL -->
+                                            <transition name="expand">
+
+                                                <div v-if="expandedId === item.id" class="case-detail">
+
+                                                    <div class="detail-row">
+                                                        <strong>HN:</strong> {{ item.hn }}
+                                                    </div>
+
+                                                    <div class="detail-row">
+                                                        <strong>Full Name:</strong> {{ item.fullName }}
+                                                    </div>
+
+                                                    <div class="detail-row">
+                                                        <strong>Age:</strong> {{ item.age }}
+                                                    </div>
+
+                                                    <div class="detail-row">
+                                                        <strong>Gender:</strong>
+                                                        {{ item.gender === 'male' ? 'ชาย' : 'หญิง' }}
+                                                    </div>
+
+                                                    <div class="detail-row">
+                                                        <strong>Underlying Disease(s):</strong>
+                                                        {{ item.underlying || '-' }}
+                                                    </div>
+
+                                                    <div class="detail-row">
+                                                        <strong>Proposed Procedure:</strong>
+                                                        {{ item.procedure }}
+                                                    </div>
+
+                                                    <div class="detail-row">
+                                                        <strong>Date:</strong>
+                                                        {{ item.date }}
+                                                    </div>
+
+                                                    <div class="detail-row">
+                                                        <strong>CXR:</strong>
+                                                        {{ item.cxrDate || '-' }} |
+                                                        {{ item.cxrNote || '-' }}
+                                                    </div>
+
+                                                    <div class="detail-row">
+                                                        <strong>ECG:</strong>
+                                                        {{ item.ecgDate || '-' }} |
+                                                        {{ item.ecgNote || '-' }}
+                                                    </div>
+
+                                                    <div class="detail-row">
+                                                        <strong>Lab:</strong>
+                                                        {{ item.labDate || '-' }} |
+                                                        {{ item.labNote || '-' }}
+                                                    </div>
+
+                                                    <div class="detail-row">
+                                                        <strong>Admission:</strong>
+                                                        {{ item.admDate || '-' }} |
+                                                        {{ item.admNote || '-' }}
+                                                    </div>
+
+                                                    <div class="detail-row">
+                                                        <strong>Notes:</strong>
+                                                        {{ item.notes || '-' }}
+                                                    </div>
+
+                                                </div>
+
+                                            </transition>
+
+                                        </div>
+
+                                        <!-- ACTION -->
+                                        <div class="case-actions">
+
+                                            <button class="btn-restore" @click.stop="restoreCase(item.id)">
+
+                                                <span class="material-icons">
+                                                    restore
+                                                </span>
+
+                                                Back to Upcoming
+
+                                            </button>
+
+                                            <button class="btn-export-case" title="Export คิวนี้"
+                                                @click.stop="openCaseExport(item)">
+                                                <span class="material-icons">download</span>
+                                                Export
+                                            </button>
+
+                                        </div>
+                                        <div class="see-more-toggle">
+                                            <span class="see-more-text">
+                                                {{ expandedId === item.id ? 'See less' : 'See more' }}
                                             </span>
+                                            <span class="material-icons see-more-icon">
+                                                {{ expandedId === item.id ? 'expand_less' : 'expand_more' }}
+                                            </span>
+                                        </div>
 
-                                            Back to Upcoming
-
-                                        </button>
-
-                                        <button class="btn-export-case" title="Export คิวนี้"
-                                            @click.stop="openCaseExport(item)">
-                                            <span class="material-icons">download</span>
-                                            Export
-                                        </button>
-
-                                    </div>
-                                    <div class="see-more-toggle">
-                                        <span class="see-more-text">
-                                            {{ expandedId === item.id ? 'See less' : 'See more' }}
-                                        </span>
-                                        <span class="material-icons see-more-icon">
-                                            {{ expandedId === item.id ? 'expand_less' : 'expand_more' }}
-                                        </span>
                                     </div>
 
                                 </div>
@@ -749,31 +864,38 @@
                         </div>
 
                     </div>
-
                 </div>
             </div>
+
+
 
             <div class="info-section">
                 <div class="info-header">
                     <span class="material-icons info-icon">info</span>
                     <h3>Additional Information</h3>
                 </div>
+
                 <ul class="info-list">
                     <li>
                         <span class="material-icons check-bullet">check</span>
                         Cases can be canceled before surgery date.
                     </li>
+
                     <li>
                         <span class="material-icons check-bullet">check</span>
                         Please arrive on time for the convenience of everyone.
                     </li>
+
                     <li>
                         <span class="material-icons check-bullet">check</span>
                         If there is a problem, please contact staff.
                     </li>
                 </ul>
             </div>
+
+
         </div>
+
     </div>
     <button class="floating-add-btn" @click="goAddPatient">
         + Add Queue
@@ -866,12 +988,12 @@
                     </span>
                 </button>
 
-                <button class="sheet-option" :disabled="isExportingCase"
-                    @click="exportSingleCasePdf(caseExportTarget)">
+                <button class="sheet-option" :disabled="isExportingCase" @click="exportSingleCasePdf(caseExportTarget)">
                     <span class="material-icons">picture_as_pdf</span>
                     <span class="sheet-option-text">
                         <strong>PDF</strong>
-                        <small>{{ isExportingCase ? 'กำลังสร้างไฟล์…' : 'ใบสรุปคิว พร้อมพิมพ์ออกมาใช้ได้ทันที' }}</small>
+                        <small>{{ isExportingCase ? 'กำลังสร้างไฟล์…' : 'ใบสรุปคิว พร้อมพิมพ์ออกมาใช้ได้ทันที'
+                            }}</small>
                     </span>
                 </button>
 
@@ -1053,6 +1175,33 @@ const FILTERS = {
 
 
 const searchHN = ref('')
+const isSearchMode = ref(false)
+const searchKeyword = ref('')
+
+const performGlobalSearch = () => {
+    const kw = searchHN.value.trim()
+    if (!kw) { isSearchMode.value = false; return }
+    searchKeyword.value = kw
+    isSearchMode.value = true
+}
+
+const clearGlobalSearch = () => {
+    searchHN.value = ''
+    isSearchMode.value = false
+}
+
+// รวมทุกเคสจากทุกสถานะ พร้อมแท็กว่าอยู่แท็บไหน
+const allTaggedCases = computed(() => [
+    ...todayCases.value.map(item => ({ ...item, __statusLabel: 'Today' })),
+    ...upcomingCases.value.map(item => ({ ...item, __statusLabel: 'Upcoming' })),
+    ...completeCases.value.map(item => ({ ...item, __statusLabel: 'Completed' })),
+    ...notCompleteCases.value.map(item => ({ ...item, __statusLabel: 'Cancelled' }))
+])
+
+const searchResults = computed(() => {
+    if (!isSearchMode.value) return []
+    return filterBySearch(allTaggedCases.value, searchKeyword.value)
+})
 
 const caseRefs = ref({})
 
@@ -1063,10 +1212,8 @@ const normalizeText = (text) => {
 }
 
 // computed สำหรับกรองข้อมูล
-const filterBySearch = (list) => {
-
-    const keyword = normalizeText(searchHN.value)
-
+const filterBySearch = (list, keywordOverride) => {
+    const keyword = normalizeText(keywordOverride ?? searchHN.value)
     if (!keyword) return list
 
     return list.filter(item => {
@@ -2189,14 +2336,31 @@ const markAsSucceed = async (id) => {
     gap: 15px;
 }
 
+/* ปุ่ม Confirm / ค้นหา */
 .btn-confirm-green {
-    background-color: #03c172;
-    color: white;
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 18px;
     border: none;
-    padding: 10px 25px;
-    border-radius: 12px;
-    font-weight: bold;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
     cursor: pointer;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.btn-confirm-green:hover {
+    transform: translateY(-1px);
+}
+
+.btn-confirm-green:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
 }
 
 .btn-confirm-red {
@@ -2717,6 +2881,16 @@ input[type="checkbox"] {
     background: transparent;
 }
 
+.search-box button,
+.search-box button:hover,
+.search-box button:focus,
+.search-box button:active {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    outline: none !important;
+}
+
 .search-icon {
     color: #6b7280;
     font-size: 22px;
@@ -2785,6 +2959,7 @@ input[type="checkbox"] {
     flex-wrap: wrap;
     justify-content: flex-end;
     align-items: center;
+
     margin-bottom: 12px;
 
     /* ⚠️ ปุ่มเฟือง (.main-header ใน App.vue) เป็น position: fixed อยู่มุมซ้ายบน
@@ -3121,7 +3296,7 @@ input[type="checkbox"] {
 }
 
 /* ต่อท้ายช่องเลือกคิวต้องมีระยะห่าง ส่วนที่ตามหลังแถบปุ่มไม่ต้อง เพราะแถบปุ่มมี margin ล่างอยู่แล้ว */
-.export-select + .export-hint {
+.export-select+.export-hint {
     margin-top: 8px;
 }
 
@@ -3172,66 +3347,205 @@ input[type="checkbox"] {
     }
 }
 
+/* =========================
+   TOP TOOLBAR
+   ========================= */
+
+.top-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+/* Export */
+.top-toolbar .btn-export {
+    margin-left: auto;
+}
+
+
+/* =========================
+   MOBILE
+   ========================= */
+
 @media (max-width: 768px) {
 
-    .search-box {
-        /* จอแคบให้ช่องค้นหากินเต็มแถว ปุ่ม Export ตกลงไปอยู่บรรทัดบนแทนที่จะเบียดกัน */
-        flex: 1 1 100%;
-        max-width: unset;
-        height: 42px;
-    }
+    .top-toolbar {
+        display: grid;
 
-    .search-box input {
-        font-size: 16px;
-    }
+        /* Search กว้าง + ปุ่มค้นหาขนาดพอดี */
+        grid-template-columns: minmax(0, 1fr) auto;
 
-    .search-icon {
-        font-size: 26px;
-    }
+        gap: 8px;
 
-    .case-card {
-        padding: 14px;
-    }
-
-    .grid-row {
-        flex-direction: column;
-        gap: 4px;
-    }
-
-    .grid-row span {
         width: 100%;
-        min-width: unset;
-    }
+        padding-left: 0;
 
-    .grid-row.row-date-room {
-        flex-direction: row !important;
-        /* บังคับให้เป็นแนวนอนแม้อยู่บนมือถือ */
-        flex-wrap: nowrap !important;
-        justify-content: space-between;
         align-items: center;
     }
 
-    .grid-row span {
+    /* ===== Export อยู่บรรทัดบน ===== */
+
+    .top-toolbar .btn-export {
+        grid-column: 1 / -1;
+
+        justify-self: end;
+
+        width: auto;
+        margin-left: 0;
+
+        min-height: 42px;
+        padding: 8px 16px;
+    }
+
+
+    /* ===== Search ===== */
+
+    .top-toolbar .search-box {
+        grid-column: 1;
+
         width: 100%;
-        min-width: unset;
+        max-width: none;
+        min-width: 0;
+
+        height: 42px;
+
+        box-sizing: border-box;
+
+        margin: 0;
+        padding: 0 10px;
     }
 
-    .case-grid {
-        gap: 8px;
-        font-size: 13px;
+    .top-toolbar .search-box input {
+        min-width: 0;
+        width: 100%;
+
+        font-size: 14px;
     }
 
-    .grid-row.row-date-room span {
-        width: auto !important;
-        flex: unset !important;
+    .top-toolbar .search-icon {
+        flex-shrink: 0;
+        font-size: 22px;
     }
 
-    /* มีปุ่ม CSV เพิ่มเข้ามา ต้องยอมให้ตกบรรทัดได้ ไม่ให้ปุ่มถูกบีบ */
-    .case-actions {
-        flex-wrap: wrap;
+
+    /* ===== ปุ่มค้นหา ===== */
+
+    .top-toolbar .btn-search-confirm {
+        grid-column: 2;
+
+        width: auto;
+        min-width: 72px;
+        height: 42px;
+
+        padding: 0 14px;
+        margin: 0;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        gap: 5px;
+
+        background: #1a3a5f;
+        color: white;
+
+        border: none;
+        border-radius: 12px;
+
+        font-size: 14px;
+        font-weight: 600;
+
+        white-space: nowrap;
+        cursor: pointer;
+
+        box-sizing: border-box;
     }
 
+    .top-toolbar .btn-search-confirm .material-icons {
+        font-size: 19px;
+    }
 }
+
+.top-toolbar .btn-search-confirm {
+    grid-column: 2;
+
+    width: auto;
+    min-width: 72px;
+    height: 42px;
+
+    padding: 0 14px;
+    margin: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    gap: 5px;
+
+    background: #1a3a5f;
+    color: white;
+
+    border: none;
+    border-radius: 12px;
+
+    font-size: 14px;
+    font-weight: 600;
+
+    white-space: nowrap;
+    cursor: pointer;
+
+    box-sizing: border-box;
+}
+
+.top-toolbar .btn-search-confirm .material-icons {
+    font-size: 19px;
+}
+
+.case-card {
+    padding: 14px;
+}
+
+.grid-row {
+    flex-direction: column;
+    gap: 4px;
+}
+
+.grid-row span {
+    width: 100%;
+    min-width: unset;
+}
+
+.grid-row.row-date-room {
+    flex-direction: row !important;
+    /* บังคับให้เป็นแนวนอนแม้อยู่บนมือถือ */
+    flex-wrap: nowrap !important;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.grid-row span {
+    width: 100%;
+    min-width: unset;
+}
+
+.case-grid {
+    gap: 8px;
+    font-size: 13px;
+}
+
+.grid-row.row-date-room span {
+    width: auto !important;
+    flex: unset !important;
+}
+
+/* มีปุ่ม CSV เพิ่มเข้ามา ต้องยอมให้ตกบรรทัดได้ ไม่ให้ปุ่มถูกบีบ */
+.case-actions {
+    flex-wrap: wrap;
+}
+
+
 
 .dp__theme_light {
     --dp-border-radius: 16px;
@@ -3320,5 +3634,132 @@ input[type="checkbox"] {
     min-width: unset !important;
     flex: none !important;
     width: auto !important;
+}
+
+/* หัวโหมดค้นหา แทนที่แท็บ Today/Upcoming/Passed */
+.search-mode-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 15px;
+    background: #f8f9fa;
+    color: #1a3a5f;
+    font-weight: 700;
+    font-size: 15px;
+}
+
+.search-mode-header .material-icons {
+    font-size: 20px;
+}
+
+.btn-back-to-tabs {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+
+    background: #eef2f7;
+    color: #64748b;
+    border: 1px solid #d6e0ec;
+    border-radius: 8px;
+    padding: 6px 12px;
+
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.btn-back-to-tabs:hover {
+    background: #dde6f1;
+    color: #1a3a5f;
+}
+
+.btn-back-to-tabs .material-icons {
+    font-size: 15px;
+}
+
+/* การ์ดค้นหา: สีตามสถานะ */
+.search-result-item.card-cancelled {
+    border-left: 5px solid #c62828;
+    background: #fef2f2;
+}
+
+.search-result-item.card-cancelled:hover {
+    background: #fee2e2;
+}
+
+.search-result-item.card-completed {
+    border-left: 5px solid #16a34a;
+    background: #f0fdf4;
+}
+
+.search-result-item.card-completed:hover {
+    background: #ecfdf5;
+}
+
+/* ทำให้การ์ดผลค้นหาเป็น relative เพื่อวาง badge มุมขวาบน */
+.search-result-item {
+    position: relative;
+}
+
+.status-badge {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+
+    display: inline-flex;
+    align-items: center;
+
+    padding: 4px 12px;
+    border-radius: 999px;
+
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+
+    background: #ffffff;
+    border: 1.5px solid currentColor;
+
+    margin-bottom: 0;
+}
+
+.badge-today {
+    color: #1e3a8a;
+}
+
+.badge-upcoming {
+    color: #0d47a1;
+}
+
+.badge-completed {
+    color: #16a34a;
+}
+
+.badge-cancelled {
+    color: #c62828;
+}
+
+.search-result-item {
+    position: relative;
+}
+
+.room-tag-floating {
+    position: absolute;
+    top: 42px;
+    /* อยู่ใต้ status badge (badge สูงประมาณ 24-26px + top 14px) */
+    right: 25px;
+
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+
+    color: #1e3a8a;
+    font-weight: bold;
+    font-size: 11px;
+}
+
+.room-tag-floating .material-icons {
+    font-size: 16px;
 }
 </style>
