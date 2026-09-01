@@ -57,6 +57,36 @@
                 </div>
             </div>
         </Transition>
+        <Transition name="fade">
+            <div v-if="isDeleteDoctorModalOpen" class="modal-overlay-center"
+                @click.self="isDeleteDoctorModalOpen = false">
+                <div class="white-modal-card">
+
+                    <div class="warning-icon">⚠️</div>
+
+                    <h2 class="modal-msg-title red-text">
+                        Delete Doctor?
+                    </h2>
+
+                    <p class="modal-desc">
+                        ลบบัญชี "{{ selectedDoctor.name }}" ออกจากระบบ?
+                        <br>
+                        (ข้อมูลคิวผ่าตัดของหมอยังคงอยู่)
+                    </p>
+
+                    <div class="modal-button-group">
+                        <button class="btn-cancel-gray" @click="isDeleteDoctorModalOpen = false">
+                            No
+                        </button>
+
+                        <button class="btn-confirm-red" @click="confirmDeleteDoctor">
+                            Yes
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+        </Transition>
 
 
         <header class="top-nav">
@@ -222,7 +252,7 @@
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                            }}</div>
+                                        }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
                                             item.cxrNote || '-' }}</div>
@@ -325,7 +355,7 @@
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                            }}</div>
+                                        }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
                                             item.cxrNote || '-' }}</div>
@@ -424,7 +454,7 @@
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                            }}</div>
+                                        }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
                                             item.cxrNote || '-' }}</div>
@@ -509,7 +539,7 @@
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                        }}</div>
+                                            }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
                                             item.cxrNote || '-' }}</div>
@@ -620,7 +650,7 @@
                     <span class="sheet-option-text">
                         <strong>PDF</strong>
                         <small>{{ isExportingCase ? 'กำลังสร้างไฟล์…' : 'ใบสรุปคิว พร้อมพิมพ์ออกมาใช้ได้ทันที'
-                            }}</small>
+                        }}</small>
                     </span>
                 </button>
 
@@ -726,10 +756,9 @@
                                 class="export-dropdown-search" placeholder="ค้นหาชื่อแพทย์..." @click.stop
                                 @keydown.stop />
 
-                            <label v-if="filteredDoctorList.length" class="export-dropdown-item export-dropdown-item-all"
-                                @click="toggleAllFilteredDoctors">
-                                <input type="checkbox" :checked="areAllFilteredDoctorsSelected"
-                                    @click.prevent />
+                            <label v-if="filteredDoctorList.length"
+                                class="export-dropdown-item export-dropdown-item-all" @click="toggleAllFilteredDoctors">
+                                <input type="checkbox" :checked="areAllFilteredDoctorsSelected" @click.prevent />
                                 <span>{{ doctorSearchQuery ? 'เลือกทั้งหมด (ที่ค้นเจอ)' : 'เลือกทั้งหมด' }}</span>
                             </label>
 
@@ -1693,20 +1722,40 @@ const cancelledCases = computed(() =>
 )
 
 
-const deleteDoctor = async (license, name) => {
-    if (!confirm(`ลบบัญชี "${name}" ออกจากระบบ?\n(ข้อมูลคิวผ่าตัดของหมอยังคงอยู่)`)) return
+const deleteDoctor = (license, name) => {
+    selectedDoctor.value = {
+        license,
+        name
+    }
+
+    isDeleteDoctorModalOpen.value = true
+}
+
+const confirmDeleteDoctor = async () => {
+    const { license } = selectedDoctor.value
+
     try {
         const res = await apiFetch(`/api/users/${license}`, {
             method: 'DELETE',
         })
+
         const data = await res.json()
+
         if (res.ok) {
-            doctorList.value = doctorList.value.filter(d => d.license !== license)
+            doctorList.value = doctorList.value.filter(
+                d => d.license !== license
+            )
+
+            isDeleteDoctorModalOpen.value = false
             showMessage('✅ ลบบัญชีสำเร็จ')
         } else {
+            isDeleteDoctorModalOpen.value = false
             showMessage('❌ ' + (data.error || 'ลบไม่สำเร็จ'))
         }
-    } catch (e) { showMessage('❌ เกิดข้อผิดพลาด') }
+    } catch (e) {
+        isDeleteDoctorModalOpen.value = false
+        showMessage('❌ เกิดข้อผิดพลาด')
+    }
 }
 
 
