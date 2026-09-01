@@ -128,6 +128,18 @@
       </div>
     </Transition>
 
+    <Transition name="fade">
+      <div v-if="isLogoutConfirmOpen" class="modal-overlay-center" @click.self="isLogoutConfirmOpen = false">
+        <div class="white-modal-card">
+          <h2 class="modal-msg-title">คุณต้องการออกจากระบบใช่หรือไม่?</h2>
+          <div class="modal-button-group">
+            <button class="btn-cancel-gray" @click="isLogoutConfirmOpen = false">Cancel</button>
+            <button class="btn-confirm-red" @click="doLogout">Confirm</button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
     <main class="content-area">
       <RouterView />
     </main>
@@ -146,6 +158,7 @@ const dialogType = ref('success')
 
 const isSidebarOpen = ref(false)
 const isOrNumberModalOpen = ref(false) // สถานะเปิด/ปิด Pop-up เลือกเลขห้อง OR
+const isLogoutConfirmOpen = ref(false) // สถานะเปิด/ปิด Dialog ยืนยันออกจากระบบ (แทน confirm() ของ browser)
 
 const router = useRouter()
 const route = useRoute()
@@ -252,12 +265,16 @@ const goTo = (path) => {
 }
 
 const handleLogout = () => {
-  if (confirm("คุณต้องการออกจากระบบใช่หรือไม่?")) {
-    localStorage.clear()  // ล้างทุกอย่างรวมถึง isLoggedIn
-    isSidebarOpen.value = false
-    router.push('/login')
-  }
+  isLogoutConfirmOpen.value = true
 }
+
+const doLogout = () => {
+  localStorage.clear()  // ล้างทุกอย่างรวมถึง isLoggedIn
+  isSidebarOpen.value = false
+  isLogoutConfirmOpen.value = false
+  router.push('/login')
+}
+
 </script>
 
 <style scoped>
@@ -407,6 +424,53 @@ const handleLogout = () => {
   align-items: center;
   z-index: 4000;
   background: rgba(0, 0, 0, 0.4);
+}
+
+/* --- Pop-up: Dialog ยืนยัน (ใช้โครงเดียวกับ HomeView.vue / AdminHome.vue / AdminDashboard.vue) --- */
+.white-modal-card {
+  background: white;
+  width: 90%;
+  max-width: 320px;
+  padding: 30px 20px;
+  border-radius: 24px;
+  text-align: center;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.modal-msg-title {
+  color: #2c4c87;
+  font-size: 1.1rem;
+  line-height: 1.6;
+  margin-bottom: 25px;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: pre-line;
+}
+
+.modal-button-group {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+}
+
+.btn-confirm-red {
+  background-color: #d50000;
+  color: white;
+  border: none;
+  padding: 10px 25px;
+  border-radius: 12px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.btn-cancel-gray {
+  background-color: #eee;
+  color: #666;
+  border: none;
+  padding: 10px 25px;
+  border-radius: 12px;
+  font-weight: bold;
+  cursor: pointer;
 }
 
 .fade-enter-active,
