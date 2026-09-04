@@ -5,6 +5,10 @@
 
 ---
 
+## Test Account
+- Username: qa.test01@example.com
+- Password: 123456**
+
 ## ✨ Main Features
 
 - 🔐 ระบบ Login ที่เป็นส่วนตัวสำหรับแพทย์แต่ละท่าน
