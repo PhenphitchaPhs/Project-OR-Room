@@ -65,11 +65,17 @@
                     <div class="grid-2-col">
 
                         <div style="display: flex; flex-direction: column;">
+                            <ProcedureManager @updated="setCustomProcedures" />
                             <select v-model="form.procedure" class="input-field green-theme" @change="checkValidDate" required>
                                 <option value="" disabled>Select Procedure</option>
                                 <optgroup v-for="group in procedureGroups" :key="group.label" :label="group.label">
                                     <option v-for="proc in group.options" :key="proc.value || proc.name" :value="proc.value || proc.name">
                                         {{ proc.name }}
+                                    </option>
+                                </optgroup>
+                                <optgroup v-if="customProcedures.length" label="Additional">
+                                    <option v-for="procedure in customProcedures" :key="procedure.id" :value="procedure.value">
+                                        {{ procedure.name }} - {{ procedure.durationMinutes }} mins
                                     </option>
                                 </optgroup>
                             </select>
@@ -168,6 +174,7 @@
 import { reactive, ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { apiFetch } from '../../api/client'
+import ProcedureManager from '../../components/ProcedureManager.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -181,6 +188,7 @@ const isOverCapacity = ref(false)
 const isDateLocked = ref(false)
 const apiHolidays = ref({})
 const doctors = ref([])
+const customProcedures = ref([])
 
 const form = reactive({
     hn: '', fullName: '', age: '', gender: '', disease: '', diagnosis: '',
@@ -274,6 +282,10 @@ const procedureGroups = ref([
         ]
     }
 ])
+
+const setCustomProcedures = (procedures) => {
+    customProcedures.value = procedures
+}
 
 const today = new Date()
 const todayStr = today.toISOString().split('T')[0]

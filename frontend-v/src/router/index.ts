@@ -1,20 +1,20 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
-import HomeView from '../views/HomeView.vue'
-import CalendarView from '../views/CalendarView.vue'
-import BookingView from '../views/BookingView.vue'
+const HomeView = () => import('../views/HomeView.vue')
+const CalendarView = () => import('../views/CalendarView.vue')
+const BookingView = () => import('../views/BookingView.vue')
 
-import LoginPages from '../pages/LoginPage.vue'
-import ForgotPassword from '../pages/email-ForgotPassword.vue'
-import SignUp from '../pages/signup.vue'
-import NewPassword from '../pages/newpassword.vue'
+const LoginPages = () => import('../pages/LoginPage.vue')
+const ForgotPassword = () => import('../pages/email-ForgotPassword.vue')
+const SignUp = () => import('../pages/signup.vue')
+const NewPassword = () => import('../pages/newpassword.vue')
 
-import LoginAdmin from '../views/admin/loginAdmin.vue'
-import AdminHome from '../views/admin/AdminHome.vue'
-import AdminDashboard from '../views/admin/AdminDashboard.vue'
+const LoginAdmin = () => import('../views/admin/loginAdmin.vue')
+const AdminHome = () => import('../views/admin/AdminHome.vue')
+const AdminDashboard = () => import('../views/admin/AdminDashboard.vue')
 
-import AddPatientByAdmin from '../views/admin/AddPatientByAdmin.vue'
-import AdminCalendarView from '../views/admin/AdminCalendarView.vue'
+const AddPatientByAdmin = () => import('../views/admin/AddPatientByAdmin.vue')
+const AdminCalendarView = () => import('../views/admin/AdminCalendarView.vue')
 
 const routes = [
   { path: '/', redirect: '/login' },

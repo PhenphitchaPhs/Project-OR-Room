@@ -15,7 +15,15 @@
         <transition name="admin-sidebar-slide">
             <aside v-if="isOpen" class="admin-sidebar" aria-label="Admin navigation">
                 <div class="admin-sidebar-header">
-                    <strong>Admin Menu</strong>
+                    <div class="admin-account">
+                        <div class="admin-avatar-icon" aria-hidden="true">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="42" height="42" viewBox="0 0 24 24">
+                                <path fill="currentColor"
+                                    d="M12 2a10 10 0 1 0 0 20a10 10 0 0 0 0-20m0 4a3.5 3.5 0 1 1 0 7a3.5 3.5 0 0 1 0-7m0 14a7.9 7.9 0 0 1-5.7-2.4c.5-1.5 2.8-2.6 5.7-2.6s5.2 1.1 5.7 2.6A7.9 7.9 0 0 1 12 20" />
+                            </svg>
+                        </div>
+                        <strong>{{ accountName }}</strong>
+                    </div>
                     <button class="admin-sidebar-close" type="button" aria-label="Close admin menu" @click="close">
                         ×
                     </button>
@@ -48,6 +56,7 @@ import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const isOpen = ref(false)
+const accountName = ref(localStorage.getItem('userLicense') || 'Admin')
 const route = useRoute()
 const router = useRouter()
 
@@ -115,6 +124,26 @@ const navigate = (path) => {
     box-sizing: border-box;
     color: #fff;
     background: #1a3a5f;
+}
+
+.admin-account {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+.admin-account strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-avatar-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
 }
 
 .admin-sidebar-close {

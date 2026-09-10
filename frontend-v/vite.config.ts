@@ -2,7 +2,6 @@ import { fileURLToPath, URL } from 'node:url'
 
 import { defineConfig, loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import vueDevTools from 'vite-plugin-vue-devtools'
 
 export default defineConfig(({ mode }) => {
 
@@ -14,7 +13,6 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [
       vue(),
-      vueDevTools(),
     ],
     resolve: {
       alias: {
@@ -29,6 +27,11 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
         },
       },
+    },
+
+    build: {
+      // pdfkit is intentionally large; it is loaded only when exporting PDF.
+      chunkSizeWarningLimit: 1500,
     },
   }
 })

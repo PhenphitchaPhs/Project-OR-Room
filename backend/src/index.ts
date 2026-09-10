@@ -56,6 +56,39 @@ const getTomorrowInBangkok = () => {
   return getDateInBangkok(new Date(Date.UTC(year, month - 1, day + 1, 12)))
 }
 
+type CustomProcedure = {
+  id: number
+  name: string
+  durationMinutes: number
+  createdBy: string
+  createdAt: string
+  updatedAt: string
+}
+
+const customProcedureValue = (procedure: Pick<CustomProcedure, 'name' | 'durationMinutes'>) =>
+  `${procedure.name} - ${procedure.durationMinutes} mins`
+
+const getStoredProcedureDuration = async (db: D1Database, procedure: unknown): Promise<number> => {
+  try {
+    return getProcedureDuration(procedure)
+  } catch (builtInError) {
+    if (typeof procedure !== 'string' || !procedure.trim()) throw builtInError
+
+    const exact = await db.prepare(
+      'SELECT durationMinutes FROM surgery_procedures WHERE name = ? COLLATE NOCASE LIMIT 1',
+    ).bind(procedure.trim()).first<{ durationMinutes: number }>()
+    if (exact) return Number(exact.durationMinutes)
+
+    const baseName = procedure.replace(/\s*-\s*\d+\s*mins?\s*$/i, '').trim()
+    const formatted = await db.prepare(
+      'SELECT durationMinutes FROM surgery_procedures WHERE name = ? COLLATE NOCASE LIMIT 1',
+    ).bind(baseName).first<{ durationMinutes: number }>()
+    if (formatted) return Number(formatted.durationMinutes)
+
+    throw builtInError
+  }
+}
+
 const ensureNotificationLogsTable = async (db: D1Database) => {
   await db.prepare(`
     CREATE TABLE IF NOT EXISTS notification_logs (
@@ -308,6 +341,15 @@ const requireAdmin = async (c: any, next: any) => {
   const user = c.get('user') as AuthUser | undefined
   if (!hasAdminAccess(user?.role)) {
     return c.json({ error: 'Admin privileges are required for this feature' }, 403)
+  }
+  await next()
+}
+
+const requireProcedureManager = async (c: any, next: any) => {
+  const user = c.get('user') as AuthUser | undefined
+  const role = normalizeRole(user?.role)
+  if (!user || (!hasAdminAccess(role) && role !== 'user')) {
+    return c.json({ error: 'Only doctors and administrators can manage surgery types' }, 403)
   }
   await next()
 }
@@ -587,6 +629,97 @@ app.delete('/api/users/:license', requireAdmin, async (c) => {
   }
 })
 
+app.get('/api/procedures', requireProcedureManager, async (c) => {
+  try {
+    const { results } = await c.env.DB.prepare(`
+      SELECT id, name, durationMinutes, createdBy, createdAt, updatedAt
+      FROM surgery_procedures
+      ORDER BY name COLLATE NOCASE ASC
+    `).all<CustomProcedure>()
+
+    return c.json(results.map((procedure) => ({
+      ...procedure,
+      value: customProcedureValue(procedure),
+    })))
+  } catch (error) {
+    console.error('GET /api/procedures failed:', error)
+    return c.json({ error: 'Unable to load additional surgery types' }, 500)
+  }
+})
+
+app.post('/api/procedures', requireProcedureManager, async (c) => {
+  const requester = c.get('user')
+  const body = await c.req.json<{ name?: unknown; durationMinutes?: unknown }>()
+  const name = typeof body.name === 'string' ? body.name.trim() : ''
+  const durationMinutes = Number(body.durationMinutes)
+
+  if (!name || name.length > 200) {
+    return c.json({ error: 'Surgery type is required and must be 200 characters or fewer' }, 400)
+  }
+  if (!Number.isInteger(durationMinutes) || durationMinutes < 1 || durationMinutes > 1440) {
+    return c.json({ error: 'Estimated duration must be a whole number from 1 to 1440 minutes' }, 400)
+  }
+
+  try {
+    const result = await c.env.DB.prepare(`
+      INSERT INTO surgery_procedures (name, durationMinutes, createdBy, updatedAt)
+      VALUES (?, ?, ?, datetime('now', '+7 hours'))
+    `).bind(name, durationMinutes, requester.license).run()
+    const procedure = await c.env.DB.prepare(
+      'SELECT id, name, durationMinutes, createdBy, createdAt, updatedAt FROM surgery_procedures WHERE id = ?',
+    ).bind(result.meta.last_row_id).first<CustomProcedure>()
+    return c.json(procedure ? { ...procedure, value: customProcedureValue(procedure) } : { success: true }, 201)
+  } catch (error: any) {
+    if (String(error?.message || error).toLowerCase().includes('unique')) {
+      return c.json({ error: 'This surgery type already exists' }, 409)
+    }
+    console.error('POST /api/procedures failed:', error)
+    return c.json({ error: 'Unable to save surgery type' }, 500)
+  }
+})
+
+app.put('/api/procedures/:id', requireProcedureManager, async (c) => {
+  const body = await c.req.json<{ name?: unknown; durationMinutes?: unknown }>()
+  const name = typeof body.name === 'string' ? body.name.trim() : ''
+  const durationMinutes = Number(body.durationMinutes)
+  if (!name || name.length > 200) {
+    return c.json({ error: 'Surgery type is required and must be 200 characters or fewer' }, 400)
+  }
+  if (!Number.isInteger(durationMinutes) || durationMinutes < 1 || durationMinutes > 1440) {
+    return c.json({ error: 'Estimated duration must be a whole number from 1 to 1440 minutes' }, 400)
+  }
+
+  try {
+    const result = await c.env.DB.prepare(`
+      UPDATE surgery_procedures
+      SET name = ?, durationMinutes = ?, updatedAt = datetime('now', '+7 hours')
+      WHERE id = ?
+    `).bind(name, durationMinutes, c.req.param('id')).run()
+    if (!result.meta.changes) return c.json({ error: 'Additional surgery type not found' }, 404)
+    const procedure = await c.env.DB.prepare(
+      'SELECT id, name, durationMinutes, createdBy, createdAt, updatedAt FROM surgery_procedures WHERE id = ?',
+    ).bind(c.req.param('id')).first<CustomProcedure>()
+    return c.json(procedure ? { ...procedure, value: customProcedureValue(procedure) } : { success: true })
+  } catch (error: any) {
+    if (String(error?.message || error).toLowerCase().includes('unique')) {
+      return c.json({ error: 'This surgery type already exists' }, 409)
+    }
+    console.error('PUT /api/procedures failed:', error)
+    return c.json({ error: 'Unable to update surgery type' }, 500)
+  }
+})
+
+app.delete('/api/procedures/:id', requireProcedureManager, async (c) => {
+  try {
+    const result = await c.env.DB.prepare('DELETE FROM surgery_procedures WHERE id = ?').bind(c.req.param('id')).run()
+    if (!result.meta.changes) return c.json({ error: 'Additional surgery type not found' }, 404)
+    return c.json({ success: true })
+  } catch (error) {
+    console.error('DELETE /api/procedures failed:', error)
+    return c.json({ error: 'Unable to delete surgery type' }, 500)
+  }
+})
+
 app.get('/api/schedule', async (c) => {
   const from = c.req.query('from')
   const to = c.req.query('to')
@@ -726,7 +859,7 @@ app.post('/api/bookings', async (c) => {
   let durationMinutes: number
 
   try {
-    durationMinutes = getProcedureDuration(b.procedure)
+    durationMinutes = await getStoredProcedureDuration(c.env.DB, b.procedure)
   } catch (error) {
     return c.json({ error: error instanceof Error ? error.message : 'Invalid procedure' }, 400)
   }
@@ -820,7 +953,7 @@ app.put('/api/bookings/:id', async (c) => {
 
     let durationMinutes: number
     try {
-      durationMinutes = getProcedureDuration(b.procedure)
+      durationMinutes = await getStoredProcedureDuration(c.env.DB, b.procedure)
     } catch (error) {
       return c.json({ error: error instanceof Error ? error.message : 'Invalid procedure' }, 400)
     }

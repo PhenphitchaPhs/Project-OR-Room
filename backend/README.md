@@ -11,9 +11,12 @@ Run the base schema first, then run each migration once against the target D1 da
 npx wrangler d1 execute or_room_db --remote --file=./schema.sql
 npx wrangler d1 execute or_room_db --remote --file=./migrate-patients.sql
 npx wrangler d1 execute or_room_db --remote --file=./migrate-add-duration-minutes.sql
+npx wrangler d1 execute or_room_db --remote --file=./migrate-surgery-procedures.sql
 ```
 
 For local development, replace `--remote` with `--local`. Do not run the duration migration again after it has already been applied, because SQLite/D1 does not support `ADD COLUMN IF NOT EXISTS`.
+
+The surgery procedures migration creates the table for user-managed surgery types. Built-in surgery types remain protected in the application and are not editable or deletable.
 
 ```
 open http://localhost:3000
