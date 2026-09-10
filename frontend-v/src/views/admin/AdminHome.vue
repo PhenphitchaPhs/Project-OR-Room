@@ -952,7 +952,7 @@ const openCancelModal = (id) => {
 
 const confirmCancelCase = async () => {
     try {
-        await apiFetch(
+        const res = await apiFetch(
             `/api/bookings/${selectedCancelId.value}/status`,
             {
                 method: 'PATCH',
@@ -960,6 +960,8 @@ const confirmCancelCase = async () => {
                 body: JSON.stringify({ status: 'Cancelled' })
             }
         )
+
+        if (!res.ok) throw new Error('Cancel failed')
 
         const target = bookings.value.find(
             item => item.id === selectedCancelId.value
