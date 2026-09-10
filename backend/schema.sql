@@ -1,9 +1,5 @@
--- ✅ ไฟล์นี้ปลอดภัย: ใช้ CREATE TABLE IF NOT EXISTS และไม่มีคำสั่ง DROP TABLE
--- รันซ้ำกับฐานข้อมูลที่มีข้อมูลอยู่แล้วได้ โดยข้อมูลเดิมจะไม่ถูกลบ
--- (ถ้าตารางมีอยู่แล้ว คำสั่งจะข้ามไปเฉย ๆ ไม่เขียนทับ)
 
--- ตารางสำหรับเก็บข้อมูลผู้ป่วย (แยกออกจากตารางการจอง)
--- 👉 ทำให้ลบรายการจองได้โดยข้อมูลผู้ป่วยยังคงอยู่ และยังกรอกอัตโนมัติจาก HN ได้
+
 CREATE TABLE IF NOT EXISTS patients (
   hn TEXT PRIMARY KEY,              -- 👈 หมายเลข HN ห้ามซ้ำ
   fullName TEXT NOT NULL,
@@ -14,7 +10,6 @@ CREATE TABLE IF NOT EXISTS patients (
   updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- ตารางสำหรับเก็บข้อมูลการจองห้องผ่าตัด
 CREATE TABLE IF NOT EXISTS bookings (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   hn TEXT NOT NULL,
@@ -42,7 +37,6 @@ CREATE TABLE IF NOT EXISTS bookings (
   createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- สร้างตารางสำหรับเก็บข้อมูลคุณหมอ (ผู้ใช้งาน)
 CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   license TEXT UNIQUE NOT NULL,
@@ -57,12 +51,20 @@ CREATE TABLE IF NOT EXISTS users (
   createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- สร้างตารางสำหรับเก็บรหัส OTP ที่ใช้ยืนยันอีเมลตอนสมัครสมาชิก
 CREATE TABLE IF NOT EXISTS otps (
   email TEXT PRIMARY KEY,           -- 👈 ต้องเป็น UNIQUE เพราะโค้ดใช้ ON CONFLICT(email)
   otp TEXT NOT NULL,
   expiry INTEGER NOT NULL           -- เวลาหมดอายุ (epoch ms) อายุ 5 นาที
 );
 
--- เพิ่มคอลัมน์ durationMinutes ในตาราง bookings
-ALTER TABLE bookings ADD COLUMN durationMinutes INTEGER DEFAULT 0;
+CREATE TABLE IF NOT EXISTS notification_logs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  notificationType TEXT NOT NULL,
+  targetDate TEXT NOT NULL,
+  doctorLicense TEXT NOT NULL,
+  email TEXT,
+  status TEXT NOT NULL,
+  bookingCount INTEGER NOT NULL DEFAULT 0,
+  errorMessage TEXT,
+  createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+);

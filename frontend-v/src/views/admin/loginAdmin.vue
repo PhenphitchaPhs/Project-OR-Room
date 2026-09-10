@@ -37,7 +37,6 @@
                     </div>
                 </div>
 
-                <!-- แสดง error -->
                 <p v-if="errorMessage" class="error-text">
                     {{ errorMessage }}
                 </p>
@@ -62,7 +61,6 @@ const password = ref('')
 const showPassword = ref(false)
 const errorMessage = ref('')
 
-// ถูกเด้งมาที่นี่เพราะ token หมดอายุ ให้บอกเหตุผลด้วย
 onMounted(() => {
     const expired = sessionStorage.getItem(SESSION_EXPIRED_KEY)
     if (expired) {
@@ -74,7 +72,7 @@ onMounted(() => {
 const handleLogin = async () => {
     errorMessage.value = ''
     if (!name.value || !password.value) {
-        errorMessage.value = 'กรุณากรอกข้อมูลให้ครบ'
+        errorMessage.value = 'Please complete all fields'
         return
     }
     try {
@@ -83,10 +81,8 @@ const handleLogin = async () => {
             password: password.value
         }, { skipAuth: true })
 
-        // 📍 เช็ค role ตรงนี้เพื่อกันไม่ให้บัญชีทั่วไปเข้าหน้าแอดมิน
-        //    เป็นการกันระดับ UI เท่านั้น สิทธิ์จริงบังคับที่ backend จาก role ใน token
         if (data.user?.role !== 'admin') {
-            errorMessage.value = '❌ ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง หรือไม่มีสิทธิ์ Admin'
+            errorMessage.value = '❌ Invalid username/password or insufficient Admin privileges'
             return
         }
 
@@ -98,8 +94,8 @@ const handleLogin = async () => {
         localStorage.setItem('userRole', data.user.role)
         router.push({ name: 'admin-home' })
     } catch (e) {
-        // ข้อความรวม ไม่บอกว่าผิดที่ช่องไหน กันการเดาว่า license ไหนมีอยู่จริง
-        errorMessage.value = '❌ ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง หรือไม่มีสิทธิ์ Admin'
+
+        errorMessage.value = '❌ Invalid username/password or insufficient Admin privileges'
     }
 }
 
@@ -115,7 +111,7 @@ const goBack = () => router.back()
 </style>
 
 <style scoped>
-/* จัดให้อยู่กึ่งกลางหน้าจอ */
+
 .login-wrapper {
     position: relative;
     display: flex;
@@ -134,7 +130,6 @@ const goBack = () => router.back()
     padding: 20px;
 }
 
-/* สไตล์ของโลโก้ */
 .logo-section {
     display: flex;
     flex-direction: column;
@@ -150,32 +145,30 @@ const goBack = () => router.back()
 
 .logo-text {
     color: #001F5B;
-    /* สีฟ้าให้ใกล้เคียงกับคำว่า Hospital */
+
     font-size: 22px;
     font-weight: 700;
     margin: 0;
 }
 
-/* สไตล์ของฟอร์ม */
 .login-form {
     display: flex;
     flex-direction: column;
     width: 100%;
     gap: 16px;
-    /* ระยะห่างระหว่างช่องกรอกข้อมูล */
+
 }
 
-/* สไตล์ของช่อง Input (สีเขียวอ่อน) */
 .custom-input {
     width: 100%;
     padding: 16px;
     border-radius: 8px;
     border: 1px solid #c0c0c0;
-    /* กรอบสีเขียวอ่อน */
+
     background-color: hsl(0, 0%, 100%);
-    /* พื้นหลังสีเขียวพาสเทล */
+
     color: #000000;
-    /* สีตัวอักษรด้านใน */
+
     font-size: 16px;
     box-sizing: border-box;
     outline: none;
@@ -190,7 +183,6 @@ const goBack = () => router.back()
     border-color: #9a9a9a;
 }
 
-/* สไตล์ของปุ่ม Log in */
 .login-button {
     width: 100%;
     padding: 16px;
@@ -198,7 +190,7 @@ const goBack = () => router.back()
     border-radius: 12px;
     border: none;
     background-color: #001F5B;
-    /* สีฟ้าอมม่วงแบบในรูป */
+
     color: #ffffff;
     font-size: 18px;
     font-weight: 600;
@@ -225,15 +217,11 @@ const goBack = () => router.back()
     opacity: 0.7;
 }
 
-/* ------------------------------------- 
-   ส่วนเพิ่มเติมสำหรับไอคอนตารหัสผ่านของแอดมิน 
--------------------------------------- */
 .input-wrapper {
     position: relative;
     width: 100%;
 }
 
-/* เว้นพื้นที่ฝั่งขวาของช่องกรอกรหัสผ่านเพื่อไม่ให้ตัวหนังสือบังไอคอน */
 .input-wrapper .password-input {
     padding-right: 48px;
 }
@@ -253,6 +241,6 @@ const goBack = () => router.back()
 
 .eye-icon:hover {
     color: #001F5B;
-    /* เปลี่ยนเป็นสีเดียวกับปุ่มเมื่อ Hover */
+
 }
 </style>

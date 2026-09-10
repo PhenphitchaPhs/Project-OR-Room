@@ -5,10 +5,8 @@
 
       <h2 class="title">ORchestrator</h2>
 
-      <!-- 🟢 เปลี่ยนจาก License เป็น Email -->
       <input v-model="email" type="email" placeholder="Email Address" class="input" />
 
-      <!-- อันนี้เป็นดวงตาเปิด/ปิดพาสเวิส -->
       <div class="input-wrapper">
         <input v-model="password" :type="showPassword ? 'text' : 'password'" placeholder="Password"
           class="input password-input" />
@@ -76,14 +74,14 @@ import { useRouter } from "vue-router";
 import { apiPost, setToken, clearSession, SESSION_EXPIRED_KEY } from "../api/client";
 
 const router = useRouter();
-const email = ref(""); // 🟢 ใช้ email แทน license
+const email = ref("");
 const password = ref("");
 const showPassword = ref(false);
 const showDialog = ref(false);
 const dialogMessage = ref("");
 
 onMounted(() => {
-  // ถูกเด้งมาที่นี่เพราะ token หมดอายุ ให้บอกเหตุผลแทนที่จะทิ้งผู้ใช้ไว้กับหน้า login เปล่า ๆ
+
   const expiredMessage = sessionStorage.getItem(SESSION_EXPIRED_KEY);
   if (expiredMessage) {
     sessionStorage.removeItem(SESSION_EXPIRED_KEY);
@@ -107,33 +105,30 @@ const goForgot = () => router.push("/forgot-password");
 const goSignup = () => router.push("/signup");
 
 const login = async () => {
-  // 🟢 ตรวจสอบรูปแบบ Email
+
   if (!email.value || !email.value.includes('@')) {
-    dialogMessage.value = "กรุณากรอกรูปแบบอีเมลให้ถูกต้อง";
+    dialogMessage.value = "Please enter a valid email address";
     showDialog.value = true;
     return;
   }
 
   if (!password.value) {
-    dialogMessage.value = "กรุณากรอก Password";
+    dialogMessage.value = "Please enter your password";
     showDialog.value = true;
     return;
   }
 
   try {
-    // skipAuth เพราะยังไม่มี token ตอนนี้ นี่คือขั้นที่กำลังไปขอ token
+
     const data = await apiPost('/api/login', {
-      email: email.value, // 🟢 ส่ง email ไปที่ Backend
+      email: email.value,
       password: password.value
     }, { skipAuth: true });
 
-    // ล้างของเก่าก่อนเสมอ กันค่าค้างจากบัญชีที่ล็อกอินไว้ก่อนหน้า
     clearSession();
 
-    // 🔑 token คือสิ่งเดียวที่ backend ใช้ตัดสินสิทธิ์
     setToken(data.token);
 
-    // ค่าที่เหลือเก็บไว้แสดงผล UI เท่านั้น แก้ใน DevTools ได้และไม่มีผลกับสิทธิ์จริง
     localStorage.setItem("isLoggedIn", "true");
     localStorage.setItem("userLicense", data.user.license);
     localStorage.setItem("doctorName", data.user.doctorName);
@@ -143,7 +138,7 @@ const login = async () => {
     router.push("/home");
   } catch (error) {
     console.error(error);
-    dialogMessage.value = "❌ " + (error?.message || "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้");
+    dialogMessage.value = "❌ " + (error?.message || "Unable to connect to the server");
     showDialog.value = true;
   }
 }

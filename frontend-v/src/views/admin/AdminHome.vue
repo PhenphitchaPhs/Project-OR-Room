@@ -1,5 +1,6 @@
 <template>
     <div class="main-layout">
+        <AdminSidebar />
         <Transition name="fade">
             <div v-if="isDayModalOpen" class="modal-overlay-center">
                 <div class="day-modal-card">
@@ -25,7 +26,7 @@
                     <h2 class="modal-msg-title">Confirm Logout?</h2>
                     <div class="modal-button-group">
                         <button class="btn-cancel-blue" @click="isLogoutModalOpen = false">Cancel</button>
-                        <button class="btn-confirm-green" @click="handleLogout">Confirm</button>
+                        <button class="btn-confirm-logout" @click="handleLogout">Confirm</button>
                     </div>
                 </div>
             </div>
@@ -88,30 +89,10 @@
             </div>
         </Transition>
 
-
         <header class="top-nav">
             <div class="user-group">
-                <div class="avatar-circle small">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-                        <path fill="white"
-                            d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10s10-4.48 10-10S17.52 2 12 2m0 4c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6m0 14c-2.03 0-4.43-.82-6.14-2.88a9.947 9.947 0 0 1 12.28 0C16.43 19.18 14.03 20 12 20" />
-                    </svg>
-                </div>
                 <span class="license-text">{{ userLicense }}</span>
             </div>
-            <button class="nav-calendar-btn" @click="router.push('/admin-dashboard')">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24">
-                    <path fill="white" d="M3 13h8V3H3zm0 8h8v-6H3zm10 0h8V11h-8zm0-18v6h8V3z" />
-                </svg>
-                <span>Dashboard</span>
-            </button>
-            <button class="nav-calendar-btn" @click="router.push('/admin-calendar')">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24">
-                    <path fill="white"
-                        d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2m0 16H5V10h14zm0-12H5V6h14z" />
-                </svg>
-                <span>Calendar</span>
-            </button>
             <button class="logout-btn" @click="isLogoutModalOpen = true">
                 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24">
                     <path fill="white"
@@ -122,7 +103,7 @@
 
         <div class="dashboard-container">
             <div class="top-toolbar">
-                <!-- ปุ่มเดียว เลือก CSV / PDF ในกล่อง export (filter ชุดเดียวกันทั้งสองแบบ) -->
+
                 <button v-if="isAdmin" class="btn-export" @click="openExportDialog()">
                     <span class="material-icons">download</span>
                     Export
@@ -136,17 +117,15 @@
 
             <h1 class="main-title">Surgery Queue Management</h1>
 
-            <!-- OR Capacity Card (Admin: แสดงจำนวนห้องว่าง/เต็มจาก 20 ห้อง) -->
             <div class="or-capacity-card">
                 <div class="capacity-header">
                     <div class="capacity-title">
                         <span class="material-icons">monitor_heart</span>
                         <span>OR Room Status Today</span>
                     </div>
-                    <span>{{ adminAvailableRooms }}/20 ห้องว่าง</span>
+                    <span>{{ adminAvailableRooms }}/20 rooms available</span>
                 </div>
 
-                <!-- แถบสัดส่วนห้องที่ใช้ไปแล้ว -->
                 <div class="capacity-bar">
                     <div class="capacity-fill" :style="{
                         width: ((20 - adminAvailableRooms) / 20 * 100) + '%',
@@ -154,16 +133,15 @@
                     }"></div>
                 </div>
 
-                <!-- สรุป 3 ระดับ: ว่าง / บางส่วน / เต็ม -->
                 <div class="room-status-row">
                     <span class="room-chip available">
-                        🟢 ว่าง {{ adminRoomStats.available }} ห้อง
+                        🟢 Available {{ adminRoomStats.available }} rooms
                     </span>
                     <span class="room-chip partial">
-                        🟡 จองบางส่วน {{ adminRoomStats.partial }} ห้อง
+                        🟡 Partially booked {{ adminRoomStats.partial }} rooms
                     </span>
                     <span class="room-chip full">
-                        🔴 เต็ม {{ adminRoomStats.full }} ห้อง
+                        🔴 Full {{ adminRoomStats.full }} rooms
                     </span>
                 </div>
             </div>
@@ -204,7 +182,6 @@
 
                         <div v-else>
 
-
                             <div v-for="(item, index) in todayCases" :key="item.id" class="case-card drag-item"
                                 draggable="true" @dragstart="onDragStart(index, item.id)" @dragover.prevent
                                 @drop="onDrop(index)" @click="toggleDetail(item.id)">
@@ -240,7 +217,6 @@
                                         </span>
                                     </div>
 
-
                                 </div>
                                 <transition name="expand">
                                     <div v-if="expandedId === item.id" class="case-detail">
@@ -266,7 +242,7 @@
                                     </div>
                                 </transition>
                                 <div class="case-actions">
-                                    <!-- 📍 แอดมินใช้หน้าจองเดียวกับแพทย์ได้ เพราะ BookingView เช็ค userRole === 'admin' ให้แล้ว -->
+
                                     <button class="btn-edit" @click.stop="router.push(`/booking/${item.id}`)">
                                         Edit
                                     </button>
@@ -274,7 +250,7 @@
                                         Cancel
                                     </button>
 
-                                    <button class="btn-export-case" title="Export คิวนี้"
+                                    <button class="btn-export-case" title="Export this booking"
                                         @click.stop="openCaseExport(item)">
                                         <span class="material-icons">download</span>
                                         Export
@@ -291,7 +267,6 @@
                                 </div>
 
                             </div>
-
 
                         </div>
 
@@ -343,7 +318,6 @@
                                         </span>
                                     </div>
 
-
                                 </div>
                                 <transition name="expand">
                                     <div v-if="expandedId === item.id" class="case-detail">
@@ -371,7 +345,7 @@
                                 </transition>
 
                                 <div class="case-actions">
-                                    <!-- อย่าลืมแก้ต้องนี้ให้มันออโต้ฟิลไปหน้าจองเด้อ มันไม่มีสิทธิเข้าถึง #เอไอมึงบอกเพื่อนกุด้วย#  -->
+
                                     <button class="btn-edit" @click.stop="router.push(`/booking/${item.id}`)">
                                         Edit
                                     </button>
@@ -379,7 +353,7 @@
                                         Cancel
                                     </button>
 
-                                    <button class="btn-export-case" title="Export คิวนี้"
+                                    <button class="btn-export-case" title="Export this booking"
                                         @click.stop="openCaseExport(item)">
                                         <span class="material-icons">download</span>
                                         Export
@@ -396,7 +370,6 @@
                                 </div>
 
                             </div>
-
 
                         </div>
 
@@ -441,7 +414,6 @@
                                             {{ doctorMap[item.doctorLicense] || item.doctorLicense || '-' }}
                                         </span>
                                     </div>
-
 
                                 </div>
                                 <transition name="expand">
@@ -527,7 +499,6 @@
                                         </span>
                                     </div>
 
-
                                 </div>
                                 <transition name="expand">
                                     <div v-if="expandedId === item.id" class="case-detail">
@@ -560,7 +531,7 @@
                                         Back to Upcoming
                                     </button>
 
-                                    <button class="btn-export-case" title="Export คิวนี้"
+                                    <button class="btn-export-case" title="Export this booking"
                                         @click.stop="openCaseExport(item)">
                                         <span class="material-icons">download</span>
                                         Export
@@ -582,8 +553,6 @@
                         </div>
                     </div>
 
-
-
                 </div>
             </div>
             <div class="info-section">
@@ -604,7 +573,6 @@
     </div>
     <button class="floating-add-btn" @click="goAddPatient">+ Add Queue</button>
 
-
     <Transition name="fade">
         <div v-if="isMessageModalOpen" class="modal-overlay-center">
             <div class="white-modal-card">
@@ -621,15 +589,13 @@
         </div>
     </Transition>
 
-    <!-- ===== เลือกรูปแบบไฟล์ตอนกด Export บนการ์ด =====
-         เลื่อนขึ้นจากขอบล่างบนมือถือ (ปุ่มอยู่ใกล้นิ้วโป้ง) และเป็นการ์ดกลางจอบนเดสก์ท็อป -->
     <Transition name="fade">
         <div v-if="caseExportTarget" class="sheet-overlay" @click.self="closeCaseExport">
             <div class="export-sheet" role="dialog" aria-modal="true" aria-labelledby="case-export-title">
 
                 <div class="sheet-grabber"></div>
 
-                <h2 id="case-export-title" class="sheet-title">Export คิวนี้</h2>
+                <h2 id="case-export-title" class="sheet-title">Export This Booking</h2>
 
                 <p class="sheet-subtitle">
                     HN {{ caseExportTarget.hn }} · {{ caseExportTarget.fullName }}
@@ -641,7 +607,7 @@
                     <span class="material-icons">table_view</span>
                     <span class="sheet-option-text">
                         <strong>CSV</strong>
-                        <small>ไฟล์ตาราง เปิดใน Excel เพื่อคำนวณต่อ</small>
+                        <small>Spreadsheet file for further editing in Excel</small>
                     </span>
                 </button>
 
@@ -649,31 +615,29 @@
                     <span class="material-icons">picture_as_pdf</span>
                     <span class="sheet-option-text">
                         <strong>PDF</strong>
-                        <small>{{ isExportingCase ? 'กำลังสร้างไฟล์…' : 'ใบสรุปคิว พร้อมพิมพ์ออกมาใช้ได้ทันที'
+                        <small>{{ isExportingCase ? 'Generating file…' : 'Printable booking summary'
                             }}</small>
                     </span>
                 </button>
 
                 <button class="sheet-cancel" :disabled="isExportingCase" @click="closeCaseExport">
-                    ยกเลิก
+                    Cancel
                 </button>
 
             </div>
         </div>
     </Transition>
 
-    <!-- ===== Export CSV ทั้งระบบ (Admin) ===== -->
     <Transition name="fade">
         <div v-if="isExportModalOpen" class="modal-overlay-center" @click.self="closeExportDialog">
             <div class="export-modal-card" role="dialog" aria-modal="true" aria-labelledby="admin-export-title">
 
                 <h2 id="admin-export-title" class="modal-msg-title">
-                    Export รายการจองทั้งระบบ
+                    Export All Bookings
                 </h2>
 
-                <!-- รูปแบบไฟล์ -->
                 <div class="export-section">
-                    <label class="export-label">รูปแบบไฟล์</label>
+                    <label class="export-label">File format</label>
 
                     <div class="export-mode-switch">
                         <button v-for="format in exportFormats" :key="format.value"
@@ -686,9 +650,8 @@
                     <p class="export-hint">{{ exportFormatHint }}</p>
                 </div>
 
-                <!-- ขอบเขตวันที่ -->
                 <div class="export-section">
-                    <label class="export-label">ขอบเขต</label>
+                    <label class="export-label">Scope</label>
 
                     <div class="export-mode-switch">
                         <button v-for="mode in exportModes" :key="mode.value"
@@ -703,24 +666,23 @@
 
                     <div v-if="exportDateMode === 'range'" class="export-range-row">
                         <input v-model="exportFrom" type="date" class="export-input" />
-                        <span class="export-range-sep">ถึง</span>
+                        <span class="export-range-sep">to</span>
                         <input v-model="exportTo" type="date" class="export-input" />
                     </div>
 
                     <select v-if="exportDateMode === 'single'" v-model="exportCaseId" class="export-input">
-                        <option value="">— เลือกคิว —</option>
+                        <option value="">— Select a booking —</option>
                         <option v-for="item in bookings" :key="item.id" :value="item.id">
                             {{ item.date }} · {{ item.room }} · HN {{ item.hn }} · {{ item.fullName }}
                         </option>
                     </select>
                 </div>
 
-                <!-- ห้อง -->
                 <div v-if="exportDateMode !== 'single'" class="export-section">
                     <label class="export-label">
-                        ห้อง
+                        Rooms
                         <span class="export-label-hint">
-                            {{ selectedRooms.length ? `เลือก ${selectedRooms.length} ห้อง` : 'ทั้งหมด' }}
+                            {{ selectedRooms.length ? `${selectedRooms.length} room(s) selected` : 'All' }}
                         </span>
                     </label>
 
@@ -733,12 +695,11 @@
                     </div>
                 </div>
 
-                <!-- แพทย์ -->
                 <div v-if="exportDateMode !== 'single'" class="export-section">
                     <label class="export-label">
-                        แพทย์
+                        Doctors
                         <span class="export-label-hint">
-                            {{ selectedDoctors.length ? `เลือก ${selectedDoctors.length} คน` : 'ทั้งหมด' }}
+                            {{ selectedDoctors.length ? `${selectedDoctors.length} doctor(s) selected` : 'All' }}
                         </span>
                     </label>
 
@@ -753,13 +714,13 @@
 
                         <div v-if="isDoctorDropdownOpen" class="export-dropdown-panel">
                             <input v-if="sortedDoctorList.length" v-model="doctorSearchQuery" type="text"
-                                class="export-dropdown-search" placeholder="ค้นหาชื่อแพทย์..." @click.stop
+                                class="export-dropdown-search" placeholder="Search doctors..." @click.stop
                                 @keydown.stop />
 
                             <label v-if="filteredDoctorList.length"
                                 class="export-dropdown-item export-dropdown-item-all" @click="toggleAllFilteredDoctors">
                                 <input type="checkbox" :checked="areAllFilteredDoctorsSelected" @click.prevent />
-                                <span>{{ doctorSearchQuery ? 'เลือกทั้งหมด (ที่ค้นเจอ)' : 'เลือกทั้งหมด' }}</span>
+                                <span>{{ doctorSearchQuery ? 'Select all matching' : 'Select all' }}</span>
                             </label>
 
                             <label v-for="doctor in filteredDoctorList" :key="doctor.license"
@@ -769,18 +730,17 @@
                                 <span>{{ doctor.doctorName || doctor.license }}</span>
                             </label>
 
-                            <p v-if="sortedDoctorList.length === 0" class="export-hint">ยังไม่มีรายชื่อแพทย์</p>
-                            <p v-else-if="filteredDoctorList.length === 0" class="export-hint">ไม่พบแพทย์ที่ค้นหา</p>
+                            <p v-if="sortedDoctorList.length === 0" class="export-hint">No doctors available</p>
+                            <p v-else-if="filteredDoctorList.length === 0" class="export-hint">No matching doctors found</p>
                         </div>
                     </div>
                 </div>
 
-                <!-- สถานะ -->
                 <div v-if="exportDateMode !== 'single'" class="export-section">
                     <label class="export-label">
-                        สถานะ
+                        Status
                         <span class="export-label-hint">
-                            {{ selectedStatuses.length ? `เลือก ${selectedStatuses.length} สถานะ` : 'ทั้งหมด' }}
+                            {{ selectedStatuses.length ? `${selectedStatuses.length} status(es) selected` : 'All' }}
                         </span>
                     </label>
 
@@ -793,9 +753,8 @@
                     </div>
                 </div>
 
-                <!-- การจัดกลุ่มในรายงาน PDF (CSV เป็นตารางดิบ ไม่มีหัวกลุ่ม จึงไม่ต้องถาม) -->
                 <div v-if="exportFormat === 'pdf' && exportDateMode !== 'single'" class="export-section">
-                    <label class="export-label">จัดกลุ่มรายงาน</label>
+                    <label class="export-label">Group report by</label>
 
                     <div class="export-mode-switch">
                         <button v-for="option in groupByOptions" :key="option.value"
@@ -810,7 +769,7 @@
                 </p>
 
                 <p v-if="exportFormat === 'pdf' && isDateInputReady" class="export-filter-summary">
-                    เงื่อนไขที่จะพิมพ์บนหัวรายงาน: {{ exportFilterLabel }}
+                    Report header filters: {{ exportFilterLabel }}
                 </p>
 
                 <p v-if="exportError" class="export-error">
@@ -818,7 +777,7 @@
                 </p>
 
                 <button class="export-reset-btn" @click="resetExportFilters">
-                    ล้าง filter ทั้งหมด
+                    Clear all filters
                 </button>
 
                 <div class="modal-button-group">
@@ -827,7 +786,7 @@
                     </button>
 
                     <button class="btn-confirm-green" :disabled="!canExport || isExporting" @click="confirmExport">
-                        {{ isExporting ? 'กำลังสร้างไฟล์…' : exportFormat === 'pdf' ? 'ดาวน์โหลด PDF' : 'ดาวน์โหลด CSV'
+                        {{ isExporting ? 'Generating file…' : exportFormat === 'pdf' ? 'Download PDF' : 'Download CSV'
                         }}
                     </button>
                 </div>
@@ -849,17 +808,16 @@ import {
     formatThaiMonth
 } from '../../components/report/QueueReportPdf'
 import { apiFetch } from '../../api/client'
-
+import AdminSidebar from '../../components/AdminSidebar.vue'
 
 const doctorMap = ref({})
 const doctorList = ref([])
 const expandedId = ref(null)
 const isMessageModalOpen = ref(false)
-// --- เพิ่มตัวแปรคุมข้อความและประเภทของ Dialog ---
-const messageTitle = ref('')
-const messageType = ref('info') // เอาไว้เช็คว่าเป็น error หรือ info (เพื่อเปลี่ยนสีข้อความ)
 
-// ฟังก์ชันสำหรับเรียกเปิด Dialog แทน alert()
+const messageTitle = ref('')
+const messageType = ref('info')
+
 const showMessage = (msg, type = 'info') => {
     messageTitle.value = msg
     messageType.value = type
@@ -881,16 +839,15 @@ const filter = ref(FILTERS.TODAY)
 const passFilter = ref('Completed')
 const bookings = ref([])
 
-// 📍 OR Capacity — แสดงสถานะรายห้อง (ว่าง/บางส่วน/เต็ม) จาก 20 ห้อง OR-201 ถึง OR-220
 const OR_ROOMS = Array.from({ length: 20 }, (_, i) => 201 + i)
-const OR_MAX_MINUTES = 420 // 7 ชม. ต่อห้อง
+const OR_MAX_MINUTES = 420
 
 const getUsedMinutesForRoom = (todayStr, roomNum) => {
     return bookings.value
         .filter(b => {
             const rNum = String(b.room || '').match(/(\d+)/)?.[1]
             return b.date === todayStr && Number(rNum) === roomNum &&
-                // ✅ เปลี่ยน Succeed → Completed
+
                 b.status !== 'Completed' && b.status !== 'Cancelled'
         })
         .reduce((sum, b) => {
@@ -899,7 +856,6 @@ const getUsedMinutesForRoom = (todayStr, roomNum) => {
         }, 0)
 }
 
-// สรุปจำนวนห้องแต่ละสถานะ
 const adminRoomStats = computed(() => {
     const todayStr = new Date().toISOString().slice(0, 10)
     let available = 0, partial = 0, full = 0
@@ -915,15 +871,12 @@ const adminRoomStats = computed(() => {
 const adminAvailableRooms = computed(() => adminRoomStats.value.available)
 const matchSearch = (item) => {
 
-
     if (!searchQuery.value.trim()) return true
 
     const q = searchQuery.value
         .toLowerCase()
         .replace(/[-\s]/g, '')
         .trim()
-
-
 
     const doctorName =
         doctorMap.value[item.doctorLicense] || ''
@@ -1037,8 +990,6 @@ onMounted(async () => {
 
         bookings.value = Array.isArray(data) ? data : []
 
-        // ✅ เปลี่ยน Succeed → Completed
-        // ย้ายเคสที่เลยวันและยังไม่ Cancel ไป Completed อัตโนมัติ
         for (const item of bookings.value) {
             if (
                 item.date < todayStr &&
@@ -1095,7 +1046,6 @@ onMounted(async () => {
     }
 })
 
-// ================= Export CSV ทั้งระบบ (Admin) =================
 const {
     buildBookingsCsv,
     downloadCsv,
@@ -1106,10 +1056,6 @@ const {
     downloadStamp
 } = useCsvExport()
 
-// path ล้วน ๆ — base URL และ token จัดการโดย apiFetch ใน src/api/client.ts
-
-// 🔒 Export ทั้งระบบเป็นสิทธิ์ของ admin เท่านั้น
-//    ฝั่ง server บังคับอยู่แล้ว (403) อันนี้คือกันไม่ให้ปุ่มโผล่ตั้งแต่แรก
 const isAdmin = computed(() =>
     String(localStorage.getItem('userRole') || '').trim().toLowerCase() === 'admin'
 )
@@ -1118,9 +1064,9 @@ const isExportModalOpen = ref(false)
 const isExporting = ref(false)
 const exportError = ref('')
 
-const exportFormat = ref('csv')     // csv | pdf
-const exportGroupBy = ref('room')   // room | doctor  (ใช้เฉพาะ pdf)
-const exportDateMode = ref('all')   // all | day | month | range | single
+const exportFormat = ref('csv')
+const exportGroupBy = ref('room')
+const exportDateMode = ref('all')
 const exportDay = ref('')
 const exportMonth = ref('')
 const exportFrom = ref('')
@@ -1132,37 +1078,35 @@ const selectedDoctors = ref([])
 const selectedStatuses = ref([])
 
 const exportFormats = [
-    { value: 'csv', label: 'CSV (ตาราง)', icon: 'table_view' },
-    { value: 'pdf', label: 'PDF (รายงาน)', icon: 'picture_as_pdf' }
+    { value: 'csv', label: 'CSV (Spreadsheet)', icon: 'table_view' },
+    { value: 'pdf', label: 'PDF (Report)', icon: 'picture_as_pdf' }
 ]
 
 const groupByOptions = [
-    { value: 'room', label: 'ตามห้อง' },
-    { value: 'doctor', label: 'ตามแพทย์' }
+    { value: 'room', label: 'By room' },
+    { value: 'doctor', label: 'By doctor' }
 ]
 
 const exportFormatHint = computed(() =>
     exportFormat.value === 'pdf'
-        ? 'รายงานพร้อมพิมพ์ มีหัวเอกสาร สรุปภาพรวม และตารางรายละเอียด'
-        : 'ไฟล์ตารางสำหรับเปิดใน Excel เพื่อไปคำนวณต่อ'
+        ? 'Printable report with a header, summary, and detailed table'
+        : 'Spreadsheet file for opening and editing in Excel'
 )
 
 const exportModes = [
-    { value: 'all', label: 'ทั้งหมด' },
-    { value: 'day', label: 'รายวัน' },
-    { value: 'month', label: 'รายเดือน' },
-    { value: 'range', label: 'ช่วงวันที่' },
-    { value: 'single', label: 'คิวเดียว' }
+    { value: 'all', label: 'All dates' },
+    { value: 'day', label: 'Daily' },
+    { value: 'month', label: 'Monthly' },
+    { value: 'range', label: 'Date range' },
+    { value: 'single', label: 'Single booking' }
 ]
 
-// ✅ เปลี่ยน Succeed → Completed
 const statusOptions = [
-    { value: 'Upcoming', label: 'รอผ่าตัด' },
-    { value: 'Completed', label: 'ผ่าตัดแล้ว' },
-    { value: 'Cancelled', label: 'ยกเลิก' }
+    { value: 'Upcoming', label: 'Upcoming' },
+    { value: 'Completed', label: 'Completed' },
+    { value: 'Cancelled', label: 'Cancelled' }
 ]
 
-// เอาเฉพาะห้องที่มีคิวจริง จะได้ไม่ต้องไล่กด 20 ห้องที่ว่างเปล่า
 const roomOptions = computed(() => {
     const rooms = [...new Set(bookings.value.map(item => item.room).filter(Boolean))]
     return rooms.sort()
@@ -1174,26 +1118,23 @@ const toggleFrom = (list, value) => {
     else list.splice(index, 1)
 }
 
-// เรียงรายชื่อแพทย์ตามตัวอักษร (ก-ฮ / A-Z) ให้หา-เลือกในดรอปดาวน์ได้ง่ายขึ้น
 const sortedDoctorList = computed(() =>
     [...doctorList.value].sort((a, b) =>
         (a.doctorName || a.license || '').localeCompare(b.doctorName || b.license || '', 'th')
     )
 )
 
-// ดรอปดาวน์เลือกแพทย์แบบเลือกได้หลายคน (multi-select) + ค้นหาชื่อ
 const isDoctorDropdownOpen = ref(false)
 const doctorDropdownRef = ref(null)
 const doctorSearchQuery = ref('')
 
 const selectedDoctorNamesText = computed(() => {
-    if (!selectedDoctors.value.length) return 'เลือกแพทย์...'
+    if (!selectedDoctors.value.length) return 'Select doctors...'
     return selectedDoctors.value
         .map(license => doctorMap.value[license] || license)
         .join(', ')
 })
 
-// กรองรายชื่อแพทย์ตามคำค้นหา (ค้นได้ทั้งชื่อและเลขใบประกอบ)
 const filteredDoctorList = computed(() => {
     const q = doctorSearchQuery.value.trim().toLowerCase()
     if (!q) return sortedDoctorList.value
@@ -1208,7 +1149,6 @@ const areAllFilteredDoctorsSelected = computed(() =>
     filteredDoctorList.value.every(doctor => selectedDoctors.value.includes(doctor.license))
 )
 
-// "เลือกทั้งหมด" จะทำงานเฉพาะกับรายชื่อที่ค้นเจอ (ไม่แตะรายชื่อที่ถูกซ่อนอยู่จากการค้นหา)
 const toggleAllFilteredDoctors = () => {
     if (areAllFilteredDoctorsSelected.value) {
         selectedDoctors.value = selectedDoctors.value.filter(
@@ -1237,7 +1177,6 @@ onBeforeUnmount(() => {
     document.removeEventListener('click', handleDoctorDropdownOutsideClick)
 })
 
-// แปลงโหมดที่เลือกเป็นช่วงวันที่จริง
 const exportDateRange = computed(() => {
     if (exportDateMode.value === 'day') {
         return { from: exportDay.value, to: exportDay.value }
@@ -1260,7 +1199,6 @@ const exportDateRange = computed(() => {
     return { from: '', to: '' }
 })
 
-// ✅ แก้ไข: ตรวจสอบช่วงวันที่ให้ถูกต้อง (from <= to)
 const isDateInputReady = computed(() => {
     if (exportDateMode.value === 'day') return !!exportDay.value
     if (exportDateMode.value === 'month') return !!exportMonth.value
@@ -1272,7 +1210,6 @@ const isDateInputReady = computed(() => {
     return true
 })
 
-// นับจำนวนจากข้อมูลที่โหลดไว้แล้ว เพื่อให้ preview ตอบสนองทันทีโดยไม่ต้องยิง API ทุกครั้งที่เปลี่ยน filter
 const exportRows = computed(() => {
     if (!isDateInputReady.value) return []
 
@@ -1301,29 +1238,23 @@ const exportRows = computed(() => {
 
 const canExport = computed(() => exportRows.value.length > 0)
 
-// ✅ แก้ไข: เพิ่มข้อความแจ้งเตือนเมื่อ from > to
 const exportPreviewText = computed(() => {
     if (!isDateInputReady.value) {
-        if (exportDateMode.value === 'single') return 'เลือกคิวที่ต้องการ export'
+        if (exportDateMode.value === 'single') return 'Select a booking to export'
         if (exportDateMode.value === 'range') {
             if (exportFrom.value && exportTo.value && exportFrom.value > exportTo.value) {
-                return '⚠️ กรุณาเลือกวันเริ่มต้นก่อนวันสิ้นสุด'
+                return '⚠️ Start date must be before the end date'
             }
-            return 'เลือกวันเริ่มต้นและวันสิ้นสุด'
+            return 'Select a start and end date'
         }
-        return 'เลือกวันที่ที่ต้องการ export'
+        return 'Select a date to export'
     }
 
     const count = exportRows.value.length
-    if (count === 0) return 'ไม่พบรายการจองตามเงื่อนไขที่เลือก'
-    return `จะ export ${count} รายการ`
+    if (count === 0) return 'No bookings found for the selected filters'
+    return `${count} booking(s) will be exported`
 })
 
-/**
- * ย่อรายการห้องที่เลขติดกันให้เป็นช่วง เช่น
- *   OR-201, OR-202, OR-203, OR-207 → OR-201–OR-203, OR-207
- * ห้องที่ไม่มีตัวเลขต่อท้าย (หรือคนละ prefix) จะถูกปล่อยไว้เดี่ยว ๆ ไม่ยุบรวม
- */
 const summarizeRooms = (rooms) => {
     const parsed = [...rooms]
         .map(room => {
@@ -1355,7 +1286,6 @@ const summarizeRooms = (rooms) => {
             end += 1
         }
 
-        // ยุบเป็นช่วงเมื่อติดกันตั้งแต่ 3 ห้องขึ้นไป น้อยกว่านั้นเขียนเต็มอ่านง่ายกว่า
         if (end - index >= 2) {
             parts.push(`${start.room}–${parsed[end].room}`)
         } else {
@@ -1368,27 +1298,23 @@ const summarizeRooms = (rooms) => {
     return parts.join(', ')
 }
 
-/**
- * เงื่อนไข filter เขียนเป็นข้อความอ่านได้ สำหรับพิมพ์บนหัวรายงาน PDF
- * เช่น "ห้อง OR-201–OR-205 · เดือนกรกฎาคม 2569 · สถานะ รอผ่าตัด"
- */
 const exportFilterLabel = computed(() => {
     const parts = []
 
     parts.push(
         selectedRooms.value.length
             ? `ห้อง ${summarizeRooms(selectedRooms.value)}`
-            : 'ทุกห้องผ่าตัด'
+            : 'All operating rooms'
     )
 
     parts.push(
         selectedDoctors.value.length
             ? `แพทย์ ${selectedDoctors.value.map(license => doctorMap.value[license] || license).join(', ')}`
-            : 'แพทย์ทุกคน'
+            : 'All doctors'
     )
 
     if (exportDateMode.value === 'day') {
-        parts.push(`วันที่ ${formatThaiDate(exportDay.value)}`)
+        parts.push(`Date: ${formatThaiDate(exportDay.value)}`)
     } else if (exportDateMode.value === 'month') {
         parts.push(formatThaiMonth(exportMonth.value))
     } else if (exportDateMode.value === 'range') {
@@ -1408,7 +1334,6 @@ const exportFilterLabel = computed(() => {
     return parts.join('  ·  ')
 })
 
-// ใช้ตั้งชื่อไฟล์ให้สื่อความหมาย เช่น เลือกห้องเดียวก็ใช้ชื่อห้องนั้น
 const exportScope = computed(() => {
     if (selectedRooms.value.length === 1 && selectedDoctors.value.length === 0) {
         return selectedRooms.value[0]
@@ -1419,7 +1344,6 @@ const exportScope = computed(() => {
     return 'all'
 })
 
-// ล้างเฉพาะเงื่อนไขการกรอง — รูปแบบไฟล์กับการจัดกลุ่มไม่ใช่ filter จึงไม่โดนล้างด้วย
 const resetExportFilters = () => {
     exportDateMode.value = 'all'
     exportDay.value = ''
@@ -1437,7 +1361,7 @@ const resetExportFilters = () => {
 
 const openExportDialog = () => {
     if (!isAdmin.value) {
-        showMessage('ไม่มีสิทธิ์ export ข้อมูลทั้งระบบ ต้องเป็นแอดมินเท่านั้น', 'error')
+        showMessage('You do not have permission to export all system data. Admin access is required.', 'error')
         return
     }
 
@@ -1456,12 +1380,12 @@ const confirmExport = async () => {
     exportError.value = ''
 
     if (!isAdmin.value) {
-        exportError.value = 'ไม่มีสิทธิ์ export ข้อมูลทั้งระบบ ต้องเป็นแอดมินเท่านั้น'
+        exportError.value = 'You do not have permission to export all system data. Admin access is required.'
         return
     }
 
     if (!canExport.value) {
-        exportError.value = 'ไม่พบรายการจองตามเงื่อนไขที่เลือก'
+        exportError.value = 'No bookings found for the selected filters'
         return
     }
 
@@ -1481,27 +1405,23 @@ const confirmExport = async () => {
             if (to) params.set('to', to)
         }
 
-        // ดึงจาก endpoint ที่บังคับสิทธิ์แอดมินฝั่ง server ไม่ใช้ข้อมูลที่ค้างอยู่ในหน้าจอ
         const res = await apiFetch(`/api/bookings/export?${params.toString()}`)
 
         if (res.status === 403) {
-            exportError.value = 'ไม่มีสิทธิ์ export ข้อมูลทั้งระบบ ต้องเป็นแอดมินเท่านั้น'
+            exportError.value = 'You do not have permission to export all system data. Admin access is required.'
             return
         }
         if (!res.ok) {
-            exportError.value = 'ดึงข้อมูลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'
+            exportError.value = 'Failed to load data. Please try again.'
             return
         }
 
         const rows = await res.json()
         if (!Array.isArray(rows) || rows.length === 0) {
-            exportError.value = 'ไม่พบรายการจองตามเงื่อนไขที่เลือก'
+            exportError.value = 'No bookings found for the selected filters'
             return
         }
 
-        // 📄 PDF — ใช้ generator ตัวเดียวกับรายงานฝั่ง user (QueueReportPdf) ส่งแค่ config ต่างกัน
-        //    ตัวเลขสรุปในรายงานคำนวณจาก rows ชุดนี้ (ผ่าน filter จาก server แล้ว)
-        //    ไม่ใช่จากตัวเลขที่แสดงบนหน้าจอ ซึ่งถูก pagination ตัดไปแล้ว
         if (exportFormat.value === 'pdf') {
             const isSingle = exportDateMode.value === 'single'
 
@@ -1538,7 +1458,7 @@ const confirmExport = async () => {
 
             downloadBlob(fileName, blob)
             isExportModalOpen.value = false
-            showMessage(`ดาวน์โหลดแล้ว ${rows.length} รายการ\n${fileName}`)
+            showMessage(`Downloaded ${rows.length} booking(s)\n${fileName}`)
             return
         }
 
@@ -1557,27 +1477,17 @@ const confirmExport = async () => {
         }))
 
         isExportModalOpen.value = false
-        showMessage(`ดาวน์โหลดแล้ว ${rows.length} รายการ\n${fileName}`)
+        showMessage(`Downloaded ${rows.length} booking(s)\n${fileName}`)
     } catch (e) {
         console.error('❌ export ไม่สำเร็จ:', e)
         exportError.value = exportFormat.value === 'pdf'
-            ? 'สร้างไฟล์ PDF ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'
-            : 'ระบบขัดข้อง ไม่สามารถติดต่อเซิร์ฟเวอร์ได้'
+            ? 'Failed to create the PDF file. Please try again.'
+            : 'System error. Unable to contact the server.'
     } finally {
         isExporting.value = false
     }
 }
 
-// ============ Export คิวเดียวจากปุ่มบนการ์ด (ไม่ต้องเปิด modal) ============
-//
-// ใช้ข้อมูลที่โหลดมาแล้วในหน้าจอได้เลย ไม่ต้องยิง API ซ้ำ
-// เพราะเป็นคิวเดียวที่ผู้ใช้เห็นอยู่ตรงหน้า ไม่มีเรื่อง pagination มาทำให้ตัวเลขคลาดเคลื่อน
-
-/**
- * แผ่นเลือกรูปแบบไฟล์ตอนกด Export บนการ์ด
- * ใช้ปุ่มเดียวบนการ์ดแล้วค่อยให้เลือก CSV หรือ PDF ในแผ่นนี้
- * เพราะการ์ดบนมือถือแคบ ถ้าวางสองปุ่มจะเบียดกับปุ่ม Edit และ Cancel จนกดพลาด
- */
 const caseExportTarget = ref(null)
 const isExportingCase = ref(false)
 
@@ -1608,10 +1518,10 @@ const exportCaseCsv = (item) => {
             doctorNames: doctorMap.value
         }))
         caseExportTarget.value = null
-        showMessage(`ดาวน์โหลดแล้ว\n${fileName}`)
+        showMessage(`Downloaded\n${fileName}`)
     } catch (e) {
         console.error('❌ สร้างไฟล์ CSV ไม่สำเร็จ:', e)
-        showMessage('สร้างไฟล์ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', 'error')
+        showMessage('Failed to create the file. Please try again.', 'error')
     }
 }
 
@@ -1619,7 +1529,6 @@ const exportCasePdf = async (item) => {
     const row = findCase(item)
     if (!row) return
 
-    // การสร้าง PDF ต้องโหลดฟอนต์ ใช้เวลาสักครู่ กันกดซ้ำระหว่างนั้น
     if (isExportingCase.value) return
     isExportingCase.value = true
 
@@ -1639,32 +1548,28 @@ const exportCasePdf = async (item) => {
 
         downloadBlob(fileName, blob)
         caseExportTarget.value = null
-        showMessage(`ดาวน์โหลดแล้ว\n${fileName}`)
+        showMessage(`Downloaded\n${fileName}`)
     } catch (e) {
         console.error('❌ สร้างไฟล์ PDF ไม่สำเร็จ:', e)
-        showMessage('สร้างไฟล์ PDF ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', 'error')
+        showMessage('Failed to create the PDF file. Please try again.', 'error')
     } finally {
         isExportingCase.value = false
     }
 }
 
-// ================= ระบบจัดเรียงคิวอัจฉริยะ =================
 const sortCases = (arr) => {
     return [...arr].sort((a, b) => {
-        // 1. เรียงตามวันผ่าตัดก่อน (วันใกล้สุดได้ก่อน)
+
         if (a.date !== b.date) return new Date(a.date) - new Date(b.date)
 
-        // 2. ถ้า manual drag ไว้ ให้ queueOrder มีผล
         const qA = a.queueOrder || 999
         const qB = b.queueOrder || 999
         if (qA !== qB) return qA - qB
 
-        // 3. อายุมากสุดได้ก่อน
         const ageA = parseInt(a.age) || 0
         const ageB = parseInt(b.age) || 0
         if (ageA !== ageB) return ageB - ageA
 
-        // 4. เพศหญิงก่อน ถ้าอายุเท่ากัน
         if (a.gender !== b.gender) return a.gender === 'female' ? -1 : 1
 
         return 0
@@ -1672,7 +1577,6 @@ const sortCases = (arr) => {
 }
 const todayStr = new Date().toISOString().split('T')[0]
 
-// ⏰ เคสของวันนี้ที่เลย 18:00 แล้ว ให้ถือว่า Completed
 const CUTOFF_HOUR = 18
 const isPastCutoffToday = (item) =>
     item.date === todayStr && new Date().getHours() >= CUTOFF_HOUR
@@ -1699,7 +1603,6 @@ const upcomingCases = computed(() =>
     )
 )
 
-// ✅ เปลี่ยน Succeed → Completed
 const completedCases = computed(() =>
     sortCases(
         bookings.value.filter(
@@ -1720,7 +1623,6 @@ const cancelledCases = computed(() =>
         )
     )
 )
-
 
 const deleteDoctor = (license, name) => {
     selectedDoctor.value = {
@@ -1758,8 +1660,6 @@ const confirmDeleteDoctor = async () => {
     }
 }
 
-
-// ================= ระบบ Drag & Drop เลื่อนคิว =================
 const draggedIndex = ref(null)
 
 const onDragStart = (index, id) => { draggedIndex.value = index }
@@ -1794,10 +1694,6 @@ const onDrop = async (dropIndex) => {
     } catch (e) { console.error("❌ อัปเดตคิวไม่สำเร็จ", e) }
 }
 
-
-
-
-// API Functions
 // const markAsSucceed = async (id) => {
 //     try {
 //         await apiFetch(`/api/bookings/${id}/status`, {
@@ -1839,7 +1735,6 @@ const onDrop = async (dropIndex) => {
 //     }
 // }
 
-// Modal logic
 const isDayModalOpen = ref(false)
 const isLogoutModalOpen = ref(false)
 const isDeleteAccModalOpen = ref(false)
@@ -1858,7 +1753,6 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
 <style scoped>
 @import url('https://fonts.googleapis.com/icon?family=Material+Icons');
 
-/* --- Layout & Basic --- */
 .main-layout {
     min-height: 100vh;
     display: flex;
@@ -1873,7 +1767,7 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0 10px;
+    padding: 0 10px 0 75px;
 }
 
 .avatar-circle {
@@ -1905,6 +1799,35 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
     border: none;
     cursor: pointer;
     margin-left: -5px;
+}
+
+.logout-btn:hover {
+    opacity: 0.8;
+}
+
+.btn-confirm-logout {
+    background: #c62828;
+    color: #ffffff;
+    border: 1px solid #c62828;
+    padding: 10px 25px;
+    border-radius: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.btn-confirm-logout:hover {
+    background: #b71c1c;
+}
+
+.btn-confirm-logout:active {
+    background: #8e0000;
+    transform: translateY(1px);
+}
+
+.btn-confirm-logout:focus-visible {
+    outline: 3px solid #cce0ff;
+    outline-offset: 2px;
 }
 
 .nav-calendar-btn {
@@ -1941,7 +1864,6 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
     margin: 30px 0;
 }
 
-/* OR Capacity Card — copied from HomeView for consistency */
 .or-capacity-card {
     width: 90%;
     max-width: 600px;
@@ -2091,7 +2013,6 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
     color: #90a4ae;
 }
 
-/* ---------- Case Card & Drag ---------- */
 .case-card {
     background: #ffffff;
     padding: 20px;
@@ -2147,13 +2068,12 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
 .case-actions {
     display: flex;
     justify-content: flex-end;
-    /* การ์ดมีปุ่มถึง 4 ปุ่มแล้ว บนจอแคบต้องยอมให้ตกบรรทัดแทนที่จะบีบจนอ่านไม่ออก */
+
     flex-wrap: wrap;
     gap: 8px;
     margin-top: 12px;
 }
 
-/* ปุ่ม export บนการ์ดแต่ละเคส — ทรงเดียวกับฝั่งแพทย์ ต่างแค่โทน navy ตามพาเลตของหน้านี้ */
 .btn-export-case {
     display: inline-flex;
     align-items: center;
@@ -2184,9 +2104,6 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
     cursor: progress;
 }
 
-/* ===================== แผ่นเลือกรูปแบบไฟล์ (Export บนการ์ด) =====================
-   มือถือ: เลื่อนขึ้นจากขอบล่าง ปุ่มอยู่ในระยะที่นิ้วโป้งเอื้อมถึง
-   เดสก์ท็อป: กลายเป็นการ์ดกลางจอ (ดู media query ท้ายบล็อกนี้) */
 .sheet-overlay {
     position: fixed;
     inset: 0;
@@ -2208,7 +2125,6 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
     box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.18);
 }
 
-/* ขีดเล็ก ๆ ด้านบนเป็นสัญญาณว่าแผ่นนี้ปิดได้ */
 .sheet-grabber {
     width: 40px;
     height: 4px;
@@ -2240,7 +2156,6 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
     gap: 14px;
     width: 100%;
 
-    /* 60px เพื่อให้เป็นเป้ากดที่ใหญ่พอสำหรับนิ้ว ไม่ใช่ขนาดเมาส์ */
     min-height: 60px;
     padding: 12px 16px;
     margin-bottom: 10px;
@@ -2307,7 +2222,6 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
     opacity: 0.5;
 }
 
-/* จอกว้างพอแล้วให้เป็นการ์ดลอยกลางจอแทนแผ่นติดขอบล่าง */
 @media (min-width: 640px) {
     .sheet-overlay {
         align-items: center;
@@ -2330,9 +2244,6 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
     }
 }
 
-
-
-
 .btn-delete {
     background: #b71c1c;
     color: white;
@@ -2343,7 +2254,6 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
     cursor: pointer;
 }
 
-/* --- Succeed Style --- */
 .succeed-item {
     border-left: 5px solid #03c172;
     background: #fdfdfd;
@@ -2353,7 +2263,6 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
     background: #f0fff4;
 }
 
-/* --- Reset Button --- */
 .reset-wrapper {
     display: flex;
     justify-content: flex-end;
@@ -2385,7 +2294,6 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
     font-size: 16px;
 }
 
-/* --- Modals & Other UI --- */
 .modal-overlay-center {
     position: fixed;
     top: 0;
@@ -2408,7 +2316,6 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
     text-align: center;
 }
 
-/* ข้อความยาว ๆ อย่างชื่อไฟล์ไม่มีเว้นวรรคให้ตัด ต้องบังคับตัดกลางคำ ไม่งั้นทะลุกรอบ */
 .modal-msg-title {
     color: #1e3a8a;
     font-size: 1.1rem;
@@ -2416,7 +2323,7 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
     margin-bottom: 25px;
     overflow-wrap: anywhere;
     word-break: break-word;
-    /* ให้ \n ในข้อความขึ้นบรรทัดใหม่จริง จะได้แยกชื่อไฟล์ออกจากข้อความหลัก */
+
     white-space: pre-line;
 }
 
@@ -2520,7 +2427,6 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
     transform: translateY(-6px);
 }
 
-/* --- Two Column Layout --- */
 .two-col-layout {
     display: flex;
     flex-direction: column;
@@ -2552,7 +2458,6 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
     }
 }
 
-/* --- Stats Dashboard --- */
 .stats-row {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -2604,7 +2509,6 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
     margin-top: 3px;
 }
 
-/* --- Doctor Management --- */
 .doctor-section {
     width: 100%;
     margin: 0 0 30px 0;
@@ -2783,7 +2687,6 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
     padding: 16px;
 }
 
-/* ===================== Export CSV (Admin) ===================== */
 .btn-export {
     display: inline-flex;
     align-items: center;
@@ -2876,7 +2779,6 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
     color: #ffffff;
 }
 
-/* ปุ่มเลือกรูปแบบไฟล์มีไอคอนนำหน้า ต้องจัดให้อยู่กึ่งกลางคู่กับข้อความ */
 .export-mode-switch button .material-icons {
     margin-right: 4px;
     font-size: 16px;
@@ -3091,7 +2993,6 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
     line-height: 1.5;
 }
 
-/* ตัวอย่างข้อความเงื่อนไขที่จะไปโผล่บนหัวรายงาน PDF — ให้เห็นก่อนกดดาวน์โหลด */
 .export-filter-summary {
     margin: 0 0 12px 0;
     padding: 10px 12px;
@@ -3133,7 +3034,6 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
     cursor: not-allowed;
 }
 
-/* จอแคบ: ปุ่มเรียงแนวตั้งเต็มความกว้าง กันปุ่มเบียดกันจนกดพลาด */
 @media (max-width: 480px) {
 
     .export-modal-card {
@@ -3164,8 +3064,6 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
     align-items: center;
     margin-bottom: 12px;
 
-    /* ⚠️ ปุ่มเฟือง (.main-header ใน App.vue) เป็น position: fixed อยู่มุมซ้ายบน
-       กินพื้นที่ประมาณ 60px ต้องเว้นให้ ไม่งั้นช่องค้นหาจะไปอยู่ใต้ปุ่มนั้นตอนจอแคบ */
     padding-left: 56px;
 }
 
@@ -3178,7 +3076,6 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
     border-radius: 12px;
     padding: 0 12px;
 
-    /* ความกว้างตายตัว 350px เดิมล้นขอบจอมือถือ เปลี่ยนเป็นยืดหดตามที่ว่างที่เหลือ */
     flex: 1 1 220px;
     max-width: 350px;
 
@@ -3211,7 +3108,6 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
     margin: 0 0 30px;
 }
 
-/* ---------- See More Toggle ---------- */
 .see-more-toggle {
     display: flex;
     flex-direction: column;
@@ -3219,12 +3115,11 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
     justify-content: center;
     margin-top: 12px;
     margin-bottom: -25px;
-    /* 🟢 ใช้ค่าติดลบเพื่อดึงให้ชิดขอบล่างสุดของการ์ด */
+
     color: #cfd5dd;
     transition: all 0.25s ease;
 }
 
-/* ตอนเอาเมาส์ชี้ให้สีเข้มขึ้นนิดนึง */
 .case-card:hover .see-more-toggle {
     color: #475569;
 }
@@ -3237,7 +3132,7 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
 .see-more-icon {
     font-size: 24px;
     margin-top: -2px;
-    /* ดึงลูกศรให้ชิดตัวหนังสือมากขึ้น */
+
 }
 
 .icon-wrap .material-icons {

@@ -9,7 +9,7 @@
                         <p><strong>HN:</strong> {{ selectedCase.hn }}</p>
                         <p><strong>Patient Name:</strong> {{ selectedCase.fullName }}</p>
                         <p><strong>Age:</strong> {{ selectedCase.age }}</p>
-                        <p><strong>Gender:</strong> {{ selectedCase.gender === 'male' ? 'ชาย' : 'หญิง' }}</p>
+                        <p><strong>Gender:</strong> {{ selectedCase.gender === 'male' ? 'Male' : 'Female' }}</p>
                         <p><strong>Procedure:</strong> {{ selectedCase.procedure }}</p>
                         <p><strong>Surgery Date:</strong> {{ selectedCase.date }}</p>
                         <p><strong>Underlying:</strong> {{ selectedCase.underlying || '-' }}</p>
@@ -30,7 +30,6 @@
 
         <div class="dashboard-container">
 
-            <!-- แถบเครื่องมือ: ช่องค้นหาและปุ่ม Export อยู่ด้วยกัน โครงเดียวกับหน้า Admin -->
             <div class="top-toolbar">
                 <button class="btn-export" @click="openExportDialog">
                     <span class="material-icons">download</span>
@@ -41,18 +40,18 @@
                     <span class="material-icons search-icon">search</span>
                     <input type="text" v-model="searchHN" placeholder="Search patient, HN, procedure"
                         @keyup.enter="performGlobalSearch" />
-                    <button v-if="searchHN" class="btn-clear-search" @click="clearGlobalSearch" title="ล้างคำค้นหา">
+                    <button v-if="searchHN" class="btn-clear-search" @click="clearGlobalSearch" title="Clear search">
                         <span class="material-icons">close</span>
                     </button>
 
                 </div>
                 <button class="btn-search-confirm" @click="performGlobalSearch">
-                    <span class="material-icons">search</span> ค้นหา
+                    <span class="material-icons">search</span> Search
                 </button>
             </div>
 
             <h1 class="main-title">ORchestrator</h1>
-            <!-- OR Capacity Card -->
+
             <div class="or-capacity-card">
 
                 <div class="capacity-header">
@@ -107,7 +106,6 @@
                             }}
                         </span>
 
-
                     </div>
 
                 </div>
@@ -117,9 +115,9 @@
             <div class="queue-card">
                 <div v-if="isSearchMode" class="search-mode-header">
                     <span class="material-icons">manage_search</span>
-                    <span>รายการค้นหา</span>
+                    <span>Search results</span>
                     <button class="btn-back-to-tabs" @click="clearGlobalSearch">
-                        <span class="material-icons">close</span> ปิดการค้นหา
+                        <span class="material-icons">close</span> Close search
                     </button>
                 </div>
 
@@ -131,7 +129,6 @@
                     <button :class="{ active: filter === FILTERS.UPCOMING }" @click="filter = FILTERS.UPCOMING">
                         Upcoming
                     </button>
-
 
                     <button :class="{ active: filter === FILTERS.SUCCEED }" @click="filter = FILTERS.SUCCEED">
                         Passed
@@ -145,12 +142,12 @@
 
                         <div v-if="searchResults.length === 0" class="empty-state">
                             <div class="icon-wrap"><span class="material-icons">search_off</span></div>
-                            <h3>ไม่พบรายการที่ค้นหา</h3>
-                            <p class="sub-text">ลองค้นด้วยชื่อ, HN, หรือหัตถการ</p>
+                            <h3>No results found</h3>
+                            <p class="sub-text">Try searching by name, HN, or procedure</p>
                         </div>
 
                         <div v-else>
-                            <p class="search-result-count">พบ {{ searchResults.length }} รายการ </p>
+                            <p class="search-result-count">{{ searchResults.length }} result(s) found</p>
 
                             <div v-for="item in searchResults" :key="item.id + '-' + item.__statusLabel"
                                 class="case-card search-result-item" :class="{
@@ -171,7 +168,7 @@
                                     </span>
                                     <div class="grid-row">
                                         <span><strong>HN:</strong> {{ item.hn }}</span>
-                                        <span><strong>Age:</strong> {{ item.age }} ปี</span>
+                                        <span><strong>Age:</strong> {{ item.age }} years</span>
                                     </div>
                                     <div class="grid-row"><span><strong>Patient:</strong> {{ item.fullName }}</span>
                                     </div>
@@ -185,7 +182,7 @@
                                         <div class="detail-row"><strong>Full Name:</strong> {{ item.fullName }}</div>
                                         <div class="detail-row"><strong>Age:</strong> {{ item.age }}</div>
                                         <div class="detail-row"><strong>Gender:</strong> {{ item.gender === 'male' ?
-                                            'ชาย' : 'หญิง' }}</div>
+                                            'Male' : 'Female' }}</div>
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
@@ -213,7 +210,7 @@
                                         @click.stop="restoreCase(item.id)">
                                         <span class="material-icons">restore</span> Back to Upcoming
                                     </button>
-                                    <button class="btn-export-case" title="Export คิวนี้"
+                                    <button class="btn-export-case" title="Export this booking"
                                         @click.stop="openCaseExport(item)">
                                         <span class="material-icons">download</span> Export
                                     </button>
@@ -249,7 +246,7 @@
                             <div v-else>
                                 <div class="reset-wrapper">
                                     <button class="btn-reset" @click="resetQueue">
-                                        <span class="material-icons">refresh</span> รีเซ็ตลำดับคิว
+                                        <span class="material-icons">refresh</span> Reset queue order
                                     </button>
                                 </div>
 
@@ -261,8 +258,6 @@
 
                                     <template #item="{ element: item }">
                                         <div class="case-card drag-item" @click="toggleDetail(item.id)">
-
-
 
                                             <div class="case-grid">
                                                 <div class="drag-handle">
@@ -283,7 +278,7 @@
 
                                                 <div class="grid-row">
                                                     <span><strong>HN:</strong> {{ item.hn }}</span>
-                                                    <span><strong>Age:</strong> {{ item.age }} ปี</span>
+                                                    <span><strong>Age:</strong> {{ item.age }} years</span>
 
                                                 </div>
 
@@ -295,10 +290,7 @@
                                                     <span><strong>Procedure:</strong> {{ item.procedure }}</span>
                                                 </div>
 
-
                                             </div>
-
-
 
                                             <transition name="expand">
 
@@ -318,7 +310,7 @@
 
                                                     <div class="detail-row">
                                                         <strong>Gender:</strong>
-                                                        {{ item.gender === 'male' ? 'ชาย' : 'หญิง' }}
+                                                        {{ item.gender === 'male' ? 'Male' : 'Female' }}
                                                     </div>
 
                                                     <div class="detail-row">
@@ -378,7 +370,7 @@
                                                     Cancel
                                                 </button>
 
-                                                <button class="btn-export-case" title="Export คิวนี้"
+                                                <button class="btn-export-case" title="Export this booking"
                                                     @click.stop="openCaseExport(item)">
                                                     <span class="material-icons">download</span>
                                                     Export
@@ -395,15 +387,11 @@
                                         </div>
                                     </template>
 
-
                                 </draggable>
-
-
 
                             </div>
 
                         </div>
-
 
                         <div v-if="filter === FILTERS.UPCOMING">
 
@@ -418,11 +406,9 @@
                             <div v-else>
                                 <div class="reset-wrapper">
                                     <button class="btn-reset" @click="resetQueue">
-                                        <span class="material-icons">refresh</span> รีเซ็ตลำดับคิว
+                                        <span class="material-icons">refresh</span> Reset queue order
                                     </button>
                                 </div>
-
-                                <!-- อันนี้ที่เลื่อนก้าดของอัพคัมมิ่ง -->
 
                                 <draggable :model-value="filterBySearch(draggableUpcoming)"
                                     @update:modelValue="val => draggableUpcoming = val" item-key="id"
@@ -436,9 +422,6 @@
                                             <div class="drag-handle">
                                                 <span class="material-icons">more_horiz</span>
                                             </div>
-
-
-                                            <!-- เคสการ์ด -->
 
                                             <div class="case-grid">
                                                 <div class="grid-row row-date-room">
@@ -466,7 +449,6 @@
                                                 </div>
                                             </div>
 
-
                                             <transition name="expand">
                                                 <div v-if="expandedId === item.id" class="case-detail">
                                                     <div class="detail-row"><strong>HN:</strong> {{ item.hn }}</div>
@@ -476,7 +458,7 @@
                                                     <div class="detail-row"><strong>Age:</strong> {{ item.age }}</div>
                                                     <div>
                                                         <strong>Gender:</strong>
-                                                        {{ item.gender === 'male' ? 'ชาย' : 'หญิง' }}
+                                                        {{ item.gender === 'male' ? 'Male' : 'Female' }}
                                                     </div>
                                                     <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                                         item.underlying || '-' }}</div>
@@ -502,7 +484,6 @@
                                                         '-' }} |
                                                         {{ item.admNote || '-' }}</div>
 
-
                                                     <div class="detail-row"><strong>Notes:</strong> {{ item.notes || '-'
                                                         }}
                                                     </div>
@@ -519,7 +500,7 @@
                                                     Cancel
                                                 </button>
 
-                                                <button class="btn-export-case" title="Export คิวนี้"
+                                                <button class="btn-export-case" title="Export this booking"
                                                     @click.stop="openCaseExport(item)">
                                                     <span class="material-icons">download</span>
                                                     Export
@@ -534,20 +515,15 @@
                                                 </span>
                                             </div>
 
-
                                         </div>
                                     </template>
                                 </draggable>
                             </div>
 
-
-
                         </div>
-
 
                         <div v-if="filter === FILTERS.SUCCEED">
 
-                            <!-- SUB TAB -->
                             <div class="queue-filter sub-filter">
 
                                 <button :class="{
@@ -566,7 +542,6 @@
 
                             </div>
 
-                            <!-- COMPLETE -->
                             <div v-if="succeedTab === FILTERS.COMPLETE">
 
                                 <div v-if="completeCases.length === 0" class="empty-state">
@@ -619,7 +594,6 @@
                                             </span>
                                         </div>
 
-                                        <!-- DETAIL -->
                                         <transition name="expand">
 
                                             <div v-if="expandedId === item.id" class="case-detail">
@@ -638,7 +612,7 @@
 
                                                 <div class="detail-row">
                                                     <strong>Gender:</strong>
-                                                    {{ item.gender === 'male' ? 'ชาย' : 'หญิง' }}
+                                                    {{ item.gender === 'male' ? 'Male' : 'Female' }}
                                                 </div>
 
                                                 <div class="detail-row">
@@ -689,9 +663,8 @@
 
                                         </transition>
 
-                                        <!-- การ์ดกลุ่มนี้เดิมไม่มีแถบปุ่มเลย ทำให้ export เฉพาะเคสไม่ได้ -->
                                         <div class="case-actions">
-                                            <button class="btn-export-case" title="Export คิวนี้"
+                                            <button class="btn-export-case" title="Export this booking"
                                                 @click.stop="openCaseExport(item)">
                                                 <span class="material-icons">download</span>
                                                 Export
@@ -704,7 +677,6 @@
 
                             </div>
 
-                            <!-- NOT COMPLETE -->
                             <div v-if="succeedTab === FILTERS.NOT_COMPLETE">
 
                                 <div v-if="notCompleteCases.length === 0" class="empty-state">
@@ -722,7 +694,6 @@
                                     <div v-for="item in filterBySearch(notCompleteCases)" :key="item.id"
                                         :ref="el => setCaseRef(el, item, FILTERS.NOT_COMPLETE)"
                                         class="case-card not-complete-item" @click="toggleDetail(item.id)">
-
 
                                         <div class="case-grid">
 
@@ -752,9 +723,6 @@
                                                 </div>
                                             </div>
 
-
-
-                                            <!-- DETAIL -->
                                             <transition name="expand">
 
                                                 <div v-if="expandedId === item.id" class="case-detail">
@@ -773,7 +741,7 @@
 
                                                     <div class="detail-row">
                                                         <strong>Gender:</strong>
-                                                        {{ item.gender === 'male' ? 'ชาย' : 'หญิง' }}
+                                                        {{ item.gender === 'male' ? 'Male' : 'Female' }}
                                                     </div>
 
                                                     <div class="detail-row">
@@ -826,7 +794,6 @@
 
                                         </div>
 
-                                        <!-- ACTION -->
                                         <div class="case-actions">
 
                                             <button class="btn-restore" @click.stop="restoreCase(item.id)">
@@ -839,7 +806,7 @@
 
                                             </button>
 
-                                            <button class="btn-export-case" title="Export คิวนี้"
+                                            <button class="btn-export-case" title="Export this booking"
                                                 @click.stop="openCaseExport(item)">
                                                 <span class="material-icons">download</span>
                                                 Export
@@ -867,8 +834,6 @@
                 </div>
             </div>
 
-
-
             <div class="info-section">
                 <div class="info-header">
                     <span class="material-icons info-icon">info</span>
@@ -892,7 +857,6 @@
                     </li>
                 </ul>
             </div>
-
 
         </div>
 
@@ -966,15 +930,13 @@
         </div>
     </Transition>
 
-    <!-- ===== เลือกรูปแบบไฟล์ตอนกด Export บนการ์ด =====
-         เลื่อนขึ้นจากขอบล่างบนมือถือ (ปุ่มอยู่ใกล้นิ้วโป้ง) และเป็นการ์ดกลางจอบนเดสก์ท็อป -->
     <Transition name="fade">
         <div v-if="caseExportTarget" class="sheet-overlay" @click.self="closeCaseExport">
             <div class="export-sheet" role="dialog" aria-modal="true" aria-labelledby="case-export-title">
 
                 <div class="sheet-grabber"></div>
 
-                <h2 id="case-export-title" class="sheet-title">Export คิวนี้</h2>
+                <h2 id="case-export-title" class="sheet-title">Export This Booking</h2>
 
                 <p class="sheet-subtitle">
                     HN {{ caseExportTarget.hn }} · {{ caseExportTarget.fullName }}
@@ -984,7 +946,7 @@
                     <span class="material-icons">table_view</span>
                     <span class="sheet-option-text">
                         <strong>CSV</strong>
-                        <small>ไฟล์ตาราง เปิดใน Excel เพื่อคำนวณต่อ</small>
+                        <small>Spreadsheet file for further editing in Excel</small>
                     </span>
                 </button>
 
@@ -992,31 +954,29 @@
                     <span class="material-icons">picture_as_pdf</span>
                     <span class="sheet-option-text">
                         <strong>PDF</strong>
-                        <small>{{ isExportingCase ? 'กำลังสร้างไฟล์…' : 'ใบสรุปคิว พร้อมพิมพ์ออกมาใช้ได้ทันที'
+                        <small>{{ isExportingCase ? 'Generating file…' : 'Printable booking summary'
                         }}</small>
                     </span>
                 </button>
 
                 <button class="sheet-cancel" :disabled="isExportingCase" @click="closeCaseExport">
-                    ยกเลิก
+                    Cancel
                 </button>
 
             </div>
         </div>
     </Transition>
 
-    <!-- ===== Export CSV: เลือกคิวเดียว หรือ หลายคิวตามช่วงวันที่ ===== -->
     <Transition name="fade">
         <div v-if="isExportModalOpen" class="modal-overlay-center" @click.self="closeExportDialog">
             <div class="export-modal-card" role="dialog" aria-modal="true" aria-labelledby="export-dialog-title">
 
                 <h2 id="export-dialog-title" class="modal-msg-title">
-                    Export รายการจอง
+                    Export Bookings
                 </h2>
 
-                <!-- รูปแบบไฟล์ — โครงเดียวกับหน้า Admin เพื่อให้ผู้ใช้ที่สลับสองหน้าไม่ต้องเรียนรู้ใหม่ -->
                 <div class="export-field">
-                    <label>รูปแบบไฟล์</label>
+                    <label>File format</label>
 
                     <div class="export-mode-switch">
                         <button v-for="format in exportFormats" :key="format.value"
@@ -1030,45 +990,44 @@
                 </div>
 
                 <div class="export-field">
-                    <label>ขอบเขต</label>
+                    <label>Scope</label>
 
                     <div class="export-mode-switch">
                         <button :class="{ active: exportMode === 'single' }" @click="exportMode = 'single'">
-                            คิวเดียว
+                            Single booking
                         </button>
                         <button :class="{ active: exportMode === 'range' }" @click="exportMode = 'range'">
-                            ช่วงวันที่
+                            Date range
                         </button>
                     </div>
                 </div>
 
                 <div v-if="exportMode === 'single'" class="export-field">
-                    <label for="export-case-select">เลือกคิวที่ต้องการ</label>
+                    <label for="export-case-select">Select a booking</label>
 
                     <select id="export-case-select" v-model="exportCaseId" class="export-select">
-                        <option value="">— เลือกคิว —</option>
+                        <option value="">— Select a booking —</option>
                         <option v-for="item in exportableCases" :key="item.id" :value="item.id">
                             {{ item.date }} · HN {{ item.hn }} · {{ item.fullName }}
                         </option>
                     </select>
 
                     <p v-if="exportableCases.length === 0" class="export-hint">
-                        ยังไม่มีรายการจองในระบบ
+                        No bookings available
                     </p>
                 </div>
 
                 <div v-else class="export-field">
-                    <label for="export-from">ช่วงวันผ่าตัด</label>
+                    <label for="export-from">Surgery date range</label>
 
-                    <!-- ใช้ช่องวันที่ของเบราว์เซอร์ ปฏิทินจะถูกวาดนอกหน้าเว็บ ไม่ถูกกรอบ modal ตัด -->
                     <div class="export-range-row">
                         <input id="export-from" v-model="exportFrom" type="date" class="export-input" />
-                        <span class="export-range-sep">ถึง</span>
+                        <span class="export-range-sep">to</span>
                         <input id="export-to" v-model="exportTo" type="date" class="export-input" />
                     </div>
 
                     <button v-if="exportFrom || exportTo" class="export-clear-btn" @click="clearExportRange">
-                        ล้างช่วงวันที่
+                        Clear date range
                     </button>
                 </div>
 
@@ -1086,7 +1045,7 @@
                     </button>
 
                     <button class="btn-confirm-green" :disabled="!canExport || isExporting" @click="confirmExport">
-                        {{ isExporting ? 'กำลังสร้างไฟล์…' : `ดาวน์โหลด ${exportFormat.toUpperCase()}` }}
+                        {{ isExporting ? 'Generating file…' : `Download ${exportFormat.toUpperCase()}` }}
                     </button>
                 </div>
 
@@ -1094,13 +1053,12 @@
         </div>
     </Transition>
 
-
 </template>
 
 <script setup>
 
 import { ref, onMounted, watch, computed, nextTick } from 'vue'
-// 🌟 แก้ไข: อิมพอร์ต useRoute เพิ่มเข้ามาเพื่อใช้อ่าน Query Parameterจาก URL
+
 import { useRouter, useRoute } from 'vue-router'
 import VueDatePicker from '@vuepic/vue-datepicker'
 import draggable from 'vuedraggable'
@@ -1109,7 +1067,7 @@ import { useCsvExport } from '../composables/useCsvExport'
 import { buildQueueReportPdf, buildReportFileName, formatThaiDate } from '../components/report/QueueReportPdf'
 import { apiFetch } from '../api/client'
 
-const route = useRoute() // 🌟 ประกาศใช้งาน
+const route = useRoute()
 
 const editCase = (id) => {
     router.push(`/booking/${id}`)
@@ -1136,7 +1094,6 @@ const saveRestoredCase = (id) => {
     }
 }
 
-
 const isConfirmModalOpen = ref(false)
 const confirmMessage = ref('')
 const confirmAction = ref(null)
@@ -1149,7 +1106,6 @@ const openConfirmDialog = (message, action) => {
 
 const isMessageModalOpen = ref(false)
 const messageTitle = ref('')
-
 
 const showMessageDialog = (message) => {
     messageTitle.value = message
@@ -1173,7 +1129,6 @@ const FILTERS = {
     NOT_COMPLETE: 'Cancelled'
 }
 
-
 const searchHN = ref('')
 const isSearchMode = ref(false)
 const searchKeyword = ref('')
@@ -1190,7 +1145,6 @@ const clearGlobalSearch = () => {
     isSearchMode.value = false
 }
 
-// รวมทุกเคสจากทุกสถานะ พร้อมแท็กว่าอยู่แท็บไหน
 const allTaggedCases = computed(() => [
     ...todayCases.value.map(item => ({ ...item, __statusLabel: 'Today' })),
     ...upcomingCases.value.map(item => ({ ...item, __statusLabel: 'Upcoming' })),
@@ -1211,20 +1165,17 @@ const normalizeText = (text) => {
         .replace(/\s+/g, '')
 }
 
-// computed สำหรับกรองข้อมูล
 const filterBySearch = (list, keywordOverride) => {
     const keyword = normalizeText(keywordOverride ?? searchHN.value)
     if (!keyword) return list
 
     return list.filter(item => {
 
-        // รองรับเพศ
         const genderText =
             item.gender === 'female'
                 ? 'female หญิง เพศหญิง woman'
                 : 'male ชาย เพศชาย man'
 
-        // รองรับวันที่หลายรูปแบบ
         const dateObj = new Date(item.date)
 
         const day = String(dateObj.getDate()).padStart(2, '0')
@@ -1232,12 +1183,12 @@ const filterBySearch = (list, keywordOverride) => {
         const year = dateObj.getFullYear()
 
         const dateFormats = [
-            item.date,                    // 2026-06-19
-            `${day}/${month}/${year}`,    // 19/06/2026
-            `${day}-${month}-${year}`,    // 19-06-2026
-            `${day}${month}${year}`,      // 19062026
-            `${year}/${month}/${day}`,    // 2026/06/19
-            `${year}${month}${day}`       // 20260619
+            item.date,
+            `${day}/${month}/${year}`,
+            `${day}-${month}-${year}`,
+            `${day}${month}${year}`,
+            `${year}/${month}/${day}`,
+            `${year}${month}${day}`
         ].join(' ')
 
         const searchableText = normalizeText([
@@ -1279,7 +1230,6 @@ const searchCase = async () => {
 
     let targetList = []
 
-    // CURRENT TAB ONLY
     if (filter.value === FILTERS.TODAY) {
 
         targetList = todayCases.value.map(item => ({
@@ -1316,7 +1266,6 @@ const searchCase = async () => {
         }))
     }
 
-    // FIND MATCH
     const found = targetList.find(({ item }) => {
 
         const searchableText = normalizeText([
@@ -1340,13 +1289,8 @@ const searchCase = async () => {
 
     if (!found) return
 
-
 }
 
-
-
-
-// รวมเวลาเฉพาะ "today"
 const usedMinutes = computed(() => {
 
     return todayCases.value.reduce((sum, booking) => {
@@ -1379,7 +1323,6 @@ const restoreCase = (id) => {
 
 }
 
-
 const confirmRestoreCase = async () => {
     isRestoreModalOpen.value = false
 
@@ -1387,22 +1330,20 @@ const confirmRestoreCase = async () => {
     if (!targetId) return
 
     try {
-        // 1. ยิง API อัปเดตสถานะเป็น Upcoming ทันที
+
         const res = await apiFetch(`/api/bookings/${targetId}/status`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: FILTERS.UPCOMING }) // เปลี่ยนสถานะเป็น Upcoming
+            body: JSON.stringify({ status: FILTERS.UPCOMING })
         })
 
         if (!res.ok) throw new Error('เปลี่ยนสถานะไม่สำเร็จ')
 
-        // 2. อัปเดตข้อมูลใน UI หน้าโฮมทันที เคสนี้จะได้หลุดออกจากแท็บเดิม
         const targetObj = bookings.value.find(item => item.id === targetId)
         if (targetObj) {
             targetObj.status = FILTERS.UPCOMING
         }
 
-        // 3. ลบออกจากประวัติใน LocalStorage (ถ้ามี) เพื่อไม่ให้แสดงซ้ำซ้อน
         const restoredCases = getRestoredCases()
         const index = restoredCases.indexOf(targetId)
         if (index > -1) {
@@ -1410,10 +1351,8 @@ const confirmRestoreCase = async () => {
             localStorage.setItem('restoredCases', JSON.stringify(restoredCases))
         }
 
-        // 4. ตั้งค่าแท็บหลักรอไว้ที่ 'Upcoming' เผื่อเวลาผู้ใช้กดเสร็จและกลับมา
         filter.value = FILTERS.UPCOMING
 
-        // 5. วิ่งไปหน้า Edit พร้อมส่ง Query Parameter บอกว่านี่คือการกู้คืนคิว (ให้แก้วันที่/ห้องใหม่ก่อนยืนยันได้)
         router.push(`/booking/${targetId}?restore=true`)
 
     } catch (e) {
@@ -1423,13 +1362,11 @@ const confirmRestoreCase = async () => {
 }
 
 const MAX_MINUTES = 420
-// เปอร์เซ็นต์ progress  อันนี้เกิน7ชม.ได้
+
 const usagePercent = computed(() => {
     return (usedMinutes.value / MAX_MINUTES) * 100
 })
 
-
-// เวลาคงเหลือ
 const remainingMinutes = computed(() => {
     return Math.max(MAX_MINUTES - usedMinutes.value, 0)
 })
@@ -1453,7 +1390,6 @@ const exceededMin = computed(() => {
     return exceededMinutes.value % 60
 })
 
-// เปลี่ยนสี progress bar
 const progressColor = computed(() => {
 
     if (usagePercent.value >= 90) {
@@ -1470,7 +1406,6 @@ const progressColor = computed(() => {
 const router = useRouter()
 const API_URL = '/api/bookings'
 
-// --- State ---
 const bookings = ref([])
 const userLicense = ref('')
 const doctorName = ref('')
@@ -1479,20 +1414,15 @@ const succeedTab = ref(FILTERS.COMPLETE)
 const expandedId = ref(null)
 const isLoading = ref(false)
 
-
-
-// ================= ระบบจัดเรียงคิว (รวม Drag&Drop แบบใหม่) =================
 const sortCases = (arr) => {
     return [...arr].sort((a, b) => {
-        // Tier 0: เรียงตามวันก่อนเสมอ
+
         if (a.date !== b.date) return new Date(a.date) - new Date(b.date)
 
-        // 🌟 ถ้าผู้ใช้เคยลากคิวจัดลำดับ (queueOrder) ให้ยึดตามที่ผู้ใช้จัดเป็นหลัก!
         const qA = a.queueOrder || 999
         const qB = b.queueOrder || 999
         if (qA !== qB) return qA - qB
 
-        // ถ้าเป็นคิวใหม่ (ยังไม่เคยลากจัด) เรียงตามอายุมากก่อน แล้วตามด้วยเพศ (หญิงก่อน)
         const ageA = parseInt(a.age) || 0
         const ageB = parseInt(b.age) || 0
         if (ageA !== ageB) return ageB - ageA
@@ -1503,7 +1433,6 @@ const sortCases = (arr) => {
     })
 }
 
-// ================= Computed Properties =================
 const todayCases = computed(() => {
 
     const today = new Date()
@@ -1547,7 +1476,6 @@ const upcomingCases = computed(() => {
 })
 const draggableToday = ref([])
 
-// คอยดักส่องและอัปเดตข้อมูลลิสต์ให้กับแท็บ Today
 watch(
     todayCases,
     (newCases) => {
@@ -1564,7 +1492,7 @@ watch(
     { immediate: true }
 )
 const saveOrder = async (event) => {
-    // ดึงอาเรย์ชุดข้อมูลตามหน้าแท็บที่ทำงานอยู่ปัจจุบัน
+
     const activeList = filter.value === FILTERS.TODAY
         ? draggableToday.value
         : draggableUpcoming.value
@@ -1611,7 +1539,6 @@ const completeCases = computed(() => {
                 0, 0, 0, 0
             )
 
-
             const autoComplete =
                 surgeryDate < today &&
                 (item.status === FILTERS.UPCOMING || !item.status) &&
@@ -1633,9 +1560,6 @@ const notCompleteCases = computed(() =>
     )
 )
 
-
-
-// ================= Export CSV =================
 const {
     buildBookingsCsv,
     downloadCsv,
@@ -1650,28 +1574,26 @@ const {
 } = useCsvExport()
 
 const isExportModalOpen = ref(false)
-const exportFormat = ref('csv')      // 'csv' | 'pdf'
+const exportFormat = ref('csv')
 
-// ใช้ชุดเดียวกับหน้า Admin — ป้ายกำกับและไอคอนต้องตรงกันทั้งสองหน้า
 const exportFormats = [
-    { value: 'csv', label: 'CSV (ตาราง)', icon: 'table_view' },
-    { value: 'pdf', label: 'PDF (รายงาน)', icon: 'picture_as_pdf' }
+    { value: 'csv', label: 'CSV (Spreadsheet)', icon: 'table_view' },
+    { value: 'pdf', label: 'PDF (Report)', icon: 'picture_as_pdf' }
 ]
 
 const exportFormatHint = computed(() =>
     exportFormat.value === 'pdf'
-        ? 'รายงานพร้อมพิมพ์ มีหัวเอกสาร สรุปภาพรวม และตารางรายละเอียด'
-        : 'ไฟล์ตารางสำหรับเปิดใน Excel เพื่อไปคำนวณต่อ'
+        ? 'Printable report with a header, summary, and detailed table'
+        : 'Spreadsheet file for opening and editing in Excel'
 )
 
-const exportMode = ref('range')      // 'single' | 'range'
-const exportFrom = ref('')           // 'YYYY-MM-DD'
-const exportTo = ref('')             // 'YYYY-MM-DD'
+const exportMode = ref('range')
+const exportFrom = ref('')
+const exportTo = ref('')
 const exportCaseId = ref('')
 const isExporting = ref(false)
 const exportError = ref('')
 
-// กันเหนียวอีกชั้น: export ได้เฉพาะรายการที่ doctorLicense ตรงกับคนที่ล็อกอินอยู่
 const ownBookings = computed(() =>
     filterOwnBookings(bookings.value, userLicense.value)
 )
@@ -1681,7 +1603,7 @@ const exportableCases = computed(() => sortForExport(ownBookings.value))
 const exportRangeKeys = computed(() => {
     const from = toDateKey(exportFrom.value)
     const to = toDateKey(exportTo.value)
-    // เลือกมาวันเดียวก็ถือว่า export เฉพาะวันนั้น
+
     return { from: from || to, to: to || from }
 })
 
@@ -1690,17 +1612,15 @@ const clearExportRange = () => {
     exportTo.value = ''
 }
 
-// ✅ แก้ไข: isDateInputReady ตรวจสอบ from <= to
 const isDateInputReady = computed(() => {
     if (exportMode.value === 'single') {
         return !!exportCaseId.value
     }
-    // range mode
+
     if (!exportFrom.value || !exportTo.value) return false
     return exportFrom.value <= exportTo.value
 })
 
-// รายการที่จะถูกเขียนลงไฟล์จริง ใช้ทั้งตอน preview และตอนกดยืนยัน
 const exportRows = computed(() => {
     if (!isDateInputReady.value) return []
 
@@ -1719,26 +1639,24 @@ const exportRows = computed(() => {
 
 const canExport = computed(() => exportRows.value.length > 0)
 
-// ✅ แก้ไข: เพิ่มข้อความแจ้งเตือนเมื่อ from > to
 const exportPreviewText = computed(() => {
     if (exportMode.value === 'single') {
         return exportCaseId.value
-            ? 'จะ export 1 รายการ'
-            : 'เลือกคิวที่ต้องการ export'
+            ? '1 booking selected for export'
+            : 'Select a booking to export'
     }
 
-    // range mode
     if (!exportFrom.value || !exportTo.value) {
-        return 'เลือกช่วงวันที่ที่ต้องการ export'
+        return 'Select a date range to export'
     }
 
     if (exportFrom.value > exportTo.value) {
-        return '⚠️ กรุณาเลือกวันเริ่มต้นก่อนวันสิ้นสุด'
+        return '⚠️ Start date must be before the end date'
     }
 
     const count = exportRows.value.length
-    if (count === 0) return `ไม่พบรายการจองระหว่าง ${exportFrom.value} ถึง ${exportTo.value}`
-    return `จะ export ${count} รายการ (${exportFrom.value} ถึง ${exportTo.value})`
+    if (count === 0) return `No bookings found between ${exportFrom.value} and ${exportTo.value}`
+    return `${count} booking(s) will be exported (${exportFrom.value} to ${exportTo.value})`
 })
 
 const openExportDialog = () => {
@@ -1756,7 +1674,6 @@ const closeExportDialog = () => {
     isExportModalOpen.value = false
 }
 
-// ข้อความบอกช่วงวันที่ที่จะพิมพ์บนหัวรายงาน PDF
 const exportRangeLabel = computed(() => {
     const { from, to } = exportRangeKeys.value
     if (!from) return '-'
@@ -1768,7 +1685,7 @@ const confirmExport = async () => {
 
     const rows = exportRows.value
     if (rows.length === 0) {
-        exportError.value = 'ไม่พบรายการจองตามเงื่อนไขที่เลือก'
+        exportError.value = 'No bookings found for the selected filters'
         return
     }
 
@@ -1799,7 +1716,7 @@ const confirmExport = async () => {
 
             downloadBlob(fileName, blob)
             isExportModalOpen.value = false
-            showMessageDialog(`ดาวน์โหลดแล้ว ${rows.length} รายการ\n${fileName}`)
+            showMessageDialog(`Downloaded ${rows.length} booking(s)\n${fileName}`)
             return
         }
 
@@ -1814,19 +1731,15 @@ const confirmExport = async () => {
         downloadCsv(fileName, buildBookingsCsv(rows))
 
         isExportModalOpen.value = false
-        showMessageDialog(`ดาวน์โหลดแล้ว ${rows.length} รายการ\n${fileName}`)
+        showMessageDialog(`Downloaded ${rows.length} booking(s)\n${fileName}`)
     } catch (error) {
         console.error('❌ สร้างไฟล์ไม่สำเร็จ:', error)
-        exportError.value = 'สร้างไฟล์ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'
+        exportError.value = 'Failed to create the file. Please try again.'
     } finally {
         isExporting.value = false
     }
 }
 
-/**
- * หาแถวจริงของคิวที่กดมา พร้อมกันไม่ให้ export คิวของแพทย์ท่านอื่น
- * คืน null เมื่อไม่ผ่าน และแจ้งผู้ใช้ให้เรียบร้อยแล้ว
- */
 const resolveOwnCase = (item) => {
     if (!item?.id) return null
 
@@ -1835,18 +1748,13 @@ const resolveOwnCase = (item) => {
     )
 
     if (!owned) {
-        showMessageDialog('ไม่สามารถ export รายการนี้ได้ เนื่องจากไม่ใช่คิวของคุณ')
+        showMessageDialog('You cannot export this booking because it is not your booking.')
         return null
     }
 
     return owned
 }
 
-/**
- * แผ่นเลือกรูปแบบไฟล์ตอนกด Export บนการ์ด
- * ใช้ปุ่มเดียวบนการ์ดแล้วค่อยให้เลือก CSV หรือ PDF ในแผ่นนี้
- * เพราะการ์ดบนมือถือแคบ ถ้าวางสองปุ่มจะเบียดกับปุ่ม Edit และ Cancel จนกดพลาด
- */
 const caseExportTarget = ref(null)
 const isExportingCase = ref(false)
 
@@ -1861,7 +1769,6 @@ const closeCaseExport = () => {
     caseExportTarget.value = null
 }
 
-// export คิวเดียวเป็น CSV
 const exportSingleCase = (item) => {
     const owned = resolveOwnCase(item)
     if (!owned) return
@@ -1870,22 +1777,17 @@ const exportSingleCase = (item) => {
         const fileName = buildSingleFileName(owned.hn, owned.date)
         downloadCsv(fileName, buildBookingsCsv([owned]))
         caseExportTarget.value = null
-        showMessageDialog(`ดาวน์โหลดแล้ว\n${fileName}`)
+        showMessageDialog(`Downloaded\n${fileName}`)
     } catch (error) {
         console.error('❌ สร้างไฟล์ CSV ไม่สำเร็จ:', error)
-        showMessageDialog('สร้างไฟล์ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง')
+        showMessageDialog('Failed to create the file. Please try again.')
     }
 }
 
-/**
- * export คิวเดียวเป็น PDF (ใบสรุปรายเคส)
- * ใช้ generator ตัวเดียวกับใน modal ต่างแค่ส่ง mode: 'single' และคิวเดียว
- */
 const exportSingleCasePdf = async (item) => {
     const owned = resolveOwnCase(item)
     if (!owned) return
 
-    // การสร้าง PDF ต้องโหลดฟอนต์ ใช้เวลาสักครู่ กันกดซ้ำระหว่างนั้น
     if (isExportingCase.value) return
     isExportingCase.value = true
 
@@ -1910,16 +1812,15 @@ const exportSingleCasePdf = async (item) => {
 
         downloadBlob(fileName, blob)
         caseExportTarget.value = null
-        showMessageDialog(`ดาวน์โหลดแล้ว\n${fileName}`)
+        showMessageDialog(`Downloaded\n${fileName}`)
     } catch (error) {
         console.error('❌ สร้างไฟล์ PDF ไม่สำเร็จ:', error)
-        showMessageDialog('สร้างไฟล์ PDF ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง')
+        showMessageDialog('Failed to create the PDF file. Please try again.')
     } finally {
         isExportingCase.value = false
     }
 }
 
-// ================= ฟังก์ชันรีเซ็ตคิว =================
 const resetQueue = async () => {
     const resetQueue = () => {
 
@@ -1960,17 +1861,14 @@ const resetQueue = async () => {
 
     }
 
-    // 1. ตั้งค่า queueOrder เป็น 999 ให้หมด
     const updates = upcomingCases.value.map(item => {
         return { id: item.id, queueOrder: 999 }
     })
 
-    // 2. อัปเดต UI ทันที
     bookings.value.forEach(b => {
         if (b.status !== FILTERS.SUCCEED) b.queueOrder = 999
     })
 
-    // 3. บันทึกลงฐานข้อมูล
     try {
         await apiFetch('/api/bookings/reorder', {
             method: 'PUT',
@@ -1983,13 +1881,11 @@ const resetQueue = async () => {
     }
 }
 
-
-// ================= โหลดข้อมูลจาก Backend =================
 const fetchBookings = async () => {
     isLoading.value = true
     try {
         const license = localStorage.getItem('userLicense')
-        // backend เทียบ license ที่ขอกับ license ใน token ให้อยู่แล้ว ขอของคนอื่นจะได้ 403
+
         const response = await apiFetch(`${API_URL}?license=${encodeURIComponent(license || '')}`)
         const data = await response.json()
         bookings.value = Array.isArray(data) ? data : []
@@ -2005,7 +1901,6 @@ onMounted(() => {
     if (savedLicense) userLicense.value = savedLicense
     if (savedName) doctorName.value = savedName
 
-    // ดักจับ Query Parameter เพื่อสลับแท็บอัตโนมัติ
     const searchParams = new URLSearchParams(window.location.search)
     const tabParam = searchParams.get('tab')
 
@@ -2016,7 +1911,6 @@ onMounted(() => {
     fetchBookings()
 })
 
-// ================= ฟังก์ชัน UI อื่นๆ =================
 const toggleDetail = (id) => expandedId.value = expandedId.value === id ? null : id
 const isDetailModalOpen = ref(false)
 const selectedCase = ref(null)
@@ -2073,7 +1967,7 @@ const deleteCase = (id) => {
 }
 const markAsSucceed = async (id) => {
     try {
-        // ✅ เปลี่ยน Succeed → Completed
+
         const res = await apiFetch(`/api/bookings/${id}/status`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
@@ -2081,7 +1975,6 @@ const markAsSucceed = async (id) => {
         })
         if (!res.ok) throw new Error()
 
-        // อัปเดต UI
         const target = bookings.value.find(item => item.id === id)
         if (target) { target.status = FILTERS.COMPLETE; filter.value = FILTERS.SUCCEED; }
     } catch (e) {
@@ -2093,7 +1986,6 @@ const markAsSucceed = async (id) => {
 <style scoped>
 @import url('https://fonts.googleapis.com/icon?family=Material+Icons');
 
-/* --- Layout & Basic --- */
 .main-layout {
     min-height: 100vh;
     display: flex;
@@ -2101,7 +1993,6 @@ const markAsSucceed = async (id) => {
     background-color: #f5f7fa;
 }
 
-/* --- Main Dashboard Content (UI อัปเดตใหม่) --- */
 .dashboard-container {
     padding: 20px;
     flex-grow: 1;
@@ -2150,16 +2041,12 @@ const markAsSucceed = async (id) => {
     border-color: #1a3a5f;
 }
 
-/* COMPLETE TAB */
 .sub-filter button.complete-active {
     background: #16a34a;
     color: white;
     border-color: #16a34a;
 }
 
-
-
-/* CANCELLED TAB */
 .sub-filter button.cancelled-active {
     background: #790606;
     color: white;
@@ -2170,8 +2057,6 @@ const markAsSucceed = async (id) => {
     text-align: center;
     padding: 60px 20px;
 }
-
-
 
 .sortable-ghost {
     opacity: 0.3 !important;
@@ -2192,8 +2077,6 @@ const markAsSucceed = async (id) => {
     cursor: grabbing !important;
 }
 
-
-/* --- Succeed Style --- */
 .succeed-item {
     border-left: 5px solid #03c172;
     background: #ecfdf5;
@@ -2251,7 +2134,6 @@ const markAsSucceed = async (id) => {
     transform: translateY(-2px);
 }
 
-/* --- Info Section อัปเดตใหม่ตามวาด --- */
 .info-section {
     max-width: 500px;
     margin: 0 auto 50px auto;
@@ -2295,7 +2177,6 @@ const markAsSucceed = async (id) => {
     margin-top: 2px;
 }
 
-/* --- Modals & Transitions (ของเดิมทั้งหมด) --- */
 .modal-overlay-center {
     position: fixed;
     top: 0;
@@ -2326,7 +2207,7 @@ const markAsSucceed = async (id) => {
     margin-bottom: 25px;
     overflow-wrap: anywhere;
     word-break: break-word;
-    /* ให้ \n ในข้อความขึ้นบรรทัดใหม่จริง จะได้แยกชื่อไฟล์ออกจากข้อความหลัก */
+
     white-space: pre-line;
 }
 
@@ -2336,7 +2217,6 @@ const markAsSucceed = async (id) => {
     gap: 15px;
 }
 
-/* ปุ่ม Confirm / ค้นหา */
 .btn-confirm-green {
     width: 100%;
     min-height: 44px;
@@ -2383,7 +2263,6 @@ const markAsSucceed = async (id) => {
     cursor: pointer;
 }
 
-/* Transitions */
 .slide-enter-active,
 .slide-leave-active {
     transition: transform 0.3s ease;
@@ -2438,8 +2317,6 @@ const markAsSucceed = async (id) => {
     cursor: pointer;
 }
 
-/* ---------- Case Card Professional Style ---------- */
-
 .case-card {
     background: #ffffff;
     padding: 20px;
@@ -2485,7 +2362,6 @@ const markAsSucceed = async (id) => {
     grid-template-columns: 1fr;
 }
 
-/* ทำ label ดูบาลานซ์ */
 .case-grid strong {
     font-weight: 600;
     margin-right: 4px;
@@ -2502,8 +2378,6 @@ const markAsSucceed = async (id) => {
     gap: 12px;
     margin-top: 12px;
 }
-
-/* ---------- Buttons ---------- */
 
 .btn-success {
     background: #0d47a1;
@@ -2536,8 +2410,6 @@ const markAsSucceed = async (id) => {
     transform: translateY(-1px);
 }
 
-/* ---------- Floating Add Button ---------- */
-
 .floating-add-btn {
     position: fixed;
     bottom: 30px;
@@ -2559,8 +2431,6 @@ const markAsSucceed = async (id) => {
     background: #244b7a;
     transform: translateY(-3px);
 }
-
-/* ---------- Detail Modal ---------- */
 
 .detail-overlay {
     position: fixed;
@@ -2642,7 +2512,6 @@ const markAsSucceed = async (id) => {
     margin-bottom: 6px;
 }
 
-/* animation */
 .expand-enter-active,
 .expand-leave-active {
     transition: all 0.25s ease;
@@ -2664,7 +2533,6 @@ const markAsSucceed = async (id) => {
     border: 1px solid #e0e6ed;
 }
 
-/* 🔥 แก้ไข Checkbox ให้เกาะกลุ่มกันสวยๆ */
 .checkbox-group {
     display: flex;
     flex-direction: column;
@@ -2676,11 +2544,11 @@ const markAsSucceed = async (id) => {
     display: flex !important;
     align-items: center !important;
     justify-content: flex-start !important;
-    /* บังคับชิดซ้าย */
+
     gap: 10px !important;
-    /* ระยะห่างระหว่างกล่องกับข้อความ */
+
     width: fit-content !important;
-    /* 👈 สำคัญ: ไม่ให้กล่องยาวเต็มบรรทัด */
+
     cursor: pointer;
 }
 
@@ -2699,7 +2567,6 @@ input[type="checkbox"] {
     cursor: grabbing;
 }
 
-/* ปุ่มรีเซ็ต */
 .reset-wrapper {
     display: flex;
     justify-content: flex-end;
@@ -2730,8 +2597,6 @@ input[type="checkbox"] {
 .btn-reset .material-icons {
     font-size: 16px;
 }
-
-/* ===== OR CAPACITY ===== */
 
 .or-capacity-card {
     width: 100%;
@@ -2826,9 +2691,6 @@ input[type="checkbox"] {
     font-size: 15px;
 }
 
-
-
-
 .btn-restore {
 
     display: flex;
@@ -2850,8 +2712,6 @@ input[type="checkbox"] {
     font-size: 18px;
 }
 
-/*.เสิรชบาร์*/
-
 .search-box {
     display: flex;
     align-items: center;
@@ -2863,7 +2723,6 @@ input[type="checkbox"] {
 
     padding: 0 12px;
 
-    /* อยู่ในแถบเครื่องมือแล้ว ไม่ต้องดันด้วย margin เอง และให้ยืดเต็มแถวเมื่อจอแคบ */
     flex: 1 1 220px;
     max-width: 350px;
 
@@ -2871,7 +2730,6 @@ input[type="checkbox"] {
 
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
-
 
 .search-box input {
     border: none;
@@ -2951,8 +2809,6 @@ input[type="checkbox"] {
     }
 }
 
-/* ===================== Export CSV ===================== */
-/* แถบเครื่องมือด้านบน: ช่องค้นหาและปุ่ม Export อยู่ด้วยกัน ตรงกับ .top-toolbar ของหน้า Admin */
 .top-toolbar {
     display: flex;
     gap: 10px;
@@ -2962,12 +2818,9 @@ input[type="checkbox"] {
 
     margin-bottom: 12px;
 
-    /* ⚠️ ปุ่มเฟือง (.main-header ใน App.vue) เป็น position: fixed อยู่มุมซ้ายบน
-       กินพื้นที่ประมาณ 60px ต้องเว้นให้ ไม่งั้นช่องค้นหาจะไปอยู่ใต้ปุ่มนั้นตอนจอแคบ */
     padding-left: 56px;
 }
 
-/* ทรงปุ่มเดียวกับ .btn-export ในหน้า Admin — ต่างแค่โทน navy ที่ยึดตามพาเลตของหน้านี้ */
 .btn-export {
     display: inline-flex;
     align-items: center;
@@ -2997,7 +2850,6 @@ input[type="checkbox"] {
     font-size: 18px;
 }
 
-/* ปุ่ม export บนการ์ดแต่ละเคส */
 .btn-export-case {
     display: inline-flex;
     align-items: center;
@@ -3028,9 +2880,6 @@ input[type="checkbox"] {
     cursor: progress;
 }
 
-/* ===================== แผ่นเลือกรูปแบบไฟล์ (Export บนการ์ด) =====================
-   มือถือ: เลื่อนขึ้นจากขอบล่าง ปุ่มอยู่ในระยะที่นิ้วโป้งเอื้อมถึง
-   เดสก์ท็อป: กลายเป็นการ์ดกลางจอ (ดู media query ท้ายไฟล์) */
 .sheet-overlay {
     position: fixed;
     inset: 0;
@@ -3052,7 +2901,6 @@ input[type="checkbox"] {
     box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.18);
 }
 
-/* ขีดเล็ก ๆ ด้านบนเป็นสัญญาณว่าแผ่นนี้ปิดได้ */
 .sheet-grabber {
     width: 40px;
     height: 4px;
@@ -3083,7 +2931,6 @@ input[type="checkbox"] {
     gap: 14px;
     width: 100%;
 
-    /* 60px เพื่อให้เป็นเป้ากดที่ใหญ่พอสำหรับนิ้ว ไม่ใช่ขนาดเมาส์ */
     min-height: 60px;
     padding: 12px 16px;
     margin-bottom: 10px;
@@ -3150,7 +2997,6 @@ input[type="checkbox"] {
     opacity: 0.5;
 }
 
-/* จอกว้างพอแล้วให้เป็นการ์ดลอยกลางจอแทนแผ่นติดขอบล่าง */
 @media (min-width: 640px) {
     .sheet-overlay {
         align-items: center;
@@ -3213,7 +3059,6 @@ input[type="checkbox"] {
     color: #ffffff;
 }
 
-/* ปุ่มเลือกรูปแบบไฟล์มีไอคอนนำหน้า ต้องจัดให้อยู่กึ่งกลางคู่กับข้อความ */
 .export-mode-switch button .material-icons {
     margin-right: 4px;
     font-size: 16px;
@@ -3295,7 +3140,6 @@ input[type="checkbox"] {
     font-size: 12px;
 }
 
-/* ต่อท้ายช่องเลือกคิวต้องมีระยะห่าง ส่วนที่ตามหลังแถบปุ่มไม่ต้อง เพราะแถบปุ่มมี margin ล่างอยู่แล้ว */
 .export-select+.export-hint {
     margin-top: 8px;
 }
@@ -3324,7 +3168,6 @@ input[type="checkbox"] {
     cursor: not-allowed;
 }
 
-/* จอแคบ: ปุ่มเรียงแนวตั้งเต็มความกว้าง กันปุ่มเบียดกันจนกดพลาด */
 @media (max-width: 480px) {
 
     .export-modal-card {
@@ -3347,10 +3190,6 @@ input[type="checkbox"] {
     }
 }
 
-/* =========================
-   TOP TOOLBAR
-   ========================= */
-
 .top-toolbar {
     display: flex;
     align-items: center;
@@ -3359,22 +3198,15 @@ input[type="checkbox"] {
     margin-bottom: 12px;
 }
 
-/* Export */
 .top-toolbar .btn-export {
     margin-left: auto;
 }
-
-
-/* =========================
-   MOBILE
-   ========================= */
 
 @media (max-width: 768px) {
 
     .top-toolbar {
         display: grid;
 
-        /* Search กว้าง + ปุ่มค้นหาขนาดพอดี */
         grid-template-columns: minmax(0, 1fr) auto;
 
         gap: 8px;
@@ -3384,8 +3216,6 @@ input[type="checkbox"] {
 
         align-items: center;
     }
-
-    /* ===== Export อยู่บรรทัดบน ===== */
 
     .top-toolbar .btn-export {
         grid-column: 1 / -1;
@@ -3398,9 +3228,6 @@ input[type="checkbox"] {
         min-height: 42px;
         padding: 8px 16px;
     }
-
-
-    /* ===== Search ===== */
 
     .top-toolbar .search-box {
         grid-column: 1;
@@ -3428,9 +3255,6 @@ input[type="checkbox"] {
         flex-shrink: 0;
         font-size: 22px;
     }
-
-
-    /* ===== ปุ่มค้นหา ===== */
 
     .top-toolbar .btn-search-confirm {
         grid-column: 2;
@@ -3519,7 +3343,7 @@ input[type="checkbox"] {
 
 .grid-row.row-date-room {
     flex-direction: row !important;
-    /* บังคับให้เป็นแนวนอนแม้อยู่บนมือถือ */
+
     flex-wrap: nowrap !important;
     justify-content: space-between;
     align-items: center;
@@ -3540,23 +3364,18 @@ input[type="checkbox"] {
     flex: unset !important;
 }
 
-/* มีปุ่ม CSV เพิ่มเข้ามา ต้องยอมให้ตกบรรทัดได้ ไม่ให้ปุ่มถูกบีบ */
 .case-actions {
     flex-wrap: wrap;
 }
 
-
-
 .dp__theme_light {
-    --dp-border-radius: 16px;
-    --dp-font-family: inherit;
+
 }
 
 .dp__menu {
     border-radius: 20px;
 }
 
-/* ---------- See More Toggle ---------- */
 .see-more-toggle {
     display: flex;
     flex-direction: column;
@@ -3565,13 +3384,11 @@ input[type="checkbox"] {
 
     margin-top: 12px;
     margin-bottom: 0;
-    /* ลบ -90px ออก */
 
     color: #94a3b8;
     transition: all 0.25s ease;
 }
 
-/* ตอนเอาเมาส์ชี้ให้สีเข้มขึ้นนิดนึง */
 .case-card:hover .see-more-toggle {
     color: #475569;
 }
@@ -3585,7 +3402,7 @@ input[type="checkbox"] {
 .see-more-icon {
     font-size: 24px;
     margin-top: -6px;
-    /* ดึงลูกศรให้ชิดตัวหนังสือมากขึ้น */
+
 }
 
 .grid-row.row-date-room {
@@ -3593,12 +3410,10 @@ input[type="checkbox"] {
     align-items: center;
 
     gap: 12px;
-    /* ระยะห่าง */
 
     flex-wrap: nowrap !important;
 }
 
-/* แถม: สไตล์ปุ่มจับลากให้ดูน่ากด */
 .drag-handle {
     cursor: grab;
     display: flex;
@@ -3629,14 +3444,12 @@ input[type="checkbox"] {
     transform: translateY(-1px);
 }
 
-/* แก้ปัญหาช่องว่างระหว่างไอคอนกับชื่อห้องบนจอคอม */
 .grid-row span.material-icons {
     min-width: unset !important;
     flex: none !important;
     width: auto !important;
 }
 
-/* หัวโหมดค้นหา แทนที่แท็บ Today/Upcoming/Passed */
 .search-mode-header {
     display: flex;
     align-items: center;
@@ -3679,7 +3492,6 @@ input[type="checkbox"] {
     font-size: 15px;
 }
 
-/* การ์ดค้นหา: สีตามสถานะ */
 .search-result-item.card-cancelled {
     border-left: 5px solid #c62828;
     background: #fef2f2;
@@ -3698,7 +3510,6 @@ input[type="checkbox"] {
     background: #ecfdf5;
 }
 
-/* ทำให้การ์ดผลค้นหาเป็น relative เพื่อวาง badge มุมขวาบน */
 .search-result-item {
     position: relative;
 }
@@ -3747,7 +3558,7 @@ input[type="checkbox"] {
 .room-tag-floating {
     position: absolute;
     top: 42px;
-    /* อยู่ใต้ status badge (badge สูงประมาณ 24-26px + top 14px) */
+
     right: 25px;
 
     display: inline-flex;

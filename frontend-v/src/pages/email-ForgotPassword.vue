@@ -19,7 +19,7 @@
             <button class="btn" @click="handleSubmit" :disabled="isLoading">
                 {{ isLoading ? 'Checking...' : 'Confirm' }}
             </button>
-            
+
             <p v-if="message" class="status-msg" :class="{ success: isSuccess, error: !isSuccess }">
                 {{ message }}
             </p>
@@ -39,7 +39,6 @@ const isLoading = ref(false);
 const message = ref("");
 const isSuccess = ref(false);
 
-// 📍 ใส่ค่าจาก EmailJS dashboard ของคุณ (Account > API Keys, Email Services, Email Templates)
 const EMAILJS_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID;
 const EMAILJS_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
 const EMAILJS_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
@@ -48,7 +47,7 @@ const goBack = () => { router.replace("/"); };
 
 const handleSubmit = async () => {
     if (!email.value) {
-        message.value = "กรุณากรอก Email";
+        message.value = "Please enter your email address";
         isSuccess.value = false;
         return;
     }
@@ -65,9 +64,8 @@ const handleSubmit = async () => {
 
         const data = await response.json();
 
-        if (!response.ok) throw new Error(data.error || "เกิดข้อผิดพลาด");
+        if (!response.ok) throw new Error(data.error || "Something went wrong");
 
-        // 📍 ส่งอีเมลจริงผ่าน EmailJS (ฟรี ส่งถึงอีเมลผู้ใช้จริง ไม่ใช่ Demo Mode แล้ว)
         await emailjs.send(
             EMAILJS_SERVICE_ID,
             EMAILJS_TEMPLATE_ID,
@@ -79,11 +77,11 @@ const handleSubmit = async () => {
         );
 
         isSuccess.value = true;
-        message.value = "✅ ส่งลิงก์รีเซ็ตรหัสผ่านไปที่อีเมลของคุณแล้ว กรุณาตรวจสอบกล่องข้อความ (รวมถึง Junk/Spam)";
+        message.value = "✅ A password reset link has been sent. Please check your inbox, including Junk/Spam.";
 
     } catch (error) {
         isSuccess.value = false;
-        message.value = "❌ " + (error.message || "ส่งอีเมลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
+        message.value = "❌ " + (error.message || "Unable to send the email. Please try again.");
     } finally {
         isLoading.value = false;
     }

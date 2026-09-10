@@ -9,13 +9,13 @@
                 <button class="ctrl-btn" @click="changeMonth(1)">›</button>
             </div>
             <div class="nav-right">
-                <button class="today-btn" @click="goToToday">วันนี้</button>
+                <button class="today-btn" @click="goToToday">Today</button>
             </div>
         </header>
 
         <div class="weekday-row">
-            <div v-for="d in ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.']" :key="d" class="weekday-cell"
-                :class="{ 'weekend-label': d === 'อา.' || d === 'ส.' }">{{ d }}</div>
+                <div v-for="d in ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']" :key="d" class="weekday-cell"
+                :class="{ 'weekend-label': d === 'Sun' || d === 'Sat' }">{{ d }}</div>
         </div>
 
         <div class="calendar-grid">
@@ -31,8 +31,12 @@
                 <span v-if="date.isCurrentMonth && isOfficialHoliday(date.fullDate)" class="holiday-tag">{{
                     getHolidayName(date.fullDate) }}</span>
                 <span v-if="date.isCurrentMonth && !isClosedDay(date.fullDate)" class="capacity-badge"
-                    :class="{ 'badge-full': availableRoomsCount(date.fullDate) === 0, 'badge-available': availableRoomsCount(date.fullDate) > 0 }">{{
-                        availableRoomsCount(date.fullDate) }}/20 ห้องว่าง</span>
+                    :class="{
+                        'badge-full': availableRoomsCount(date.fullDate) === 0,
+                        'badge-partial': hasBooking(date.fullDate) && availableRoomsCount(date.fullDate) > 0,
+                        'badge-available': !hasBooking(date.fullDate) && availableRoomsCount(date.fullDate) > 0
+                    }">{{
+                        availableRoomsCount(date.fullDate) }}/20 rooms available</span>
                 <div class="dot-row">
                     <span v-for="b in getBookingsForDate(date.fullDate).slice(0, 3)" :key="b.id" class="dot"
                         :style="{ background: roomStatusColor(date.fullDate, b.room) }"></span>
@@ -47,10 +51,10 @@
                 <div class="card-modal">
                     <h3 class="modal-title">📅 {{ formatDateThai(selectedFullDate) }}</h3>
                     <p v-if="!isClosedDay(selectedFullDate)" class="capacity-line">
-                        🏥 ห้องว่าง {{ availableRoomsCount(selectedFullDate) }}/20 ห้อง
+                        🏥 {{ availableRoomsCount(selectedFullDate) }}/20 rooms available
                     </p>
                     <p v-else class="capacity-line capacity-closed-text">
-                        🔒 ห้องผ่าตัดปิดทำการ
+                        🔒 Operating rooms closed
                     </p>
 
                     <div v-if="!isClosedDay(selectedFullDate)" class="room-grid">
@@ -66,7 +70,7 @@
                     </div>
 
                     <div v-if="selectedDateBookings.length === 0" class="empty-state">
-                        ยังไม่มีคิวที่จองในวันนี้
+                        No bookings for today
                     </div>
 
                     <div v-for="b in selectedDateBookings" :key="b.id" class="booking-item">
@@ -74,14 +78,14 @@
                             <p><strong>Room:</strong> {{ b.room || '-' }}</p>
                             <p><strong>Patient:</strong> {{ b.fullName }}</p>
                             <p><strong>HN:</strong> {{ b.hn }}</p>
-                            <p><strong>Age / Gender:</strong> {{ b.age || '-' }} ปี · {{ b.gender === 'female' ? 'หญิง'
-                                : 'ชาย' }}</p>
+                            <p><strong>Age / Gender:</strong> {{ b.age || '-' }} years · {{ b.gender === 'female' ? 'Female'
+                                : 'Male' }}</p>
                             <p><strong>Procedure:</strong> {{ b.procedure }}</p>
                             <button class="btn-edit-booking" @click="goToEditBooking(b.id)">✏️ Edit
-                                (เพิ่ม/เปลี่ยนวันที่และห้อง)</button>
+                                (change date or room)</button>
                         </template>
                         <template v-else>
-                            <p class="other-booking-line">🔒 ห้อง {{ b.room || '-' }} ถูกจองแล้ว (คิวของแพทย์ท่านอื่น)
+                            <p class="other-booking-line">🔒 Room {{ b.room || '-' }} is booked (another doctor's booking)
                             </p>
                         </template>
                         <hr style="border-color:#eee; margin: 8px 0" />
@@ -132,7 +136,7 @@ const fetchSchedule = async (year, month) => {
   const endDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDate).padStart(2, '0')}`
 
   try {
-    // 1. ดึงตารางห้อง
+
     const url = `/api/schedule?from=${startDate}&to=${endDate}`
     const resSchedule = await apiFetch(url)
 
@@ -156,7 +160,6 @@ const fetchSchedule = async (year, month) => {
     const scheduleDataRaw = await resSchedule.json()
     scheduleData.value = Array.isArray(scheduleDataRaw) ? scheduleDataRaw : []
 
-    // 2. ดึงเฉพาะคิวของตัวเอง
     const resMyBookings = await apiFetch(`/api/bookings`)
 
     if (!resMyBookings.ok) {
@@ -174,11 +177,10 @@ const fetchSchedule = async (year, month) => {
   }
 }
 
-// เปลี่ยนชื่อเดือนเป็นภาษาไทย
-const monthNames = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"]
+const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
 
 const isOfficialHoliday = (d) => officialHolidays.value.some(h => h.date === d)
-const getHolidayName = (d) => officialHolidays.value.find(h => h.date === d)?.name || 'วันหยุด'
+const getHolidayName = (d) => officialHolidays.value.find(h => h.date === d)?.name || 'Holiday'
 
 const isWeekend = (d) => {
     const dow = new Date(d + 'T00:00:00').getDay()
@@ -199,7 +201,6 @@ const sortByAgeThenFemaleFirst = (arr) => {
     })
 }
 
-// ✅ เปลี่ยน Succeed → Completed
 const getBookingsForDate = (d) => {
     return scheduleData.value.filter(b => b.date === d && b.status !== 'Completed')
 }
@@ -210,7 +211,6 @@ const getRoomNumber = (roomStr) => {
     return match ? parseInt(match[1]) : null
 }
 
-// ✅ เปลี่ยน Succeed → Completed
 const getUsedMinutesForRoom = (d, roomNum) => {
     return scheduleData.value
         .filter(b => b.date === d && getRoomNumber(b.room) === roomNum && b.status !== 'Completed' && b.status !== 'Cancelled')
@@ -224,10 +224,10 @@ const isRoomPartial = (d, roomNum) => {
 }
 const roomRemainingLabel = (d, roomNum) => {
     const remain = Math.max(MAX_MINUTES - getUsedMinutesForRoom(d, roomNum), 0)
-    if (remain <= 0) return 'เต็ม'
+    if (remain <= 0) return 'Full'
     const hrs = Math.floor(remain / 60)
     const mins = remain % 60
-    return `${hrs}ชม${mins > 0 ? ' ' + mins + 'น' : ''}`
+    return `${hrs}h${mins > 0 ? ' ' + mins + 'm' : ''}`
 }
 const availableRoomsCount = (d) => orRooms.filter(r => !isRoomFull(d, r)).length
 
@@ -239,7 +239,6 @@ const roomStatusColor = (d, roomStr) => {
     return '#43a047'
 }
 
-// ✅ เปลี่ยน Succeed → Completed
 const selectedDateBookings = computed(() => {
     const base = scheduleData.value.filter(b => b.date === selectedFullDate.value && b.status !== 'Completed')
     return base.map(b => {
@@ -351,7 +350,7 @@ onMounted(async () => {
 .nav-center {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 6px;
     flex: 1;
     justify-content: center;
 }
@@ -365,7 +364,7 @@ onMounted(async () => {
 .ctrl-btn {
     background: rgba(255, 255, 255, 0.2);
     border: none;
-    width: 34px;
+    width: 28px;
     height: 34px;
     border-radius: 8px;
     font-size: 22px;
@@ -375,6 +374,7 @@ onMounted(async () => {
     align-items: center;
     justify-content: center;
     line-height: 1;
+    padding: 0;
 }
 
 .ctrl-btn:hover {
@@ -501,6 +501,10 @@ onMounted(async () => {
 
 .badge-available {
     background: #43a047;
+}
+
+.badge-partial {
+    background: #f59e0b;
 }
 
 .badge-full {

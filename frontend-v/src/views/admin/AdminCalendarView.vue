@@ -1,5 +1,6 @@
 <template>
     <div class="calendar-page">
+        <AdminSidebar />
 
         <header class="calendar-navbar">
             <div class="nav-left">
@@ -15,14 +16,13 @@
                 <button class="ctrl-btn" @click="changeMonth(1)">›</button>
             </div>
             <div class="nav-right">
-                <span class="nav-badge">All Doctors</span>
-                <button class="today-btn" @click="goToToday">วันนี้</button>
+                <button class="today-btn" @click="goToToday">Today</button>
             </div>
         </header>
 
         <div class="weekday-row">
-            <div v-for="d in ['อา.','จ.','อ.','พ.','พฤ.','ศ.','ส.']" :key="d" class="weekday-cell"
-                :class="{ 'weekend-label': d === 'อา.' || d === 'ส.' }">{{ d }}</div>
+            <div v-for="d in ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']" :key="d" class="weekday-cell"
+                :class="{ 'weekend-label': d === 'Sun' || d === 'Sat' }">{{ d }}</div>
         </div>
 
         <div class="calendar-grid">
@@ -44,8 +44,12 @@
                 <span
                     v-if="date.isCurrentMonth && !isClosedDay(date.fullDate)"
                     class="capacity-badge"
-                    :class="{ 'badge-full': availableRoomsCount(date.fullDate) === 0, 'badge-available': availableRoomsCount(date.fullDate) > 0 }"
-                >{{ availableRoomsCount(date.fullDate) }}/20 ห้องว่าง</span>
+                    :class="{
+                        'badge-full': availableRoomsCount(date.fullDate) === 0,
+                        'badge-partial': hasBooking(date.fullDate) && availableRoomsCount(date.fullDate) > 0,
+                        'badge-available': !hasBooking(date.fullDate) && availableRoomsCount(date.fullDate) > 0
+                    }"
+                >{{ availableRoomsCount(date.fullDate) }}/20 rooms available</span>
                 <div class="dot-row">
                     <span v-for="b in getBookingsForDate(date.fullDate).slice(0, 3)" :key="b.id" class="dot"
                         :style="{ background: roomStatusColor(date.fullDate, b.room) }"></span>
@@ -61,13 +65,12 @@
                     <h3 class="modal-title">📅 {{ formatDateThai(selectedFullDate) }}</h3>
 
                     <p v-if="!isClosedDay(selectedFullDate)" class="capacity-line">
-                        🏥 ห้องว่าง {{ availableRoomsCount(selectedFullDate) }}/20 ห้อง
+                        🏥 {{ availableRoomsCount(selectedFullDate) }}/20 rooms available
                     </p>
                     <p v-else class="capacity-line capacity-closed-text">
-                        🔒 ห้องผ่าตัดปิดทำการ
+                        🔒 Operating rooms closed
                     </p>
 
-                    <!-- 📍 Admin เห็นสถานะของห้องผ่าตัดทุกห้อง (OR-201 ถึง OR-220) เหมือนฝั่งแพทย์ -->
                     <div v-if="!isClosedDay(selectedFullDate)" class="room-grid">
                         <div
                             v-for="r in orRooms"
@@ -85,7 +88,7 @@
                     </div>
 
                     <div v-if="selectedDateBookings.length === 0" class="empty-state">
-                        ยังไม่มีคิวที่จองในวันนี้
+                        No bookings for today
                     </div>
 
                     <div v-for="b in selectedDateBookings" :key="b.id" class="booking-item">
@@ -93,7 +96,7 @@
                         <p><strong>Doctor:</strong> {{ doctorMap[b.doctorLicense] || b.doctorLicense || '-' }}</p>
                         <p><strong>Patient:</strong> {{ b.fullName }}</p>
                         <p><strong>HN:</strong> {{ b.hn }}</p>
-                        <p><strong>Age / Gender:</strong> {{ b.age || '-' }} ปี · {{ b.gender === 'female' ? 'หญิง' : 'ชาย' }}</p>
+                        <p><strong>Age / Gender:</strong> {{ b.age || '-' }} years · {{ b.gender === 'female' ? 'Female' : 'Male' }}</p>
                         <p><strong>Procedure:</strong> {{ b.procedure }}</p>
                         <hr style="border-color:#eee; margin: 8px 0" />
                     </div>
@@ -119,6 +122,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { apiFetch } from '../../api/client'
+import AdminSidebar from '../../components/AdminSidebar.vue'
 
 const router = useRouter()
 const now = new Date()
@@ -132,12 +136,11 @@ const selectedDateBookings = ref([])
 const bookings = ref([])
 const doctorMap = ref({})
 
-// 📍 1. สร้างตัวแปรว่างๆ ไว้รอรับข้อมูลวันหยุดจาก API
 const officialHolidays = ref([])
 
 onMounted(async () => {
     try {
-        // admin ดึงคิวทั้งหมด ไม่กรอง license
+
         const res = await apiFetch('/api/bookings')
         const data = await res.json()
         bookings.value = Array.isArray(data) ? data : []
@@ -146,7 +149,7 @@ onMounted(async () => {
     }
 
     try {
-        // ดึงชื่อหมอ map license -> doctorName
+
         const res2 = await apiFetch('/api/users')
         const users = await res2.json()
         if (Array.isArray(users)) {
@@ -156,7 +159,6 @@ onMounted(async () => {
         console.error('ดึงรายชื่อหมอไม่สำเร็จ', e)
     }
 
-    // 📍 2. ดึงข้อมูลวันหยุดจาก API หลังบ้าน
     try {
         const resHoliday = await apiFetch(`/api/holidays`)
         const dataHoliday = await resHoliday.json()
@@ -172,11 +174,10 @@ onMounted(async () => {
     }
 })
 
-const monthNames = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"]
+const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
 
-// 📍 อัปเดตฟังก์ชันให้เช็กวันหยุดจากตัวแปร officialHolidays.value แทน
 const isOfficialHoliday = (d) => officialHolidays.value.some(h => h.date === d)
-const getHolidayName = (d) => officialHolidays.value.find(h => h.date === d)?.name || 'วันหยุด'
+const getHolidayName = (d) => officialHolidays.value.find(h => h.date === d)?.name || 'Holiday'
 
 const isWeekend = (d) => {
     const dow = new Date(d + 'T00:00:00').getDay()
@@ -184,20 +185,17 @@ const isWeekend = (d) => {
 }
 const isClosedDay = (d) => isWeekend(d) || isOfficialHoliday(d)
 
-// ✅ เปลี่ยน Succeed → Completed
 const getBookingsForDate = (d) => bookings.value.filter(b => b.date === d && b.status !== 'Completed')
 const hasBooking = (d) => getBookingsForDate(d).length > 0
 
-// 📍 เลขห้องผ่าตัด OR-201 ถึง OR-220 และฟังก์ชันคำนวณความจุต่อห้อง (เหมือนฝั่งแพทย์ทุกอย่าง)
 const orRooms = Array.from({ length: 20 }, (_, i) => 201 + i)
 const MAX_MINUTES = 420
-// 📍 ดึงเฉพาะตัวเลขห้องออกมาเทียบ กันกรณีข้อมูลเก่า/รูปแบบไม่ตรงเป๊ะ เช่น "OR-201", "OR201", "201"
+
 const getRoomNumber = (roomStr) => {
     const match = String(roomStr || '').match(/(\d+)/)
     return match ? parseInt(match[1]) : null
 }
 
-// ✅ เปลี่ยน Succeed → Completed
 const getUsedMinutesForRoom = (d, roomNum) => {
     return bookings.value
         .filter(b => b.date === d && getRoomNumber(b.room) === roomNum && b.status !== 'Completed' && b.status !== 'Cancelled')
@@ -214,20 +212,19 @@ const isRoomPartial = (d, roomNum) => {
 }
 const roomRemainingLabel = (d, roomNum) => {
     const remain = Math.max(MAX_MINUTES - getUsedMinutesForRoom(d, roomNum), 0)
-    if (remain <= 0) return 'เต็ม'
+    if (remain <= 0) return 'Full'
     const hrs = Math.floor(remain / 60)
     const mins = remain % 60
-    return `${hrs}ชม${mins > 0 ? ' ' + mins + 'น' : ''}`
+    return `${hrs}h${mins > 0 ? ' ' + mins + 'm' : ''}`
 }
 const availableRoomsCount = (d) => orRooms.filter(r => !isRoomFull(d, r)).length
 
-// 📍 สีจุดบนปฏิทินให้ตรงกับสีห้องในป๊อปอัป (เขียว/เหลือง/แดง)
 const roomStatusColor = (d, roomStr) => {
     const roomNum = getRoomNumber(roomStr)
-    if (roomNum === null) return '#b0b8c1' // ไม่มีข้อมูลห้อง ใช้สีเทา
-    if (isRoomFull(d, roomNum)) return '#e53935'      // แดง = เต็ม
-    if (isRoomPartial(d, roomNum)) return '#f59e0b'   // เหลือง = บางส่วน
-    return '#43a047'                                    // เขียว = ว่าง
+    if (roomNum === null) return '#b0b8c1'
+    if (isRoomFull(d, roomNum)) return '#e53935'
+    if (isRoomPartial(d, roomNum)) return '#f59e0b'
+    return '#43a047'
 }
 
 const calendarDays = computed(() => {
@@ -261,7 +258,6 @@ const handleDateClick = (date) => {
     isDetailPopupOpen.value = true
 }
 
-
 const goAddPatient = () => {
     router.push(`/admin-add-patient?date=${selectedFullDate.value}`)
 }
@@ -282,23 +278,25 @@ const formatDateThai = (d) => {
 
 .calendar-page {
     min-height: 100vh;
+    height: 100vh;
     display: flex;
     flex-direction: column;
     background: #f4f7f9;
     font-family: 'Segoe UI', sans-serif;
+    overflow-x: hidden;
+    overflow-y: auto;
 }
 
-/* NAVBAR */
 .calendar-navbar {
     background: linear-gradient(135deg, #174983, #1a3a5f);
     height: 70px;
-    padding: 0 20px;
+    padding: 0 20px 0 75px;
     display: flex;
     align-items: center;
     justify-content: space-between;
 }
 .nav-left { width: 40px; display: flex; align-items: center; }
-.nav-center { display: flex; align-items: center; gap: 12px; flex: 1; justify-content: center; }
+.nav-center { display: flex; align-items: center; gap: 6px; flex: 1; justify-content: center; }
 .nav-right { display: flex; align-items: center; gap: 10px; }
 
 .back-btn {
@@ -329,7 +327,7 @@ const formatDateThai = (d) => {
 .ctrl-btn {
     background: rgba(255,255,255,0.2);
     border: none;
-    width: 34px;
+    width: 28px;
     height: 34px;
     border-radius: 8px;
     font-size: 22px;
@@ -339,6 +337,7 @@ const formatDateThai = (d) => {
     align-items: center;
     justify-content: center;
     line-height: 1;
+    padding: 0;
 }
 
 .ctrl-btn:hover {
@@ -350,8 +349,8 @@ const formatDateThai = (d) => {
 .month-label {
     font-weight: 700;
     font-size: 1rem;
-    color: #1a3a5f;
-    flex: 1;
+    color: white;
+    flex: 0 0 auto;
     text-align: center;
 }
 
@@ -367,7 +366,6 @@ const formatDateThai = (d) => {
 }
 .today-btn:hover { background: rgba(255,255,255,0.3); }
 
-/* WEEKDAY */
 .weekday-row {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
@@ -383,7 +381,6 @@ const formatDateThai = (d) => {
 }
 .weekend-label { color: #c0392b; }
 
-/* GRID */
 .calendar-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
@@ -483,9 +480,9 @@ const formatDateThai = (d) => {
     color: white;
 }
 .badge-available { background: #43a047; }
+.badge-partial { background: #f59e0b; }
 .badge-full { background: #e53935; }
 
-/* POPUP */
 .overlay-modal {
     position: fixed;
     inset: 0;
@@ -594,7 +591,6 @@ const formatDateThai = (d) => {
     font-size: 14px;
 }
 
-/* FAB */
 .fab-btn {
     position: fixed;
     bottom: 30px;

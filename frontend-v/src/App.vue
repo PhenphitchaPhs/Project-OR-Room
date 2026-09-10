@@ -131,10 +131,10 @@
     <Transition name="fade">
       <div v-if="isLogoutConfirmOpen" class="modal-overlay-center" @click.self="isLogoutConfirmOpen = false">
         <div class="white-modal-card">
-          <h2 class="modal-msg-title">คุณต้องการออกจากระบบใช่หรือไม่?</h2>
+          <h2 class="modal-msg-title">Are you sure you want to log out?</h2>
           <div class="modal-button-group">
             <button class="btn-cancel-gray" @click="isLogoutConfirmOpen = false">Cancel</button>
-            <button class="btn-confirm-red" @click="doLogout">Confirm</button>
+            <button class="btn-confirm-logout" @click="doLogout">Confirm</button>
           </div>
         </div>
       </div>
@@ -151,28 +151,23 @@ import { ref, onMounted, computed, watch } from 'vue'
 import { RouterView, useRouter, useRoute } from 'vue-router'
 import { apiFetch } from './api/client'
 
-// แสดงผลเป็น dialog
 const isDialogOpen = ref(false)
 const dialogMessage = ref('')
 const dialogType = ref('success')
 
 const isSidebarOpen = ref(false)
-const isOrNumberModalOpen = ref(false) // สถานะเปิด/ปิด Pop-up เลือกเลขห้อง OR
-const isLogoutConfirmOpen = ref(false) // สถานะเปิด/ปิด Dialog ยืนยันออกจากระบบ (แทน confirm() ของ browser)
+const isOrNumberModalOpen = ref(false)
+const isLogoutConfirmOpen = ref(false)
 
 const router = useRouter()
 const route = useRoute()
-// 📍 เปลี่ยนจาก computed(() => localStorage...) เป็น ref + sync เอง
-// เพราะ localStorage ไม่ใช่ reactive source, computed จะ cache ค่าแรกไว้ตลอดไป
-// ทำให้พอ logout แล้ว login ด้วยบัญชีอื่น (เป็นแค่ client-side navigation ไม่ reload หน้า)
-// ค่าที่โชว์จะยังเป็นเลข license ของบัญชีเก่าอยู่
+
 const userLicense = ref(localStorage.getItem('userLicense') || '------')
 const orNumber = ref(localStorage.getItem('orNumber') || '...')
-// 📍 เลขห้องผ่าตัดประจำ OR-201 ถึง OR-220
+
 const orNumbers = Array.from({ length: 20 }, (_, i) => 201 + i)
 const tempOrNumber = ref(201)
 
-// คำนวณว่าควรแสดงเลย์เอาต์ไหม
 const showLayout = computed(() => {
   const hiddenPages = [
     '/login',
@@ -190,7 +185,6 @@ const showLayout = computed(() => {
   return !hiddenPages.includes(route.path)
 })
 
-// 📍 ดึงข้อมูลผู้ใช้ปัจจุบันจาก localStorage มาซิงค์ใหม่ทุกครั้ง (กันค่าค้างจากบัญชีเก่า)
 const syncUserFromStorage = async () => {
   const license = localStorage.getItem('userLicense')
   userLicense.value = license || '------'
@@ -210,25 +204,22 @@ const syncUserFromStorage = async () => {
         localStorage.setItem('orNumber', data.orNumber)
       }
     } catch (e) {
-      console.error('ดึงเลขห้อง OR ไม่สำเร็จ', e)
+      console.error('Failed to load OR number', e)
     }
   }
 }
 
 onMounted(syncUserFromStorage)
 
-// 📍 ทุกครั้งที่เปลี่ยนหน้า (เช่น login เสร็จแล้วเด้งมา /home) ให้ซิงค์ค่าผู้ใช้ใหม่
-// เผื่อ login ด้วยบัญชีอื่นต่อจากที่ logout ไปแบบไม่ reload หน้าเว็บ
 watch(() => route.path, syncUserFromStorage)
 
 const toggleSidebar = () => { isSidebarOpen.value = !isSidebarOpen.value }
 const closeSidebar = () => { isSidebarOpen.value = false }
 
-// --- ฟังก์ชันของ Pop-up เลือกเลขห้อง OR ---
 const openOrNumberModal = () => {
-  isSidebarOpen.value = false // ปิดเมนูข้างก่อน
-  tempOrNumber.value = Number(orNumber.value) || 201 // เซ็ตค่าเริ่มให้ตรงกับห้องปัจจุบัน
-  isOrNumberModalOpen.value = true // เปิดหน้าต่าง Pop-up
+  isSidebarOpen.value = false
+  tempOrNumber.value = Number(orNumber.value) || 201
+  isOrNumberModalOpen.value = true
 }
 
 const confirmOrNumberChange = async () => {
@@ -246,19 +237,18 @@ const confirmOrNumberChange = async () => {
     orNumber.value = tempOrNumber.value
     localStorage.setItem('orNumber', tempOrNumber.value)
     isOrNumberModalOpen.value = false
-    dialogMessage.value = 'อัปเดตเลขห้อง OR สำเร็จ!'
+    dialogMessage.value = 'OR number updated successfully!'
     dialogType.value = 'success'
     isDialogOpen.value = true
 
   } catch (error) {
     console.error("❌ PUT Error:", error)
-    dialogMessage.value = 'เกิดข้อผิดพลาด!'
+    dialogMessage.value = 'An error occurred!'
     dialogType.value = 'error'
     isDialogOpen.value = true
   }
 }
 
-// เปลี่ยนหน้าทั่วไป
 const goTo = (path) => {
   isSidebarOpen.value = false
   router.push(path)
@@ -269,7 +259,7 @@ const handleLogout = () => {
 }
 
 const doLogout = () => {
-  localStorage.clear()  // ล้างทุกอย่างรวมถึง isLoggedIn
+  localStorage.clear()
   isSidebarOpen.value = false
   isLogoutConfirmOpen.value = false
   router.push('/login')
@@ -280,7 +270,6 @@ const doLogout = () => {
 <style scoped>
 @import url('https://fonts.googleapis.com/icon?family=Material+Icons');
 
-/* --- Style ส่วน Sidebar เดิม --- */
 .main-header {
   padding: 15px;
   position: fixed;
@@ -372,6 +361,10 @@ const doLogout = () => {
   align-items: center;
 }
 
+.logout-btn:hover {
+  color: #cce0ff;
+}
+
 .sidebar-nav ul {
   list-style: none;
   padding: 0;
@@ -412,7 +405,6 @@ const doLogout = () => {
   width: 100%;
 }
 
-/* --- Style สำหรับ Pop-up พื้นฐาน --- */
 .modal-overlay-center {
   position: fixed;
   top: 0;
@@ -426,7 +418,6 @@ const doLogout = () => {
   background: rgba(0, 0, 0, 0.4);
 }
 
-/* --- Pop-up: Dialog ยืนยัน (ใช้โครงเดียวกับ HomeView.vue / AdminHome.vue / AdminDashboard.vue) --- */
 .white-modal-card {
   background: white;
   width: 90%;
@@ -463,6 +454,31 @@ const doLogout = () => {
   cursor: pointer;
 }
 
+.btn-confirm-logout {
+  background: #c62828;
+  color: #ffffff;
+  border: 1px solid #c62828;
+  padding: 10px 25px;
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.btn-confirm-logout:hover {
+  background: #b71c1c;
+}
+
+.btn-confirm-logout:active {
+  background: #8e0000;
+  transform: translateY(1px);
+}
+
+.btn-confirm-logout:focus-visible {
+  outline: 3px solid #cce0ff;
+  outline-offset: 2px;
+}
+
 .btn-cancel-gray {
   background-color: #eee;
   color: #666;
@@ -483,7 +499,6 @@ const doLogout = () => {
   opacity: 0;
 }
 
-/* --- Pop-up: เลือกวัน --- */
 .day-modal-card {
   background-color: #e3f2fd;
   width: 90%;
@@ -586,16 +601,14 @@ body {
   margin: 0 !important;
 }
 
-/* --- Pop-up: เลือกเลขห้อง OR --- */
 .day-modal-card {
   background-color: #e3f2fd;
   width: 90%;
   max-width: 340px;
 
   max-height: 85vh;
-  /* สำคัญ */
+
   overflow: hidden;
-  /* สำคัญ */
 
   padding: 20px;
   border-radius: 24px;
@@ -611,9 +624,8 @@ body {
   gap: 5px;
 
   overflow-y: auto;
-  /* สำคัญ */
+
   max-height: 55vh;
-  /* สำคัญ */
 
   padding-right: 4px;
 }

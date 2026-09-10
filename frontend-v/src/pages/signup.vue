@@ -12,19 +12,17 @@
         <div class="form-group">
           <input type="text" placeholder="Full Name" v-model="doctorName" class="form-input" />
           <input type="text" placeholder="License Number" v-model="license" class="form-input" />
-          
-          <!-- 🟢 ช่อง Email และปุ่มกดส่ง OTP -->
+
           <div class="email-group">
             <input type="email" placeholder="Email Address" v-model="email" class="form-input" style="margin-bottom: 0;" />
             <button @click="sendOtp" :disabled="isSendingOtp || countdown > 0" class="otp-btn" type="button">
-              {{ countdown > 0 ? `รอ ${countdown}s` : 'Send OTP' }}
+              {{ countdown > 0 ? `Wait ${countdown}s` : 'Send OTP' }}
             </button>
           </div>
 
           <input type="password" placeholder="Password" v-model="password" class="form-input" />
           <input type="password" placeholder="Confirm Password" v-model="confirmPassword" class="form-input" />
-          
-          <!-- 🟢 เปลี่ยนจาก Secret Key เป็นกรอก OTP -->
+
           <input type="text" placeholder="Enter 6-digit OTP from Email" v-model="otp" class="form-input" maxlength="6" />
 
           <div class="select-wrapper">
@@ -58,25 +56,24 @@ const license = ref('')
 const email = ref('')
 const password = ref('')
 const confirmPassword = ref('')
-const otp = ref('') // 🟢 ตัวแปร OTP
+const otp = ref('')
 const orNumber = ref('')
 const message = ref('')
 const isSuccess = ref(false)
 
-// 🟢 ตัวจัดการสถานะปุ่ม OTP
 const isSendingOtp = ref(false)
 const countdown = ref(0)
 
 const sendOtp = async () => {
   if (!email.value || !email.value.includes('@')) {
-    message.value = "กรุณากรอกรูปแบบอีเมลให้ถูกต้องก่อน"
+    message.value = "Please enter a valid email address first"
     isSuccess.value = false
     return
   }
 
   isSendingOtp.value = true
-  message.value = "กำลังส่งรหัส OTP..."
-  isSuccess.value = true 
+  message.value = "Sending OTP..."
+  isSuccess.value = true
 
   try {
     const response = await apiFetch('/api/send-otp', {
@@ -84,14 +81,14 @@ const sendOtp = async () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: email.value })
     })
-    
+
     const data = await response.json()
 
-    if (!response.ok) throw new Error(data.error || 'ส่งอีเมลไม่สำเร็จ')
+    if (!response.ok) throw new Error(data.error || 'Unable to send the email')
 
-    message.value = "ส่งรหัส OTP ไปยังอีเมลแล้ว (หมดอายุใน 5 นาที)"
+    message.value = "OTP sent to your email (expires in 5 minutes)"
     isSuccess.value = true
-    
+
     countdown.value = 60
     const timer = setInterval(() => {
       countdown.value--
@@ -108,13 +105,13 @@ const sendOtp = async () => {
 
 const submitForm = async () => {
   if (!doctorName.value || !license.value || !email.value || !password.value || !confirmPassword.value || !orNumber.value || !otp.value) {
-    message.value = "กรุณากรอกข้อมูลและรหัส OTP ให้ครบ"
+    message.value = "Please complete all fields and enter the OTP"
     isSuccess.value = false
     return
   }
 
   if (password.value !== confirmPassword.value) {
-    message.value = "รหัสผ่านไม่ตรงกัน"
+    message.value = "Passwords do not match"
     isSuccess.value = false
     return
   }
@@ -129,15 +126,15 @@ const submitForm = async () => {
         email: email.value,
         password: password.value,
         orNumber: orNumber.value,
-        otp: otp.value // 🟢 ส่ง OTP ไปเช็ค
+        otp: otp.value
       })
     })
 
     const data = await response.json()
 
-    if (!response.ok) throw new Error(data.error || 'สมัครไม่สำเร็จ')
+    if (!response.ok) throw new Error(data.error || 'Registration failed')
 
-    message.value = "สมัครสมาชิกสำเร็จ!"
+    message.value = "Registration successful!"
     isSuccess.value = true
 
     setTimeout(() => { router.push('/login') }, 1500)
@@ -248,7 +245,6 @@ const orNumbers = Array.from({ length: 20 }, (_, i) => 201 + i)
   box-shadow: 0 0 8px rgba(0, 31, 91, 0.1);
 }
 
-/* 🟢 สไตล์ใหม่สำหรับปุ่มกดรับ OTP */
 .email-group {
   display: flex;
   gap: 10px;

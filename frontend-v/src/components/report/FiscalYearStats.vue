@@ -1,9 +1,8 @@
 <template>
     <div class="doctor-section" style="margin-bottom: 20px;">
         <div class="section-header">
-            <h2 class="section-title">📅 สถิติปีงบประมาณ {{ fiscalYearLabel }}</h2>
+            <h2 class="section-title">📅 Fiscal Year Statistics {{ fiscalYearLabel }}</h2>
         </div>
-
 
         <div class="fiscal-summary-row">
             <div class="fiscal-summary-card">
@@ -13,7 +12,7 @@
                 <div>
                     <div class="fiscal-summary-number">{{ fiscalYearTotal }}</div>
                     <div class="fiscal-summary-label">
-                        เคสที่เสร็จสิ้นทั้งหมด · {{ fiscalYearRangeLabel }}
+                        Total completed cases · {{ fiscalYearRangeLabel }}
                     </div>
                 </div>
             </div>
@@ -25,15 +24,12 @@
                 <div>
                     <div class="fiscal-summary-number">{{ fiscalYearCancelledTotal }}</div>
                     <div class="fiscal-summary-label">
-                        เคสที่ถูกยกเลิกทั้งหมด · {{ fiscalYearRangeLabel }}
+                        Total cancelled cases · {{ fiscalYearRangeLabel }}
                     </div>
                 </div>
             </div>
         </div>
 
-
-
-        <!-- ===== แผนภูมิแท่ง + เส้นกราฟแนวโน้ม รายเดือน ===== -->
         <div class="fiscal-chart-wrap">
             <div class="chart-legend">
                 <span class="legend-item"><span class="legend-dot bar-dot"></span>Completed</span>
@@ -42,18 +38,16 @@
 
             <svg :viewBox="`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`" class="bar-chart-svg"
                 preserveAspectRatio="xMidYMid meet">
-                <!-- เส้นกริดแนวนอน -->
+
                 <line v-for="g in gridLines" :key="g" :x1="CHART_PADDING" :x2="CHART_WIDTH - CHART_PADDING" :y1="g"
                     :y2="g" class="chart-grid-line" />
 
-                <!-- เส้นฐาน -->
                 <line :x1="CHART_PADDING" :x2="CHART_WIDTH - CHART_PADDING" :y1="CHART_HEIGHT - CHART_PADDING"
                     :y2="CHART_HEIGHT - CHART_PADDING" class="chart-axis-line" />
 
-                <!-- แท่งกราฟ -->
                 <g v-for="d in barChartData" :key="'bar-' + d.key">
                     <rect :x="d.x" :y="d.y" :width="d.barWidth" :height="d.barHeight" rx="4" class="chart-bar">
-                        <title>{{ d.label }} — {{ d.count }} เคส</title>
+                        <title>{{ d.label }} — {{ d.count }} case(s)</title>
                     </rect>
                     <text v-if="d.count > 0" :x="d.cx" :y="d.y - 6" text-anchor="middle" class="chart-value-label">
                         {{ d.count }}
@@ -64,40 +58,38 @@
                     </text>
                 </g>
 
-                <!-- เส้นแนวโน้ม: จำนวนเคสที่ยกเลิกรายเดือน -->
                 <polyline :points="cancelledLinePoints" class="chart-trend-line" />
                 <circle v-for="d in barChartData" :key="'pt-' + d.key" :cx="d.cx" :cy="d.cancelledCy" r="3.2"
                     class="chart-trend-point">
-                    <title>{{ d.label }} — ยกเลิก {{ d.cancelledCount }} เคส</title>
+                    <title>{{ d.label }} — {{ d.cancelledCount }} cancelled case(s)</title>
                 </circle>
             </svg>
         </div>
 
-        <!-- ===== สถิติการใช้ห้องผ่าตัดรายปี ===== -->
         <div class="room-usage-section">
             <div class="room-usage-header">
                 <span class="material-icons room-usage-icon">meeting_room</span>
-                <h3 class="room-usage-title">สถิติการใช้ห้องผ่าตัดรายปี</h3>
+                <h3 class="room-usage-title">Annual Operating Room Usage</h3>
             </div>
 
             <div v-if="roomMonthlyUsage.length === 0" class="room-usage-empty">
-                ไม่มีข้อมูลการใช้ห้องผ่าตัดในปีงบประมาณนี้
+                No operating room usage data for this fiscal year
             </div>
 
             <div v-else class="room-usage-table-wrap">
                 <table class="room-usage-table">
                     <thead>
                         <tr>
-                            <th class="room-col">ห้อง</th>
+                            <th class="room-col">Room</th>
                             <th v-for="m in shortMonthLabels" :key="m">{{ m }}</th>
-                            <th class="total-col">รวม</th>
+                            <th class="total-col">Total</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr v-for="row in roomMonthlyUsage" :key="row.room">
                             <td class="room-col room-name-cell">{{ row.room }}</td>
                             <td v-for="(m, idx) in row.months" :key="idx" :class="{ 'has-case': m.count > 0 }"
-                                :title="m.count > 0 ? `${m.count} เคส · ${m.minutes} นาที` : ''">
+                                :title="m.count > 0 ? `${m.count} case(s) · ${m.minutes} minutes` : ''">
                                 {{ m.count > 0 ? m.count : '·' }}
                             </td>
                             <td class="total-col total-cell">{{ row.total }}</td>
@@ -105,7 +97,7 @@
                     </tbody>
                     <tfoot>
                         <tr>
-                            <td class="room-col room-name-cell">รวมทุกห้อง</td>
+                            <td class="room-col room-name-cell">All rooms</td>
                             <td v-for="(v, idx) in monthlyTotalsAcrossRooms" :key="idx" class="footer-cell">
                                 {{ v > 0 ? v : '·' }}
                             </td>
@@ -127,18 +119,17 @@
 
                 <div>
                     <h3 class="monthly-room-title">
-                        สถิติการใช้ห้องผ่าตัดรายเดือน
+                        Monthly Operating Room Usage
                     </h3>
 
                     <p class="monthly-room-subtitle">
-                        จำนวนเคสและระยะเวลาการใช้ห้องผ่าตัดแยกตามเดือน
+                        Case count and operating room usage by month
                     </p>
                 </div>
             </div>
 
-            <!-- Dropdown เดือน -->
             <div class="monthly-room-filter">
-                <label>เดือน</label>
+                <label>Month</label>
 
                 <select v-model="selectedMonthlyRoomMonth">
                     <option v-for="month in monthlyRoomMonthOptions" :key="month.value" :value="month.value">
@@ -149,8 +140,6 @@
 
         </div>
 
-
-        <!-- Summary -->
         <div class="monthly-room-summary">
 
             <div class="monthly-summary-card">
@@ -167,12 +156,11 @@
                     </div>
 
                     <div class="monthly-summary-label">
-                        ห้องผ่าตัดทั้งหมด
+                        Total operating rooms
                     </div>
                 </div>
 
             </div>
-
 
             <div class="monthly-summary-card">
 
@@ -188,12 +176,11 @@
                     </div>
 
                     <div class="monthly-summary-label">
-                        เคสที่เสร็จสิ้น · {{ selectedMonthlyRoomMonthLabel }}
+                        Completed cases · {{ selectedMonthlyRoomMonthLabel }}
                     </div>
                 </div>
 
             </div>
-
 
             <div class="monthly-summary-card">
 
@@ -209,7 +196,7 @@
                     </div>
 
                     <div class="monthly-summary-label">
-                        นาทีการใช้งาน
+                        Usage minutes
                     </div>
                 </div>
 
@@ -217,18 +204,16 @@
 
         </div>
 
-
-        <!-- ตาราง -->
         <div class="monthly-room-table-wrap">
 
             <table class="monthly-room-table">
 
                 <thead>
                     <tr>
-                        <th>ห้อง</th>
-                        <th>จำนวนเคส</th>
-                        <th>นาทีใช้งาน</th>
-                        <th>สถานะ</th>
+                        <th>Room</th>
+                        <th>Case count</th>
+                        <th>Usage minutes</th>
+                        <th>Status</th>
                     </tr>
                 </thead>
 
@@ -258,12 +243,12 @@
 
                             <span v-if="row.count > 0" class="monthly-status active">
                                 <span class="status-dot"></span>
-                                มีการใช้งาน
+                                In use
                             </span>
 
                             <span v-else class="monthly-status empty">
                                 <span class="status-dot"></span>
-                                ไม่มีเคส
+                                No cases
                             </span>
 
                         </td>
@@ -272,12 +257,11 @@
 
                 </tbody>
 
-
                 <tfoot>
                     <tr>
 
                         <td>
-                            รวมทุกห้อง
+                            All rooms
                         </td>
 
                         <td>
@@ -306,7 +290,6 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
 
-// รับ bookings มาจาก parent เฉยๆ ไม่ต้อง fetch เอง
 const props = defineProps({
     bookings: {
         type: Array,
@@ -314,15 +297,14 @@ const props = defineProps({
     }
 })
 
-// 📅 ปีงบประมาณไทย: 1 ต.ค. - 30 ก.ย. ปีถัดไป — คำนวณจากวันที่ปัจจุบันเสมอ
 const THAI_MONTHS_FISCAL_ORDER = [
-    'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม', 'มกราคม', 'กุมภาพันธ์', 'มีนาคม',
-    'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน'
+    'October', 'November', 'December', 'January', 'February', 'March',
+    'April', 'May', 'June', 'July', 'August', 'September'
 ]
 
 const THAI_MONTHS_SHORT = [
-    'ต.ค.', 'พ.ย.', 'ธ.ค.', 'ม.ค.', 'ก.พ.', 'มี.ค.',
-    'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.'
+    'Oct.', 'Nov.', 'Dec.', 'Jan.', 'Feb.', 'Mar.',
+    'Apr.', 'May', 'Jun.', 'Jul.', 'Aug.', 'Sep.'
 ]
 
 const shortMonthLabels = THAI_MONTHS_SHORT
@@ -333,14 +315,14 @@ const shortMonthLabel = (label) => {
 
 const fiscalYearInfo = computed(() => {
     const now = new Date()
-    const month = now.getMonth() // 0 = ม.ค., 9 = ต.ค.
+    const month = now.getMonth()
     const year = now.getFullYear()
 
     const startYear = month >= 9 ? year : year - 1
     const endYear = startYear + 1
 
-    const start = new Date(startYear, 9, 1) // 1 ต.ค.
-    const end = new Date(endYear, 8, 30, 23, 59, 59) // 30 ก.ย.
+    const start = new Date(startYear, 9, 1)
+    const end = new Date(endYear, 8, 30, 23, 59, 59)
 
     const label = String(endYear + 543)
 
@@ -355,7 +337,6 @@ const fiscalYearRangeLabel = computed(() => {
     return `${fmt(start)} – ${fmt(end)}`
 })
 
-// เคสที่เสร็จสิ้น (Completed) ในปีงบประมาณปัจจุบันเท่านั้น
 const fiscalYearBookings = computed(() => {
     const { start, end } = fiscalYearInfo.value
     return props.bookings.filter(b => {
@@ -364,7 +345,7 @@ const fiscalYearBookings = computed(() => {
         return d >= start && d <= end
     })
 })
-// เคสที่ถูกยกเลิก ในปีงบประมาณปัจจุบัน
+
 const fiscalYearCancelledBookings = computed(() => {
     const { start, end } = fiscalYearInfo.value
     return props.bookings.filter(b => {
@@ -378,7 +359,6 @@ const fiscalYearCancelledTotal = computed(() => fiscalYearCancelledBookings.valu
 
 const fiscalYearTotal = computed(() => fiscalYearBookings.value.length)
 
-// รายเดือน ต.ค. → ก.ย. พร้อมสัดส่วนสำหรับทำแท่งกราฟ
 const fiscalMonthlyBreakdown = computed(() => {
     const { startYear } = fiscalYearInfo.value
     const counts = THAI_MONTHS_FISCAL_ORDER.map((label, idx) => {
@@ -395,7 +375,6 @@ const fiscalMonthlyBreakdown = computed(() => {
     return counts.map(c => ({ ...c, percent: Math.round((c.count / max) * 100) }))
 })
 
-// ===================== SVG Bar + Line Chart =====================
 const CHART_WIDTH = 640
 const CHART_HEIGHT = 220
 const CHART_PADDING = 32
@@ -409,7 +388,6 @@ const barChartData = computed(() => {
     const step = innerWidth / n
     const barWidth = step * 0.5
 
-    // นับจำนวนยกเลิกรายเดือน ด้วย index ปีงบประมาณเดียวกับแท่ง
     const cancelledCounts = data.map((_, idx) => {
         const realMonth = (9 + idx) % 12
         const realYear = idx <= 2 ? startYear : startYear + 1
@@ -419,7 +397,6 @@ const barChartData = computed(() => {
         }).length
     })
 
-    // ใช้ scale เดียวกันทั้งแท่งและเส้น จะได้เทียบสัดส่วนกันได้ตรง ๆ
     const maxCount = Math.max(1, ...data.map(d => d.count), ...cancelledCounts)
 
     return data.map((d, i) => {
@@ -448,7 +425,6 @@ const cancelledLinePoints = computed(() =>
     barChartData.value.map(d => `${d.cx},${d.cancelledCy}`).join(' ')
 )
 
-// เส้นกริดแนวนอน 4 เส้นแบ่งพื้นที่กราฟเท่าๆ กัน ไว้ช่วยกะสัดส่วนด้วยสายตา
 const gridLines = computed(() => {
     const innerHeight = CHART_HEIGHT - CHART_PADDING * 2
     const lines = []
@@ -458,10 +434,9 @@ const gridLines = computed(() => {
     return lines
 })
 
-// ===================== สถิติการใช้ห้องผ่าตัดรายเดือน =====================
 const roomKeyOf = (b) => {
     const match = String(b.room || '').match(/(\d+)/)
-    return match ? `OR-${match[1]}` : (b.room || 'ไม่ระบุห้อง')
+    return match ? `OR-${match[1]}` : (b.room || 'Unassigned room')
 }
 
 const minutesOf = (b) => {
@@ -480,7 +455,7 @@ const roomMonthlyUsage = computed(() => {
         }
 
         const d = new Date(b.date)
-        // แปลงเดือนจริง (0=ม.ค.) ให้เป็น index ตามลำดับปีงบประมาณ (0=ต.ค.)
+
         const fiscalIdx = (d.getMonth() - 9 + 12) % 12
 
         roomsMap[room][fiscalIdx].count += 1
@@ -496,7 +471,6 @@ const roomMonthlyUsage = computed(() => {
         .sort((a, b) => a.room.localeCompare(b.room, undefined, { numeric: true }))
 })
 
-// แถวรวมท้ายตาราง — รวมจำนวนเคสของทุกห้องในแต่ละเดือน
 const monthlyTotalsAcrossRooms = computed(() => {
     const totals = new Array(12).fill(0)
     roomMonthlyUsage.value.forEach(row => {
@@ -505,16 +479,10 @@ const monthlyTotalsAcrossRooms = computed(() => {
     return totals
 })
 
-// ======================================================
-// สถิติการใช้ห้องผ่าตัดรายเดือน
-// ======================================================
-
-// ห้องคงที่ 20 ห้อง
 const FIXED_OR_ROOMS = Array.from(
     { length: 20 },
     (_, index) => `OR-${201 + index}`
 )
-
 
 const MONTHLY_ROOM_MONTH_KEY = 'monthlyRoomSelectedMonth'
 
@@ -525,7 +493,6 @@ const getSavedMonthlyRoomMonth = () => {
         return saved
     }
 
-    // ถ้ายังไม่เคยเลือก ให้ใช้เดือนปัจจุบัน
     const now = new Date()
 
     return `${now.getFullYear()}-${now.getMonth()}`
@@ -544,8 +511,6 @@ watch(
     }
 )
 
-
-// ตัวเลือกเดือน
 const monthlyRoomMonthOptions = computed(() => {
     const year = new Date().getFullYear()
 
@@ -563,19 +528,12 @@ const monthlyRoomMonthOptions = computed(() => {
     })
 })
 
-
-// Label เดือนที่เลือก
 const selectedMonthlyRoomMonthLabel = computed(() => {
 
     return monthlyRoomMonthOptions.value.find(
         item => item.value === selectedMonthlyRoomMonth.value
     )?.label || ''
 })
-
-
-// ======================================================
-// Booking ของเดือนที่เลือก
-// ======================================================
 
 const selectedMonthlyRoomBookings = computed(() => {
 
@@ -601,11 +559,6 @@ const selectedMonthlyRoomBookings = computed(() => {
     })
 })
 
-
-// ======================================================
-// แปลงชื่อห้อง
-// ======================================================
-
 const fixedRoomKeyOf = (b) => {
 
     const match = String(
@@ -626,11 +579,6 @@ const fixedRoomKeyOf = (b) => {
     return `OR-${number}`
 }
 
-
-// ======================================================
-// จำนวนเวลาผ่าตัด
-// ======================================================
-
 const roomMinutesOf = (b) => {
 
     const match = String(
@@ -642,14 +590,8 @@ const roomMinutesOf = (b) => {
         : 0
 }
 
-
-// ======================================================
-// สร้างข้อมูลครบ 20 ห้อง
-// ======================================================
-
 const monthlyRoomUsage = computed(() => {
 
-    // สร้างครบ OR-201 → OR-220 ก่อน
     const rooms = {}
 
     FIXED_OR_ROOMS.forEach(room => {
@@ -662,8 +604,6 @@ const monthlyRoomUsage = computed(() => {
 
     })
 
-
-    // เอา booking มาใส่แต่ละห้อง
     selectedMonthlyRoomBookings.value.forEach(b => {
 
         const room = fixedRoomKeyOf(b)
@@ -678,17 +618,10 @@ const monthlyRoomUsage = computed(() => {
 
     })
 
-
-    // คืนค่าตามลำดับ OR-201 → OR-220
     return FIXED_OR_ROOMS.map(
         room => rooms[room]
     )
 })
-
-
-// ======================================================
-// รวมจำนวนเคส
-// ======================================================
 
 const selectedMonthlyTotalCases = computed(() => {
 
@@ -697,11 +630,6 @@ const selectedMonthlyTotalCases = computed(() => {
         0
     )
 })
-
-
-// ======================================================
-// รวมเวลาการใช้งาน
-// ======================================================
 
 const selectedMonthlyTotalMinutes = computed(() => {
 
@@ -781,7 +709,6 @@ const selectedMonthlyTotalMinutes = computed(() => {
     margin-top: 4px;
 }
 
-/* ===== Chart ===== */
 .fiscal-chart-wrap {
     padding: 16px 20px 8px;
 }
@@ -869,7 +796,6 @@ const selectedMonthlyTotalMinutes = computed(() => {
     stroke-width: 1.5;
 }
 
-/* ===== Room Usage Table ===== */
 .room-usage-section {
     padding: 12px 20px 20px;
 }
@@ -971,10 +897,6 @@ const selectedMonthlyTotalMinutes = computed(() => {
     color: #334155;
 }
 
-/* ======================================================
-   Monthly Room Usage Card
-====================================================== */
-
 .monthly-room-section {
     margin: 20px;
 
@@ -985,9 +907,6 @@ const selectedMonthlyTotalMinutes = computed(() => {
 
     background: #ffffff;
 }
-
-
-/* Header */
 
 .monthly-room-header {
     display: flex;
@@ -1003,14 +922,12 @@ const selectedMonthlyTotalMinutes = computed(() => {
     border-bottom: 1px solid #e2e8f0;
 }
 
-
 .monthly-room-header-left {
     display: flex;
     align-items: center;
 
     gap: 10px;
 }
-
 
 .monthly-room-icon {
     width: 36px;
@@ -1026,11 +943,9 @@ const selectedMonthlyTotalMinutes = computed(() => {
     color: #2563eb;
 }
 
-
 .monthly-room-icon .material-icons {
     font-size: 20px;
 }
-
 
 .monthly-room-title {
     margin: 0;
@@ -1041,7 +956,6 @@ const selectedMonthlyTotalMinutes = computed(() => {
     font-weight: 700;
 }
 
-
 .monthly-room-subtitle {
     margin: 3px 0 0;
 
@@ -1050,9 +964,6 @@ const selectedMonthlyTotalMinutes = computed(() => {
     font-size: 11px;
 }
 
-
-/* Dropdown */
-
 .monthly-room-filter {
     display: flex;
     align-items: center;
@@ -1060,14 +971,12 @@ const selectedMonthlyTotalMinutes = computed(() => {
     gap: 8px;
 }
 
-
 .monthly-room-filter label {
     color: #64748b;
 
     font-size: 11px;
     font-weight: 600;
 }
-
 
 .monthly-room-filter select {
     min-width: 150px;
@@ -1089,16 +998,12 @@ const selectedMonthlyTotalMinutes = computed(() => {
     cursor: pointer;
 }
 
-
 .monthly-room-filter select:focus {
     border-color: #4a6fa5;
 
     box-shadow:
         0 0 0 3px rgba(74, 111, 165, 0.1);
 }
-
-
-/* Summary */
 
 .monthly-room-summary {
     display: grid;
@@ -1110,7 +1015,6 @@ const selectedMonthlyTotalMinutes = computed(() => {
 
     padding: 14px 18px;
 }
-
 
 .monthly-summary-card {
     display: flex;
@@ -1127,7 +1031,6 @@ const selectedMonthlyTotalMinutes = computed(() => {
     background: #f9fbff;
 }
 
-
 .monthly-summary-icon {
     width: 34px;
     height: 34px;
@@ -1141,29 +1044,24 @@ const selectedMonthlyTotalMinutes = computed(() => {
     border-radius: 9px;
 }
 
-
 .monthly-summary-icon .material-icons {
     font-size: 18px;
 }
-
 
 .monthly-summary-icon.blue {
     background: #e0ecff;
     color: #2563eb;
 }
 
-
 .monthly-summary-icon.green {
     background: #dcfce7;
     color: #15803d;
 }
 
-
 .monthly-summary-icon.orange {
     background: #fef3c7;
     color: #d97706;
 }
-
 
 .monthly-summary-number {
     color: #1a3a5f;
@@ -1174,7 +1072,6 @@ const selectedMonthlyTotalMinutes = computed(() => {
     line-height: 1;
 }
 
-
 .monthly-summary-label {
     margin-top: 4px;
 
@@ -1182,9 +1079,6 @@ const selectedMonthlyTotalMinutes = computed(() => {
 
     font-size: 11px;
 }
-
-
-/* Table */
 
 .monthly-room-table-wrap {
     margin: 0 18px 18px;
@@ -1196,7 +1090,6 @@ const selectedMonthlyTotalMinutes = computed(() => {
     border-radius: 10px;
 }
 
-
 .monthly-room-table {
     width: 100%;
 
@@ -1204,7 +1097,6 @@ const selectedMonthlyTotalMinutes = computed(() => {
 
     font-size: 12px;
 }
-
 
 .monthly-room-table th {
     padding: 9px 10px;
@@ -1220,7 +1112,6 @@ const selectedMonthlyTotalMinutes = computed(() => {
     white-space: nowrap;
 }
 
-
 .monthly-room-table td {
     padding: 8px 10px;
 
@@ -1231,18 +1122,13 @@ const selectedMonthlyTotalMinutes = computed(() => {
     border-bottom: 1px solid #f1f5f9;
 }
 
-
 .monthly-room-table tbody tr:hover {
     background: #f9fbff;
 }
 
-
 .monthly-room-table tbody tr:last-child td {
     border-bottom: none;
 }
-
-
-/* Room */
 
 .monthly-room-name {
     width: 130px;
@@ -1254,17 +1140,11 @@ const selectedMonthlyTotalMinutes = computed(() => {
     text-align: left !important;
 }
 
-
-/* Case */
-
 .monthly-has-case {
     color: #1a3a5f !important;
 
     font-weight: 800;
 }
-
-
-/* Status */
 
 .monthly-status {
     display: inline-flex;
@@ -1276,7 +1156,6 @@ const selectedMonthlyTotalMinutes = computed(() => {
     font-weight: 600;
 }
 
-
 .monthly-status .status-dot {
     width: 7px;
     height: 7px;
@@ -1284,28 +1163,21 @@ const selectedMonthlyTotalMinutes = computed(() => {
     border-radius: 50%;
 }
 
-
 .monthly-status.active {
     color: #15803d;
 }
-
 
 .monthly-status.active .status-dot {
     background: #22c55e;
 }
 
-
 .monthly-status.empty {
     color: #94a3b8;
 }
 
-
 .monthly-status.empty .status-dot {
     background: #cbd5e1;
 }
-
-
-/* Footer */
 
 .monthly-room-table tfoot td {
     padding: 10px;
@@ -1321,9 +1193,6 @@ const selectedMonthlyTotalMinutes = computed(() => {
     border-bottom: none;
 }
 
-
-/* Responsive */
-
 @media (max-width: 768px) {
 
     .monthly-room-header {
@@ -1332,21 +1201,17 @@ const selectedMonthlyTotalMinutes = computed(() => {
         flex-direction: column;
     }
 
-
     .monthly-room-filter {
         width: 100%;
     }
-
 
     .monthly-room-filter select {
         flex: 1;
     }
 
-
     .monthly-room-summary {
         grid-template-columns: 1fr;
     }
-
 
     .monthly-room-table-wrap {
         margin-left: 12px;
@@ -1354,12 +1219,6 @@ const selectedMonthlyTotalMinutes = computed(() => {
     }
 }
 
-
-/* ======================================================
-   Smooth Animation - Bar + Line Chart
-====================================================== */
-
-/* แท่งกราฟค่อย ๆ สูงขึ้น */
 .chart-bar {
     transform-box: fill-box;
     transform-origin: center bottom;
@@ -1371,8 +1230,6 @@ const selectedMonthlyTotalMinutes = computed(() => {
         opacity 0.2s ease;
 }
 
-
-/* ให้แต่ละแท่งขึ้นไม่พร้อมกัน */
 .chart-bar:nth-child(1) {
     animation-delay: 0.05s;
 }
@@ -1421,7 +1278,6 @@ const selectedMonthlyTotalMinutes = computed(() => {
     animation-delay: 0.60s;
 }
 
-
 @keyframes barGrow {
     0% {
         transform: scaleY(0);
@@ -1438,11 +1294,6 @@ const selectedMonthlyTotalMinutes = computed(() => {
     }
 }
 
-
-/* ======================================================
-   Trend Line Animation
-====================================================== */
-
 .chart-trend-line {
     fill: none;
 
@@ -1452,14 +1303,12 @@ const selectedMonthlyTotalMinutes = computed(() => {
     stroke-linejoin: round;
     stroke-linecap: round;
 
-    /* ทำให้เส้นค่อย ๆ วาดออกมา */
     stroke-dasharray: 1000;
     stroke-dashoffset: 1000;
 
     animation:
         drawTrendLine 1.6s cubic-bezier(0.22, 1, 0.36, 1) 0.4s forwards;
 }
-
 
 @keyframes drawTrendLine {
     from {
@@ -1470,11 +1319,6 @@ const selectedMonthlyTotalMinutes = computed(() => {
         stroke-dashoffset: 0;
     }
 }
-
-
-/* ======================================================
-   Trend Points
-====================================================== */
 
 .chart-trend-point {
     fill: #f50b0b;
@@ -1490,9 +1334,6 @@ const selectedMonthlyTotalMinutes = computed(() => {
     animation:
         pointAppear 0.35s ease-out forwards;
 }
-
-
-/* จุดค่อย ๆ ขึ้นทีละจุด */
 
 .chart-trend-point:nth-of-type(1) {
     animation-delay: 0.55s;
@@ -1542,7 +1383,6 @@ const selectedMonthlyTotalMinutes = computed(() => {
     animation-delay: 1.65s;
 }
 
-
 @keyframes pointAppear {
     0% {
         opacity: 0;
@@ -1560,16 +1400,10 @@ const selectedMonthlyTotalMinutes = computed(() => {
     }
 }
 
-
-/* ======================================================
-   ตัวเลขบนแท่ง
-====================================================== */
-
 .chart-value-label {
     animation:
         valueAppear 0.45s ease-out 0.5s both;
 }
-
 
 @keyframes valueAppear {
     from {
@@ -1582,11 +1416,6 @@ const selectedMonthlyTotalMinutes = computed(() => {
         transform: translateY(0);
     }
 }
-
-
-/* ======================================================
-   ลด motion สำหรับคนที่เปิด accessibility setting
-====================================================== */
 
 @media (prefers-reduced-motion: reduce) {
 

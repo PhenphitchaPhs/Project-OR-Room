@@ -2,7 +2,7 @@
     <div class="page-wrapper">
         <div class="card">
             <div v-if="tomorrowCount > 0" class="reminder-banner">
-                📢 Reminder: พรุ่งนี้มีนัดผ่าตัดทั้งหมด <strong>{{ tomorrowCount }}</strong> เคส
+                📢 Reminder: <strong>{{ tomorrowCount }}</strong> surgery case(s) scheduled for tomorrow
             </div>
 
             <div class="header-row">
@@ -24,8 +24,9 @@
                     </label>
                     <div class="grid-2-col">
                         <div style="position: relative;">
-                            <input type="text" v-model="form.hn" placeholder="HN" class="input-field green-theme"
-                                @blur="lookupHN" required />
+                            <input type="text" v-model="form.hn" placeholder="HN (7 digits)" class="input-field green-theme"
+                                inputmode="numeric" pattern="[0-9]{7}" maxlength="7"
+                                @input="form.hn = form.hn.replace(/\D/g, '').slice(0, 7)" @blur="lookupHN" required />
                             <span v-if="hnStatus === 'loading'" class="status-tag">⏳</span>
                             <span v-if="hnStatus === 'found'" class="status-tag" style="color:#2e7d32">✅ Found</span>
                         </div>
@@ -33,7 +34,7 @@
                             class="input-field green-theme" required />
 
                         <div class="split-input-row">
-                            <input type="number" v-model="form.age" placeholder="Age (ปี)" min="0" max="120"
+                            <input type="number" v-model="form.age" placeholder="Age (years)" min="0" max="120"
                                 class="input-field green-theme" required />
                             <select v-model="form.gender" class="input-field green-theme" required>
                                 <option value="" disabled>Gender</option>
@@ -66,7 +67,7 @@
 
                         <div style="display: flex; flex-direction: column;">
                             <label class="date-label">
-                                📅 วันที่ผ่าตัด (กรุณากรอกเป็น ค.ศ. เท่านั้น)
+                                📅 Surgery date (Gregorian calendar only)
                                 <span class="required">*</span>
                             </label>
 
@@ -75,12 +76,12 @@
                                 :class="{ 'locked-field': isDateLocked && form.date }" required />
 
                             <span class="date-hint">
-                                ตัวอย่าง: 25-06-2026
+                                Example: 25-06-2026
                             </span>
 
                             <span v-if="isDateLocked && form.date"
                                 style="color: #1a3a5f; font-size: 0.8rem; margin-top: 4px; font-weight: 600;">
-                                🔒 ล็อควันที่จากปฏิทินแล้ว
+                                🔒 Date locked by calendar
                             </span>
 
                             <span v-if="remainingTimeMsg"
@@ -154,7 +155,7 @@
                     {{ alertMessage }}
                 </div>
                 <button class="alert-btn" @click="showAlertModal = false">
-                    ตกลง
+                    OK
                 </button>
             </div>
         </div>
@@ -291,7 +292,7 @@ onMounted(async () => {
 
     if (bookingId) {
         try {
-            // 📍 แก้ไข: ยิงขอแค่คิวที่ต้องการ ถ้าไม่มีสิทธิ์ Server จะคืน 403
+
             const res = await apiFetch(`/api/bookings/${bookingId}`)
 
             if (res.ok) {
@@ -319,7 +320,7 @@ onMounted(async () => {
                 form.admDate = booking.admDate || ''
                 form.admNote = booking.admNote || ''
             } else if (res.status === 403) {
-                showAlert('คุณไม่มีสิทธิ์แก้ไขคิวนี้ เพราะไม่ใช่คิวของคุณครับ')
+            showAlert('You do not have permission to edit this booking')
                 const isAdminReject = localStorage.getItem('userRole') === 'admin'
                 setTimeout(() => { router.push(isAdminReject ? '/admin-home' : '/home') }, 1500)
                 return
@@ -348,8 +349,7 @@ onMounted(async () => {
         const tomorrow = new Date()
         tomorrow.setDate(tomorrow.getDate() + 1)
         const tomStr = tomorrow.toISOString().split('T')[0]
-        
-        // 📍 แก้ไข: ดึงตารางแค่วันพรุ่งนี้ ไม่ดึงทั้งหมด ไม่โหลดข้อมูลผู้ป่วย
+
         const res = await apiFetch(`/api/schedule?from=${tomStr}&to=${tomStr}`)
         if (res.ok) {
             const data = await res.json()
@@ -398,7 +398,7 @@ const validateHolidayAndWeekend = (dateStr) => {
     if (!normalizedYear || normalizedYear < currentYear - 1 || normalizedYear > currentYear + 5) return true
 
     if (apiHolidays.value[dateStr]) {
-        showAlert(`วันที่เลือกเป็นวันหยุดราชการ : ${apiHolidays.value[dateStr]} ห้องผ่าตัดปิดให้บริการครับ`)
+        showAlert(`The selected date is a public holiday: ${apiHolidays.value[dateStr]}. The operating rooms are closed.`)
         form.date = ''
         return false
     }
@@ -406,7 +406,7 @@ const validateHolidayAndWeekend = (dateStr) => {
     const selected = new Date(dateStr)
     const dow = selected.getDay()
     if (dow === 0 || dow === 6) {
-        showAlert('วันเสาร์-อาทิตย์ ห้องผ่าตัดปิดให้บริการครับ')
+        showAlert('The operating rooms are closed on weekends')
         form.date = ''
         return false
     }
@@ -414,7 +414,7 @@ const validateHolidayAndWeekend = (dateStr) => {
     const selectedDateObj = new Date(dateStr)
     const maxDateObj = new Date(maxDate.value)
     if (selectedDateObj > maxDateObj) {
-        showAlert(`ไม่สามารถจองคิวล่วงหน้าเกิน 90 วันได้ครับ (จองได้ถึง ${maxDate.value})`)
+        showAlert(`Bookings cannot be made more than 90 days in advance (available until ${maxDate.value})`)
         form.date = ''
         return false
     }
@@ -441,13 +441,12 @@ const checkValidDate = async () => {
     }
 
     try {
-        // 📍 แก้ไข: ยิงหา /api/schedule เฉพาะวันที่ต้องการ
+
         const res = await apiFetch(`/api/schedule?from=${form.date}&to=${form.date}`)
-        
+
         if (res.ok) {
             const dailySchedule = await res.json()
 
-            // ✅ เปลี่ยน Succeed → Completed
             const sameDayBookings = dailySchedule.filter(
                 b =>
                     b.room === form.room &&
@@ -456,7 +455,6 @@ const checkValidDate = async () => {
                     String(b.id) !== String(bookingId)
             )
 
-            // 📍 แก้ไข: ใช้ข้อมูล durationMinutes ที่แนบมากับ Endpoint ได้เลย
             const usedMinutes = sameDayBookings.reduce((sum, b) => sum + (b.durationMinutes || 0), 0)
 
             const MAX_MINUTES = 420
@@ -468,17 +466,17 @@ const checkValidDate = async () => {
                 const exMins = exceededMin % 60
                 isOverCapacity.value = true
                 remainingTimeMsg.value =
-                    `ห้อง ${form.room} เกินเวลาที่กำหนดแล้ว ${exHrs} ชม. ` +
-                    (exMins > 0 ? `${exMins} นาที ` : '') +
-                    '(ยังสามารถจองต่อได้)'
+                    `Room ${form.room} has exceeded its capacity by ${exHrs}h ` +
+                    (exMins > 0 ? `${exMins}m ` : '') +
+                    '(you can still continue booking)'
             } else {
                 const hrs = Math.floor(remainingMinutes / 60)
                 const mins = remainingMinutes % 60
 
                 isOverCapacity.value = false
                 remainingTimeMsg.value =
-                    `ห้อง ${form.room} เหลือเวลาว่างอีก ${hrs} ชม. ` +
-                    (mins > 0 ? `${mins} นาที` : '')
+                    `Room ${form.room} has ${hrs}h ` +
+                    (mins > 0 ? `${mins}m` : '') + ' remaining'
             }
 
             if (form.procedure) {
@@ -494,9 +492,9 @@ const checkValidDate = async () => {
 
                     isOverCapacity.value = true
                     remainingTimeMsg.value =
-                        `ห้อง ${form.room} วันที่ ${form.date} เวลารวมจะเกิน ${MAX_MINUTES / 60} ชม. ไป ${overHrs} ชม. ` +
-                        (overMins > 0 ? `${overMins} นาที ` : '') +
-                        '(ยังสามารถจองต่อได้)'
+                        `Room ${form.room} on ${form.date} will exceed the ${MAX_MINUTES / 60}-hour limit by ${overHrs}h ` +
+                        (overMins > 0 ? `${overMins}m ` : '') +
+                        '(you can still continue booking)'
                 }
             }
         }
@@ -506,14 +504,18 @@ const checkValidDate = async () => {
 }
 
 const submitForm = async () => {
+    if (!/^\d{7}$/.test(form.hn)) {
+        showAlert('HN must contain exactly 7 digits')
+        return
+    }
+
     if (!form.hn || !form.fullName || !form.age || !form.gender || !form.date || !form.procedure || !form.room) {
-        showAlert('กรุณากรอกข้อมูล Patient Information และ Surgery Details ให้ครบถ้วนทุกช่องครับ')
+        showAlert('Please complete all Patient Information and Surgery Details fields')
         return
     }
 
     if (!validateHolidayAndWeekend(form.date)) return
 
-    // 📍 แกะหา durationMinutes เพื่อส่งไปบันทึกลง Database
     const matchProc = form.procedure.match(/(\d+)\s*min/)
     const durationMinutes = matchProc ? parseInt(matchProc[1]) : 0
 
@@ -523,7 +525,7 @@ const submitForm = async () => {
         age: form.age,
         gender: form.gender || '',
         procedure: form.procedure,
-        durationMinutes: durationMinutes, // ส่งให้ Backend เก็บลงฐานข้อมูลโดยตรง
+        durationMinutes: durationMinutes,
         date: form.date,
         room: form.room,
         underlying: form.disease || '',
@@ -553,7 +555,7 @@ const submitForm = async () => {
         })
 
         if (res.ok) {
-            showAlert(bookingId ? 'อัปเดตคิวสำเร็จ!' : 'จองคิวสำเร็จ!', true)
+            showAlert(bookingId ? 'Booking updated successfully!' : 'Booking created successfully!', true)
             setTimeout(() => {
                 const isAdmin = localStorage.getItem('userRole') === 'admin'
                 if (isAdmin) {
@@ -564,11 +566,11 @@ const submitForm = async () => {
             }, 1500)
         } else {
             const errData = await res.json().catch(() => ({}))
-            showAlert(`บันทึกไม่สำเร็จ: ${errData.error || 'เซิร์ฟเวอร์ปฏิเสธการรับข้อมูล'}`)
+            showAlert(`Save failed: ${errData.error || 'The server rejected the request'}`)
         }
     } catch (e) {
         console.error(e)
-        showAlert('ระบบขัดข้อง ไม่สามารถติดต่อเซิร์ฟเวอร์ได้')
+        showAlert('System error. Unable to contact the server')
     }
 }
 

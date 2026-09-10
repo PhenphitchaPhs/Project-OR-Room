@@ -8,12 +8,12 @@
                         <polyline points="15 18 9 12 15 6" />
                     </svg>
                 </button>
-                <h1 class="title">เพิ่มคิวผ่าตัด (Admin)</h1>
+                <h1 class="title">Add Surgery Booking (Admin)</h1>
                 <div class="header-spacer"></div>
             </div>
 
             <form @submit.prevent="submitForm">
-                <!-- 1. Patient Information -->
+
                 <div class="section-group">
                     <label class="group-label">
                         Patient Information
@@ -21,8 +21,9 @@
                     </label>
                     <div class="grid-2-col">
                         <div style="position: relative;">
-                            <input type="text" v-model="form.hn" placeholder="HN Number" class="input-field green-theme"
-                                @blur="lookupHN" required />
+                            <input type="text" v-model="form.hn" placeholder="HN (7 digits)" class="input-field green-theme"
+                                inputmode="numeric" pattern="[0-9]{7}" maxlength="7"
+                                @input="form.hn = form.hn.replace(/\D/g, '').slice(0, 7)" @blur="lookupHN" required />
                             <span v-if="hnStatus === 'loading'" class="status-tag">⏳</span>
                             <span v-if="hnStatus === 'found'" class="status-tag" style="color:#2e7d32">✅ Found</span>
                             <span v-if="hnStatus === 'notfound'" class="status-tag" style="color:#888">👤 New</span>
@@ -31,7 +32,7 @@
                             class="input-field green-theme" required />
 
                         <div class="split-input-row">
-                            <input type="number" v-model="form.age" placeholder="Age (ปี)" min="0" max="120"
+                            <input type="number" v-model="form.age" placeholder="Age (years)" min="0" max="120"
                                 class="input-field green-theme" required />
                             <select v-model="form.gender" class="input-field green-theme" required>
                                 <option value="" disabled>Gender</option>
@@ -46,17 +47,15 @@
                     </div>
                 </div>
 
-                <!-- 2. Surgery Details (Admin Specifics Included) -->
                 <div class="section-group">
                     <label class="group-label">
                         Surgery Details
                         <span class="required">*</span>
                     </label>
-                    
-                    <!-- ส่วนเลือกแพทย์สำหรับแอดมิน -->
+
                     <div style="margin-bottom: 15px;">
                         <select v-model="form.doctorLicense" class="input-field green-theme" required>
-                            <option value="" disabled>Select Doctor (แพทย์ผู้รับผิดชอบ)</option>
+                            <option value="" disabled>Select Doctor</option>
                             <option v-for="doc in doctors" :key="doc.license" :value="doc.license">
                                 {{ doc.doctorName }} ({{ doc.license }})
                             </option>
@@ -64,7 +63,7 @@
                     </div>
 
                     <div class="grid-2-col">
-                        <!-- Procedure Selection -->
+
                         <div style="display: flex; flex-direction: column;">
                             <select v-model="form.procedure" class="input-field green-theme" @change="checkValidDate" required>
                                 <option value="" disabled>Select Procedure</option>
@@ -74,27 +73,25 @@
                                     </option>
                                 </optgroup>
                             </select>
-                            
-                            <!-- Custom Procedure Inputs (โผล่เมื่อเลือก OTHER_PROCEDURE) -->
+
                             <div v-if="form.procedure === 'OTHER_PROCEDURE'" class="custom-procedure-row">
                                 <input type="text" v-model="form.customProcedure" placeholder="Procedure Name" class="input-field green-theme" required />
                                 <input type="number" min="1" v-model="form.customProcedureMinutes" placeholder="Mins" class="input-field green-theme" @blur="checkValidDate" required />
                             </div>
                         </div>
 
-                        <!-- Date Selection -->
                         <div style="display: flex; flex-direction: column;">
                             <label class="date-label">
-                                📅 วันที่ผ่าตัด (ค.ศ. เท่านั้น)
+                                📅 Surgery date (Gregorian calendar only)
                                 <span class="required">*</span>
                             </label>
                             <input type="date" v-model="form.date" :min="minDate" :max="maxDate" @blur="checkValidDate"
                                 class="input-field green-theme" :readonly="isDateLocked && !!form.date"
                                 :class="{ 'locked-field': isDateLocked && form.date }" required />
 
-                            <span class="date-hint">ตัวอย่าง: 25-06-2026</span>
+                            <span class="date-hint">Example: 25-06-2026</span>
                             <span v-if="isDateLocked && form.date" style="color: #1a3a5f; font-size: 0.8rem; margin-top: 4px; font-weight: 600;">
-                                🔒 ล็อควันที่จากปฏิทินแล้ว
+                                🔒 Date locked by calendar
                             </span>
                             <span v-if="remainingTimeMsg"
                                 :style="{ color: isOverCapacity ? '#dc2626' : '#0288d1', fontSize: '0.85rem', marginTop: '6px', fontWeight: '500' }">
@@ -102,7 +99,6 @@
                             </span>
                         </div>
 
-                        <!-- OR Room Selection (Fixed OR-201 to OR-220) -->
                         <select v-model="form.room" class="input-field green-theme" @change="checkValidDate" required>
                             <option value="" disabled>Select OR Room</option>
                             <option v-for="n in orRooms" :key="n" :value="`OR-${n}`">OR-{{ n }}</option>
@@ -110,7 +106,6 @@
                     </div>
                 </div>
 
-                <!-- 3. Pre-operative & Admission Notes -->
                 <div class="section-group">
                     <label class="group-label">Pre-operative & Admission Notes</label>
                     <div class="notes-grid">
@@ -145,7 +140,6 @@
                     </div>
                 </div>
 
-                <!-- 4. Other Remarks -->
                 <div class="section-group">
                     <label class="group-label">Other Remarks</label>
                     <textarea v-model="form.notes" placeholder="Additional details..."
@@ -158,14 +152,13 @@
             </form>
         </div>
     </div>
-    
-    <!-- Alert Modal แบบเดียวกับฝั่งผู้ใช้ -->
+
     <Transition name="fade">
         <div v-if="showAlertModal" class="modal-overlay" @click="showAlertModal = false">
             <div class="alert-modal" @click.stop>
                 <div class="alert-icon">{{ isAlertSuccess ? '✅' : '❌' }}</div>
                 <div class="alert-message">{{ alertMessage }}</div>
-                <button class="alert-btn" @click="showAlertModal = false">ตกลง</button>
+                <button class="alert-btn" @click="showAlertModal = false">OK</button>
             </div>
         </div>
     </Transition>
@@ -179,7 +172,6 @@ import { apiFetch } from '../../api/client'
 const router = useRouter()
 const route = useRoute()
 
-// State Management
 const hnStatus = ref('')
 const showAlertModal = ref(false)
 const alertMessage = ref('')
@@ -188,9 +180,8 @@ const remainingTimeMsg = ref('')
 const isOverCapacity = ref(false)
 const isDateLocked = ref(false)
 const apiHolidays = ref({})
-const doctors = ref([]) // เก็บรายชื่อแพทย์สำหรับแอดมิน
+const doctors = ref([])
 
-// ฟอร์มข้อมูล
 const form = reactive({
     hn: '', fullName: '', age: '', gender: '', disease: '', diagnosis: '',
     procedure: '', customProcedure: '', customProcedureMinutes: '',
@@ -201,7 +192,6 @@ const form = reactive({
     admDate: '', admNote: ''
 })
 
-// ตัวเลือกห้องผ่าตัด OR-201 ถึง OR-220
 const orRooms = Array.from({ length: 20 }, (_, i) => 201 + i)
 
 const procedureGroups = ref([
@@ -293,7 +283,6 @@ const max = new Date()
 max.setDate(max.getDate() + 90)
 const maxDate = ref(max.toISOString().split('T')[0])
 
-// Alert Helper
 const showAlert = (message, isSuccess = false) => {
     alertMessage.value = message
     isAlertSuccess.value = isSuccess
@@ -301,25 +290,23 @@ const showAlert = (message, isSuccess = false) => {
 }
 
 onMounted(async () => {
-    // 1. ดึงรายชื่อแพทย์ทั้งหมดเพื่อใส่ใน Dropdown ให้แอดมินเลือก
+
     try {
         const res = await apiFetch('/api/users')
         if (res.ok) {
             const data = await res.json()
-            // กรองเอาเฉพาะบัญชีแพทย์ (role: user) ไม่เอา admin
+
             doctors.value = Array.isArray(data) ? data.filter(u => u.role !== 'admin') : []
         }
     } catch (e) {
         console.error('ดึงรายชื่อแพทย์ไม่สำเร็จ', e)
     }
 
-    // 2. ล็อควันที่หากมาจากการกดผ่านปฏิทิน (Route Query)
     if (route.query.date) {
         form.date = route.query.date
         isDateLocked.value = true
     }
 
-    // 3. ดึงข้อมูลวันหยุดราชการ
     try {
         const holidayRes = await apiFetch('/api/holidays')
         if (holidayRes.ok) {
@@ -339,7 +326,6 @@ onMounted(async () => {
     }
 })
 
-// ค้นหาประวัติผู้ป่วยจาก HN
 const lookupHN = async () => {
     if (form.hn.length < 3) return
     hnStatus.value = 'loading'
@@ -355,22 +341,21 @@ const lookupHN = async () => {
         } else {
             hnStatus.value = 'notfound'
         }
-    } catch (e) { 
-        hnStatus.value = 'notfound' 
+    } catch (e) {
+        hnStatus.value = 'notfound'
     }
 }
 
-// ตรวจสอบวันหยุด
 const validateHolidayAndWeekend = (dateStr) => {
     if (!dateStr) return true
     const yearPart = parseInt(dateStr.split('-')[0])
     const currentYear = new Date().getFullYear()
     const normalizedYear = yearPart > 2400 ? yearPart - 543 : yearPart
-    
+
     if (!normalizedYear || normalizedYear < currentYear - 1 || normalizedYear > currentYear + 5) return true
 
     if (apiHolidays.value[dateStr]) {
-        showAlert(`วันที่เลือกเป็นวันหยุดราชการ : ${apiHolidays.value[dateStr]} ห้องผ่าตัดปิดให้บริการครับ`)
+        showAlert(`The selected date is a public holiday: ${apiHolidays.value[dateStr]}. The operating rooms are closed.`)
         form.date = ''
         return false
     }
@@ -378,7 +363,7 @@ const validateHolidayAndWeekend = (dateStr) => {
     const selected = new Date(dateStr)
     const dow = selected.getDay()
     if (dow === 0 || dow === 6) {
-        showAlert('วันเสาร์-อาทิตย์ ห้องผ่าตัดปิดให้บริการครับ')
+        showAlert('The operating rooms are closed on weekends')
         form.date = ''
         return false
     }
@@ -386,14 +371,13 @@ const validateHolidayAndWeekend = (dateStr) => {
     const selectedDateObj = new Date(dateStr)
     const maxDateObj = new Date(maxDate.value)
     if (selectedDateObj > maxDateObj) {
-        showAlert(`ไม่สามารถจองคิวล่วงหน้าเกิน 90 วันได้ครับ (จองได้ถึง ${maxDate.value})`)
+        showAlert(`Bookings cannot be made more than 90 days in advance (available until ${maxDate.value})`)
         form.date = ''
         return false
     }
     return true
 }
 
-// ตรวจสอบความจุห้องผ่าตัด
 const checkValidDate = async () => {
     remainingTimeMsg.value = ''
     isOverCapacity.value = false
@@ -407,7 +391,6 @@ const checkValidDate = async () => {
         const res = await apiFetch('/api/bookings')
         const allBookings = await res.json()
 
-        // ✅ เปลี่ยน Succeed → Completed
         const sameDayBookings = allBookings.filter(
             b => b.date === form.date && b.room === form.room && b.status !== 'Completed' && b.status !== 'Cancelled'
         )
@@ -417,7 +400,7 @@ const checkValidDate = async () => {
             return sum + (match ? parseInt(match[1]) : 0)
         }, 0)
 
-        const MAX_MINUTES = 420 // มาตรฐาน 7 ชั่วโมง
+        const MAX_MINUTES = 420
         const remainingMinutes = MAX_MINUTES - usedMinutes
 
         if (remainingMinutes <= 0) {
@@ -425,17 +408,16 @@ const checkValidDate = async () => {
             const exHrs = Math.floor(exceededMin / 60)
             const exMins = exceededMin % 60
             isOverCapacity.value = true
-            remainingTimeMsg.value = `ห้อง ${form.room} เกินเวลาที่กำหนดแล้ว ${exHrs} ชม. ` +
-                (exMins > 0 ? `${exMins} นาที ` : '') + '(ยังสามารถจองต่อได้)'
+                remainingTimeMsg.value = `Room ${form.room} has exceeded its capacity by ${exHrs}h ` +
+                    (exMins > 0 ? `${exMins}m ` : '') + '(you can still continue booking)'
         } else {
             const hrs = Math.floor(remainingMinutes / 60)
             const mins = remainingMinutes % 60
             isOverCapacity.value = false
-            remainingTimeMsg.value = `ห้อง ${form.room} เหลือเวลาว่างอีก ${hrs} ชม. ` +
-                (mins > 0 ? `${mins} นาที` : '')
+            remainingTimeMsg.value = `Room ${form.room} has ${hrs}h ` +
+                (mins > 0 ? `${mins}m` : '') + ' remaining'
         }
 
-        // เช็คเวลาของหัตถการที่จะเพิ่มใหม่
         if (form.procedure) {
             let newProcMin = 0
             if (form.procedure === 'OTHER_PROCEDURE') {
@@ -451,8 +433,8 @@ const checkValidDate = async () => {
                 const overHrs = Math.floor(overBy / 60)
                 const overMins = overBy % 60
                 isOverCapacity.value = true
-                remainingTimeMsg.value = `ห้อง ${form.room} วันที่ ${form.date} เวลารวมจะเกินกำหนดไป ${overHrs} ชม. ` +
-                    (overMins > 0 ? `${overMins} นาที ` : '') + '(ยังสามารถจองต่อได้)'
+                remainingTimeMsg.value = `Room ${form.room} on ${form.date} will exceed the limit by ${overHrs}h ` +
+                    (overMins > 0 ? `${overMins}m ` : '') + '(you can still continue booking)'
             }
         }
     } catch (e) {
@@ -460,22 +442,25 @@ const checkValidDate = async () => {
     }
 }
 
-// ยืนยันการจองคิว
 const submitForm = async () => {
+    if (!/^\d{7}$/.test(form.hn)) {
+        showAlert('HN must contain exactly 7 digits')
+        return
+    }
+
     if (!form.hn || !form.fullName || !form.age || !form.gender || !form.date || !form.procedure || !form.room || !form.doctorLicense) {
-        showAlert('กรุณากรอกข้อมูล Patient Information, เลือกแพทย์ และ Surgery Details ให้ครบถ้วนทุกช่องครับ')
+        showAlert('Please complete Patient Information, select a doctor, and complete Surgery Details')
         return
     }
 
     if (form.procedure === 'OTHER_PROCEDURE' && (!form.customProcedure || !form.customProcedureMinutes)) {
-        showAlert('กรุณาระบุชื่อการผ่าตัดและเวลา (นาที) ให้ครบถ้วนครับ')
+        showAlert('Please specify the procedure and duration in minutes')
         return
     }
 
     if (!validateHolidayAndWeekend(form.date)) return
 
-    // จัดการข้อความ Procedure กรณี Custom
-    const finalProcedure = form.procedure === 'OTHER_PROCEDURE' 
+    const finalProcedure = form.procedure === 'OTHER_PROCEDURE'
         ? `${form.customProcedure} - ${form.customProcedureMinutes} mins`
         : form.procedure
 
@@ -495,7 +480,7 @@ const submitForm = async () => {
         labDate: form.labDate, labNote: form.labNote,
         admDate: form.admDate, admNote: form.admNote,
         dob: null,
-        doctorLicense: form.doctorLicense // ใช้แพทย์ที่แอดมินเลือกจากฟอร์ม
+        doctorLicense: form.doctorLicense
     }
 
     try {
@@ -509,28 +494,27 @@ const submitForm = async () => {
         })
 
         if (res.ok) {
-            showAlert('เพิ่มคิวโดยแอดมินสำเร็จ!', true)
+            showAlert('Booking added successfully by admin!', true)
             setTimeout(() => {
                 router.push('/admin-home')
             }, 1500)
         } else {
             const errData = await res.json().catch(() => ({}))
-            showAlert(`บันทึกไม่สำเร็จ: ${errData.error || 'เซิร์ฟเวอร์ปฏิเสธการรับข้อมูล'}`)
+            showAlert(`Save failed: ${errData.error || 'The server rejected the request'}`)
         }
     } catch (e) {
         console.error(e)
-        showAlert('ระบบขัดข้อง ไม่สามารถติดต่อเซิร์ฟเวอร์ได้')
+        showAlert('System error. Unable to contact the server')
     }
 }
 
-// กลับหน้า Home (Admin)
 const goHome = () => {
     router.push('/admin-home')
 }
 </script>
 
 <style scoped>
-/* สไตล์ทั้งหมดอิงจาก BookingView.vue เพื่อให้ UI/UX สอดคล้องกัน 100% */
+
 .page-wrapper {
     display: flex;
     justify-content: center;
@@ -682,7 +666,6 @@ const goHome = () => {
     margin-left: 4px;
 }
 
-/* Notes Grid */
 .notes-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -737,7 +720,6 @@ const goHome = () => {
     background: #162c4d;
 }
 
-/* Modal Alert */
 .modal-overlay {
     position: fixed;
     inset: 0;

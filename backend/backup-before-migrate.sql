@@ -11,7 +11,7 @@ CREATE TABLE bookings (
   urgency TEXT,
   isNpoRisk INTEGER DEFAULT 0,
   isInfected INTEGER DEFAULT 0,
-  underlying TEXT,                
+  underlying TEXT,
   cxrDate TEXT,        -- 👈 เพิ่มข้อมูล CXR
   cxrNote TEXT,
   ecgDate TEXT,        -- 👈 เพิ่มข้อมูล ECG
@@ -21,9 +21,9 @@ CREATE TABLE bookings (
   admDate TEXT,        -- 👈 เพิ่มข้อมูล Admission
   admNote TEXT,
   notes TEXT,
-  status TEXT DEFAULT 'Upcoming', 
-  room TEXT DEFAULT 'OR-01', 
-  doctorLicense TEXT,     
+  status TEXT DEFAULT 'Upcoming',
+  room TEXT DEFAULT 'OR-01',
+  doctorLicense TEXT,
   createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
 , diagnosis TEXT);
 INSERT INTO "bookings" ("id","hn","fullName","dob","age","gender","procedure","date","urgency","isNpoRisk","isInfected","underlying","cxrDate","cxrNote","ecgDate","ecgNote","labDate","labNote","admDate","admNote","notes","status","room","doctorLicense","createdAt","diagnosis") VALUES(1,'1234567','July Summer',NULL,25,'female','Cesarean Section / C-Section (ผ่าคลอด) - 60 mins','2026-06-29','Normal',0,0,'','','','','','','','','','TEST','Succeed','OR-201','12345','2026-06-27 05:08:24',NULL);
@@ -54,7 +54,7 @@ INSERT INTO "bookings" ("id","hn","fullName","dob","age","gender","procedure","d
 INSERT INTO "bookings" ("id","hn","fullName","dob","age","gender","procedure","date","urgency","isNpoRisk","isInfected","underlying","cxrDate","cxrNote","ecgDate","ecgNote","labDate","labNote","admDate","admNote","notes","status","room","doctorLicense","createdAt","diagnosis") VALUES(26,'1245438','ฟองจันทร์ กามล',NULL,62,'female','Thyroidectomy (ผ่าตัดต่อมไทรอยด์) - 120 mins','2026-08-10',NULL,0,0,replace('MNG\nAsthma','\n',char(10)),'2026-07-16','','2026-07-16','','2026-07-16','TFT','2026-08-09','','Right Lobectomy + Istmectomy + Partial Left Lobectomy','Upcoming','OR-206','42251','2026-07-16 15:27:20',NULL);
 CREATE TABLE users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  license TEXT UNIQUE NOT NULL,    
+  license TEXT UNIQUE NOT NULL,
   doctorName TEXT NOT NULL,
   password TEXT NOT NULL,
   day TEXT,

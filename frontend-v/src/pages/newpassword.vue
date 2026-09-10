@@ -1,12 +1,11 @@
 <template>
     <div class="page">
         <div class="card">
-            <!-- logo -->
+
             <img src="../assets/logo.png" class="logo" />
 
             <h2 class="title">ORchestrator</h2>
 
-            <!-- new password -->
             <div class="input-wrap">
                 <input :type="showNew ? 'text' : 'password'" v-model="newPassword" placeholder="New Password"
                     class="input" />
@@ -18,7 +17,6 @@
                 </span>
             </div>
 
-            <!-- confirm password -->
             <div class="input-wrap">
                 <input :type="showConfirm ? 'text' : 'password'" v-model="confirmPassword"
                     placeholder="Confirm Password" class="input" :class="{ error: passwordMismatch }" />
@@ -30,14 +28,12 @@
                 </span>
             </div>
 
-            <!-- error text -->
             <p v-if="passwordMismatch" class="error-text">
-                รหัสผ่านไม่ตรงกัน
+                Passwords do not match
             </p>
 
-            <!-- button -->
             <button class="btn" @click="confirm" :disabled="isLoading">
-                {{ isLoading ? 'กำลังบันทึก...' : 'confirm' }}
+                {{ isLoading ? 'Saving...' : 'Confirm' }}
             </button>
 
             <p v-if="message" class="status-msg" :class="{ success: isSuccess, error: !isSuccess }">
@@ -65,13 +61,12 @@ const isLoading = ref(false);
 const message = ref("");
 const isSuccess = ref(false);
 
-// 📍 ดึง token จากลิงก์ที่ส่งมาในอีเมล (?token=xxxx)
 const token = ref("");
 
 onMounted(() => {
     token.value = route.query.token || "";
     if (!token.value) {
-        message.value = "❌ ลิงก์ไม่ถูกต้อง กรุณากดลิงก์จากอีเมลรีเซ็ตรหัสผ่านอีกครั้ง";
+        message.value = "❌ Invalid link. Please use the link from your password reset email.";
         isSuccess.value = false;
     }
 });
@@ -79,7 +74,6 @@ onMounted(() => {
 const toggleNew = () => (showNew.value = !showNew.value);
 const toggleConfirm = () => (showConfirm.value = !showConfirm.value);
 
-/* ✅ เช็กเฉพาะตอนเริ่มกรอกช่องที่สองแล้ว */
 const passwordMismatch = computed(() => {
     return (
         confirmPassword.value !== "" &&
@@ -89,13 +83,13 @@ const passwordMismatch = computed(() => {
 
 const confirm = async () => {
     if (!token.value) {
-        message.value = "❌ ลิงก์ไม่ถูกต้อง กรุณากดลิงก์จากอีเมลรีเซ็ตรหัสผ่านอีกครั้ง";
+        message.value = "❌ Invalid link. Please use the link from your password reset email.";
         isSuccess.value = false;
         return;
     }
 
     if (!newPassword.value || !confirmPassword.value) {
-        message.value = "กรุณากรอกรหัสผ่านให้ครบ";
+        message.value = "Please complete the password fields";
         isSuccess.value = false;
         return;
     }
@@ -116,16 +110,16 @@ const confirm = async () => {
 
         const data = await response.json();
 
-        if (!response.ok) throw new Error(data.error || "เกิดข้อผิดพลาด");
+        if (!response.ok) throw new Error(data.error || "Something went wrong");
 
         isSuccess.value = true;
-        message.value = "✅ ตั้งรหัสผ่านใหม่สำเร็จ กำลังพาไปหน้าเข้าสู่ระบบ...";
+        message.value = "✅ Password reset successfully. Redirecting to login...";
 
         setTimeout(() => { router.push('/login'); }, 1500);
 
     } catch (error) {
         isSuccess.value = false;
-        message.value = "❌ " + (error.message || "ตั้งรหัสผ่านใหม่ไม่สำเร็จ");
+        message.value = "❌ " + (error.message || "Unable to reset the password");
     } finally {
         isLoading.value = false;
     }
@@ -137,7 +131,6 @@ const confirm = async () => {
     box-sizing: border-box;
 }
 
-/* หน้าไม่เลื่อน */
 .page {
     height: 100dvh;
     width: 100%;
@@ -149,7 +142,6 @@ const confirm = async () => {
     padding-top: 90px;
 }
 
-/* card */
 .card {
     width: 100%;
     max-width: 390px;
@@ -157,19 +149,16 @@ const confirm = async () => {
     text-align: center;
 }
 
-/* logo */
 .logo {
     width: 90px;
     margin-bottom: 6px;
 }
 
-/* title */
 .title {
     color: #2a7de1;
     margin-bottom: 26px;
 }
 
-/* input */
 .input-wrap {
     position: relative;
     margin-bottom: 14px;
@@ -184,13 +173,11 @@ const confirm = async () => {
     font-size: 14px;
 }
 
-/* ❌ error input */
 .input.error {
     border-color: #ef4444;
     background: #fff1f2;
 }
 
-/* error text */
 .error-text {
     font-size: 12px;
     color: #ef4444;
@@ -198,7 +185,6 @@ const confirm = async () => {
     margin: 4px 4px 12px;
 }
 
-/* eye icon */
 .eye {
     position: absolute;
     right: 14px;
@@ -220,7 +206,6 @@ const confirm = async () => {
     fill: #2a7de1;
 }
 
-/* button */
 .btn {
     width: 220px;
     padding: 14px;

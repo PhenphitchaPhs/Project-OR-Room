@@ -1,14 +1,14 @@
 <template>
     <div class="main-layout">
+        <AdminSidebar />
 
-        <!-- Logout Modal -->
         <Transition name="fade">
             <div v-if="isLogoutModalOpen" class="modal-overlay-center">
                 <div class="white-modal-card">
                     <h2 class="modal-msg-title">Are you sure you want to log out?</h2>
                     <div class="modal-button-group">
                         <button class="btn-cancel-blue" @click="isLogoutModalOpen = false">Cancel</button>
-                        <button class="btn-confirm-green" @click="handleLogout">Confirm</button>
+                        <button class="btn-confirm-logout" @click="handleLogout">Confirm</button>
                     </div>
                 </div>
             </div>
@@ -40,10 +40,10 @@
         <Transition name="fade">
             <div v-if="isCancelledModalOpen" class="modal-overlay-center" @click.self="isCancelledModalOpen = false">
                 <div class="white-modal-card cancelled-modal-card">
-                    <h2 class="modal-msg-title">🗑️ เคสที่ถูกยกเลิก ({{ cancelledList.length }})</h2>
+                        <h2 class="modal-msg-title">🗑️ Cancelled cases ({{ cancelledList.length }})</h2>
 
                     <div v-if="cancelledList.length === 0" class="empty-state" style="padding: 20px">
-                        <p>ไม่มีเคสที่ถูกยกเลิก</p>
+                            <p>No cancelled cases</p>
                     </div>
 
                     <div v-else class="cancelled-list">
@@ -66,31 +66,10 @@
             </div>
         </Transition>
 
-
-        <!-- Top Nav -->
         <header class="top-nav">
             <div class="user-group">
-                <div class="avatar-circle small">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-                        <path fill="white"
-                            d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10s10-4.48 10-10S17.52 2 12 2m0 4c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6m0 14c-2.03 0-4.43-.82-6.14-2.88a9.947 9.947 0 0 1 12.28 0C16.43 19.18 14.03 20 12 20" />
-                    </svg>
-                </div>
                 <span class="license-text">{{ userLicense }}</span>
             </div>
-            <button class="nav-btn" @click="router.push('/admin-home')">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24">
-                    <path fill="white" d="M10 20v-6h4v6h5v-8h3L12 3L2 12h3v8z" />
-                </svg>
-                <span>Queue</span>
-            </button>
-            <button class="nav-btn" @click="router.push('/admin-calendar')">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24">
-                    <path fill="white"
-                        d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2m0 16H5V10h14zm0-12H5V6h14z" />
-                </svg>
-                <span>Calendar</span>
-            </button>
             <button class="logout-btn" @click="isLogoutModalOpen = true">
                 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24">
                     <path fill="white"
@@ -99,7 +78,6 @@
             </button>
         </header>
 
-        <!-- Content: sidebar เล็ก + page-container -->
         <div class="body-layout">
             <aside class="section-nav">
                 <button class="section-nav-btn" :class="{ active: activeSection === 'dashboard' }"
@@ -123,7 +101,6 @@
 
             <div class="page-container">
 
-                <!-- ===== Section: Admin Dashboard ===== -->
                 <div v-if="activeSection === 'dashboard'">
                     <h1 class="main-title">📊 Admin Dashboard</h1>
                     <div class="admin-search-box">
@@ -137,43 +114,41 @@
                         </button>
                     </div>
 
-                    <!-- Stats Cards: เคสที่กำลังจะมาถึง / เคสที่ถูกยกเลิก (ดีไซน์ทางการ) -->
                     <div class="formal-stats-row">
                         <div class="formal-stat-card accent-blue">
                             <div class="formal-stat-top">
-                                <span class="formal-stat-label">เคสที่กำลังจะมาถึง</span>
+                                <span class="formal-stat-label">Upcoming cases</span>
                                 <span class="formal-stat-icon-badge blue">
                                     <span class="material-icons">schedule</span>
                                 </span>
                             </div>
                             <div class="formal-stat-number">{{ upcomingCount }}</div>
-                            <div class="formal-stat-foot">รายการที่ยังไม่ถึงวันผ่าตัด</div>
+                            <div class="formal-stat-foot">Cases not yet scheduled for surgery</div>
                         </div>
 
                         <div class="formal-stat-card accent-red clickable" @click="isCancelledModalOpen = true">
                             <div class="formal-stat-top">
-                                <span class="formal-stat-label">เคสที่ถูกยกเลิก</span>
+                                <span class="formal-stat-label">Cancelled cases</span>
                                 <span class="formal-stat-icon-badge red">
                                     <span class="material-icons">cancel</span>
                                 </span>
                             </div>
                             <div class="formal-stat-number">{{ cancelledCount }}</div>
-                            <div class="formal-stat-foot">คลิกเพื่อดูรายละเอียด</div>
+                            <div class="formal-stat-foot">Click to view details</div>
                         </div>
                     </div>
 
-                    <!-- Surgery Room Queues -->
                     <div class="doctor-section" style="margin-bottom: 20px;">
                         <div class="section-header">
-                            <h2 class="section-title">🏥 คิวห้องผ่าตัดวันนี้</h2>
+                            <h2 class="section-title">🏥 Today's operating room queue</h2>
                         </div>
 
                         <div class="room-queue-wrap">
                             <div v-if="loading" class="empty-state" style="padding: 30px">
-                                <p>กำลังโหลด...</p>
+                                <p>Loading...</p>
                             </div>
                             <div v-else-if="roomQueues.length === 0" class="empty-state" style="padding: 30px">
-                                <p>ไม่มีคิวผ่าตัดในขณะนี้</p>
+                                <p>No surgery bookings at this time</p>
                             </div>
 
                             <div v-else class="room-list">
@@ -190,17 +165,17 @@
                                                 </div>
                                                 <div class="room-current">
                                                     <span v-if="rq.current">
-                                                        <span class="live-tag">🔴 กำลังผ่าตัด</span> {{
+                                                        <span class="live-tag">🔴 In surgery</span> {{
                                                             rq.current.procedureName }}
                                                     </span>
-                                                    <span v-else>ไม่มีคิว</span>
+                                                    <span v-else>No queue</span>
                                                 </div>
                                             </div>
                                         </div>
 
                                         <div class="room-summary-right">
-                                            <span class="room-count-badge">{{ rq.queues.length }} คิว</span>
-                                            <span class="room-min-badge">{{ rq.totalMinutes }} นาที</span>
+                                            <span class="room-count-badge">{{ rq.queues.length }} case(s)</span>
+                                            <span class="room-min-badge">{{ rq.totalMinutes }} minutes</span>
                                             <span class="material-icons expand-icon">
                                                 {{ expandedRoom === rq.room ? 'expand_less' : 'expand_more' }}
                                             </span>
@@ -216,7 +191,7 @@
                                                         <span class="queue-procedure">{{ q.procedureName }}</span>
                                                         <span class="queue-live-badge"
                                                             :class="{ 'is-active': idx === 0 }">
-                                                            {{ idx === 0 ? '🔴 กำลังผ่าตัด' : '⏳ รอคิว' }}
+                                                            {{ idx === 0 ? '🔴 In surgery' : '⏳ Waiting' }}
                                                         </span>
                                                     </div>
                                                     <div class="queue-meta">HN {{ q.hn }} · {{ q.patientName }}</div>
@@ -233,13 +208,11 @@
                     </div>
                 </div>
 
-                <!-- ===== Section: Fiscal Year ===== -->
                 <div v-if="activeSection === 'fiscal'">
                     <h1 class="main-title">📅 สถิติปีงบประมาณ</h1>
                     <FiscalYearStats :bookings="bookings" />
                 </div>
 
-                <!-- ===== Section: Doctor Accounts ===== -->
                 <div v-if="activeSection === 'doctors'">
                     <h1 class="main-title">👨‍⚕️ Doctor Accounts</h1>
 
@@ -300,6 +273,7 @@ import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { apiFetch } from '../../api/client'
 import FiscalYearStats from '../../components/report/FiscalYearStats.vue'
+import AdminSidebar from '../../components/AdminSidebar.vue'
 
 const router = useRouter()
 const userLicense = ref('Admin')
@@ -308,7 +282,7 @@ const doctorMap = ref({})
 const bookings = ref([])
 const loading = ref(true)
 const isLogoutModalOpen = ref(false)
-const activeSection = ref('dashboard') // 'dashboard' | 'fiscal' | 'doctors'
+const activeSection = ref('dashboard')
 
 const searchQuery = ref('')
 
@@ -393,15 +367,12 @@ const filteredDoctorList = computed(() => {
     })
 })
 
-
-// 🐛 Fix: ปรับปรุงการดึงวันที่ปัจจุบันให้ตรงกับ Local Timezone (แก้ปัญหา UTC offset)
 const tzOffset = new Date().getTimezoneOffset() * 60000
 const todayStr = new Date(Date.now() - tzOffset).toISOString().split('T')[0]
 
-// ✅ เปลี่ยน Succeed → Completed
 const upcomingCount = computed(() => bookings.value.filter(b => b.status === 'Upcoming' || !b.status).length)
 const succeedCount = computed(() => bookings.value.filter(b => b.status === 'Completed').length)
-// ✅ เปลี่ยน Succeed → Completed
+
 const todayCount = computed(() =>
     bookings.value.filter(
         b => b.date === todayStr &&
@@ -413,7 +384,7 @@ const cancelledCount = computed(() =>
         b => b.status === 'Cancelled'
     ).length
 )
-// 📋 รายละเอียดเคสที่ถูกยกเลิก
+
 const isCancelledModalOpen = ref(false)
 const cancelledList = computed(() =>
     bookings.value
@@ -429,7 +400,6 @@ const cancelledList = computed(() =>
         .sort((a, b) => (b.date || '').localeCompare(a.date || ''))
 )
 
-// 🏥 จัดกลุ่มคิวผ่าตัดตามห้อง (ไม่รวม Cancelled/Succeed) — อิงลำดับคิว (queueOrder) + นาทีจาก procedure
 const roomQueues = computed(() => {
     const groups = {}
 
@@ -437,7 +407,7 @@ const roomQueues = computed(() => {
         .filter(b =>
             b.date === todayStr &&
             b.status !== 'Cancelled' &&
-            // ✅ เปลี่ยน Succeed → Completed
+
             b.status !== 'Completed' &&
             matchSearch(b)
         )
@@ -471,24 +441,22 @@ const roomQueues = computed(() => {
                 queues,
                 totalMinutes,
                 status: getRoomStatus(totalMinutes),
-                current: queues[0] || null, // คิวแรกในลำดับ = กำลังผ่าตัดอยู่
+                current: queues[0] || null,
             }
         })
         .sort((a, b) => a.room.localeCompare(b.room, undefined, { numeric: true }))
 })
 
-// เก็บว่าห้องไหนถูกกางรายละเอียดอยู่ (คลิกซ้ำเพื่อพับ)
 const expandedRoom = ref(null)
 const toggleRoom = (room) => {
     expandedRoom.value = expandedRoom.value === room ? null : room
 }
 
-// สถานะห้องแบบย่อ ใช้สีบอกสถานะทำนองเดียวกับหน้า Home (ว่าง/บางส่วน/เต็ม)
-const OR_MAX_MINUTES = 420 // 7 ชม. มาตรฐานต่อห้อง
+const OR_MAX_MINUTES = 420
 const getRoomStatus = (totalMinutes) => {
-    if (totalMinutes === 0) return { label: 'ว่าง', class: 'available' }
-    if (totalMinutes < OR_MAX_MINUTES) return { label: 'กำลังใช้งาน', class: 'partial' }
-    return { label: 'เต็ม', class: 'full' }
+    if (totalMinutes === 0) return { label: 'Available', class: 'available' }
+    if (totalMinutes < OR_MAX_MINUTES) return { label: 'Partially booked', class: 'partial' }
+    return { label: 'Full', class: 'full' }
 }
 
 onMounted(async () => {
@@ -537,7 +505,6 @@ const showDialog = (title, message, callback = null) => {
     dialogOpen.value = true
 }
 
-
 const deleteDoctor = (license, name) => {
     showDialog(
         'Delete Doctor',
@@ -578,7 +545,6 @@ const deleteDoctor = (license, name) => {
     )
 }
 
-
 const handleLogout = () => { localStorage.clear(); router.push('/login') }
 const getRoleLabel = (role) => {
     if (!role) return '👤 User'
@@ -612,7 +578,6 @@ const getRoleClass = (role) => {
     return 'user'
 }
 
-// 📍 เปลี่ยน Role ของบัญชี (user / admin) — เรียก endpoint ที่เพิ่มใหม่ฝั่ง backend
 const changeRole = async (license, newRole) => {
     try {
         const res = await apiFetch(
@@ -628,7 +593,6 @@ const changeRole = async (license, newRole) => {
         const data = await res.json()
         if (!res.ok) throw new Error(data.error || 'เปลี่ยน Role ไม่สำเร็จ')
 
-        // อัปเดตค่าใน UI ทันทีโดยไม่ต้องโหลดหน้าใหม่
         const target = doctorList.value.find(d => d.license === license)
         if (target) target.role = newRole
 
@@ -644,19 +608,21 @@ const changeRole = async (license, newRole) => {
 
 .main-layout {
     min-height: 100vh;
+    height: 100vh;
     display: flex;
     flex-direction: column;
     background-color: #f5f7fa;
+    overflow-x: hidden;
+    overflow-y: auto;
 }
 
-/* ===== Top Nav ===== */
 .top-nav {
     background-color: #1a3a5f !important;
     height: 80px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0 20px;
+    padding: 0 20px 0 75px;
     flex-shrink: 0;
 }
 
@@ -712,7 +678,35 @@ const changeRole = async (license, newRole) => {
     padding: 4px;
 }
 
-/* ===== body layout: sidebar เล็ก + content ===== */
+.logout-btn:hover {
+    opacity: 0.8;
+}
+
+.btn-confirm-logout {
+    background: #c62828;
+    color: #ffffff;
+    border: 1px solid #c62828;
+    padding: 10px 25px;
+    border-radius: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.btn-confirm-logout:hover {
+    background: #b71c1c;
+}
+
+.btn-confirm-logout:active {
+    background: #8e0000;
+    transform: translateY(1px);
+}
+
+.btn-confirm-logout:focus-visible {
+    outline: 3px solid #cce0ff;
+    outline-offset: 2px;
+}
+
 .body-layout {
     display: flex;
     flex: 1;
@@ -796,7 +790,6 @@ const changeRole = async (license, newRole) => {
     margin-bottom: 24px;
 }
 
-/* Stats */
 .stats-row {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -854,7 +847,6 @@ const changeRole = async (license, newRole) => {
     margin-top: 4px;
 }
 
-/* ===== Formal Stat Cards (Upcoming / Cancelled) ===== */
 .formal-stats-row {
     display: grid;
     grid-template-columns: 1fr;
@@ -942,7 +934,6 @@ const changeRole = async (license, newRole) => {
     color: #94a3b8;
 }
 
-/* Doctor Section */
 .doctor-section {
     background: white;
     border-radius: 20px;
@@ -1047,7 +1038,6 @@ const changeRole = async (license, newRole) => {
     color: #999;
 }
 
-/* Modal */
 .modal-overlay-center {
     position: fixed;
     inset: 0;
@@ -1359,10 +1349,6 @@ const changeRole = async (license, newRole) => {
     margin-right: 4px;
 }
 
-/* =========================
-   Admin Search
-   ========================= */
-
 .admin-search-box {
     width: 100%;
     max-width: 875px;
@@ -1390,7 +1376,6 @@ const changeRole = async (license, newRole) => {
     box-shadow: 0 0 0 3px rgba(26, 58, 95, 0.10);
 }
 
-/* Search icon */
 .admin-search-box .material-icons {
     font-size: 22px;
     color: #718096;
@@ -1398,7 +1383,6 @@ const changeRole = async (license, newRole) => {
     flex-shrink: 0;
 }
 
-/* Input */
 .admin-search-box input {
     flex: 1;
 
@@ -1420,7 +1404,6 @@ const changeRole = async (license, newRole) => {
     color: #9aa6b2;
 }
 
-/* Clear button */
 .search-clear-btn {
     width: 30px;
     height: 30px;
@@ -1447,10 +1430,6 @@ const changeRole = async (license, newRole) => {
     background: #eef2f6;
     color: #1a3a5f;
 }
-
-/* =========================
-   Responsive
-   ========================= */
 
 @media (max-width: 768px) {
     .admin-search-box {
