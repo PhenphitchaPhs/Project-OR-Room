@@ -13,6 +13,7 @@
                         <p><strong>Procedure:</strong> {{ selectedCase.procedure }}</p>
                         <p><strong>Surgery Date:</strong> {{ selectedCase.date }}</p>
                         <p><strong>Underlying:</strong> {{ selectedCase.underlying || '-' }}</p>
+                        <p><strong>Diagnosis:</strong> {{ selectedCase.diagnosis || '-' }}</p>
                         <p><strong>CXR:</strong> {{ selectedCase.cxrDate || '-' }} | {{ selectedCase.cxrNote || '-' }}
                         </p>
                         <p><strong>ECG:</strong> {{ selectedCase.ecgDate || '-' }} | {{ selectedCase.ecgNote || '-' }}
@@ -185,6 +186,8 @@
                                             'Male' : 'Female' }}</div>
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
+                                        <div class="detail-row"><strong>Diagnosis:</strong> {{
+                                            item.diagnosis || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
                                             }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
@@ -316,6 +319,11 @@
                                                     <div class="detail-row">
                                                         <strong>Underlying Disease(s):</strong>
                                                         {{ item.underlying || '-' }}
+                                                    </div>
+
+                                                    <div class="detail-row">
+                                                        <strong>Diagnosis:</strong>
+                                                        {{ item.diagnosis || '-' }}
                                                     </div>
 
                                                     <div class="detail-row">
@@ -462,6 +470,8 @@
                                                     </div>
                                                     <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                                         item.underlying || '-' }}</div>
+                                                    <div class="detail-row"><strong>Diagnosis:</strong> {{
+                                                        item.diagnosis || '-' }}</div>
                                                     <div class="detail-row"><strong>Proposed Procedure:</strong> {{
                                                         item.procedure
                                                         }}</div>
@@ -621,6 +631,11 @@
                                                 </div>
 
                                                 <div class="detail-row">
+                                                    <strong>Diagnosis:</strong>
+                                                    {{ item.diagnosis || '-' }}
+                                                </div>
+
+                                                <div class="detail-row">
                                                     <strong>Proposed Procedure:</strong>
                                                     {{ item.procedure }}
                                                 </div>
@@ -747,6 +762,11 @@
                                                     <div class="detail-row">
                                                         <strong>Underlying Disease(s):</strong>
                                                         {{ item.underlying || '-' }}
+                                                    </div>
+
+                                                    <div class="detail-row">
+                                                        <strong>Diagnosis:</strong>
+                                                        {{ item.diagnosis || '-' }}
                                                     </div>
 
                                                     <div class="detail-row">
@@ -1196,6 +1216,7 @@ const filterBySearch = (list, keywordOverride) => {
             item.fullName,
             item.procedure,
             item.underlying,
+            item.diagnosis,
             item.notes,
             item.room,
             item.doctorName,
@@ -1273,6 +1294,7 @@ const searchCase = async () => {
             item.fullName,
             item.procedure,
             item.underlying,
+            item.diagnosis,
             item.notes,
             item.room,
             item.date,
