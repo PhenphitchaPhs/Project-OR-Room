@@ -81,6 +81,7 @@
                             <p><strong>Age / Gender:</strong> {{ b.age || '-' }} years · {{ b.gender === 'female' ? 'Female'
                                 : 'Male' }}</p>
                             <p><strong>Procedure:</strong> {{ b.procedure }}</p>
+                            <p><strong>Diagnosis:</strong> {{ b.diagnosis || '-' }}</p>
                             <button class="btn-edit-booking" @click="goToEditBooking(b.id)">✏️ Edit
                                 (change date or room)</button>
                         </template>
