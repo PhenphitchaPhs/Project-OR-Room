@@ -15,6 +15,7 @@ const AdminDashboard = () => import('../views/admin/AdminDashboard.vue')
 
 const AddPatientByAdmin = () => import('../views/admin/AddPatientByAdmin.vue')
 const AdminCalendarView = () => import('../views/admin/AdminCalendarView.vue')
+const SurgeryTypesView = () => import('../views/SurgeryTypesView.vue')
 
 const routes = [
   { path: '/', redirect: '/login' },
@@ -26,12 +27,14 @@ const routes = [
   { path: '/home', name: 'home', component: HomeView, meta: { requiresAuth: true } },
   { path: '/booking/:id?', name: 'booking', component: BookingView, meta: { requiresAuth: true } },
   { path: '/calendar', name: 'calendar', component: CalendarView, meta: { requiresAuth: true } },
+  { path: '/procedures', name: 'procedures', component: SurgeryTypesView, meta: { requiresAuth: true } },
 
   { path: '/admin-login', name: 'admin-login', component: LoginAdmin },
   { path: '/admin-home', name: 'admin-home', component: AdminHome, meta: { requiresAuth: true, role: 'admin' } },
   { path: '/admin-dashboard', name: 'admin-dashboard', component: AdminDashboard, meta: { requiresAuth: true, role: 'admin' } },
   { path: '/admin-add-patient', name: 'admin-add-patient', component: AddPatientByAdmin, meta: { requiresAuth: true, role: 'admin' } },
-  { path: '/admin-calendar', name: 'admin-calendar', component: AdminCalendarView, meta: { requiresAuth: true, role: 'admin' } }
+  { path: '/admin-calendar', name: 'admin-calendar', component: AdminCalendarView, meta: { requiresAuth: true, role: 'admin' } },
+  { path: '/admin-procedures', name: 'admin-procedures', component: SurgeryTypesView, meta: { requiresAuth: true, role: 'admin' } }
 ]
 
 const router = createRouter({

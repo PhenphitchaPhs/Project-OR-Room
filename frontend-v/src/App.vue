@@ -80,6 +80,13 @@
               </div>
             </li>
 
+            <li @click="goTo('/procedures')">
+              <div class="menu-item">
+                <span class="menu-icon"><span class="material-icons">medical_services</span></span>
+                <span class="menu-text">Surgery Types</span>
+              </div>
+            </li>
+
           </ul>
         </nav>
       </aside>
@@ -180,7 +187,8 @@ const showLayout = computed(() => {
     '/admin-calendar',
     '/admin-add-patient',
     '/choose-doctor',
-    '/admin-dashboard'
+    '/admin-dashboard',
+    '/admin-procedures'
   ]
   return !hiddenPages.includes(route.path)
 })

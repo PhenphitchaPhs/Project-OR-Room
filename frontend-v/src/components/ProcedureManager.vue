@@ -33,12 +33,25 @@
         </form>
 
         <div class="additional-list">
-          <h3>Additional</h3>
+          <div class="additional-heading">
+            <div>
+              <h3>Additional</h3>
+              <span v-if="procedures.length" class="procedure-count">{{ procedures.length }} type(s)</span>
+            </div>
+            <button type="button" class="refresh-btn" :disabled="isLoading" @click="refreshProcedures">
+              {{ isLoading ? 'Refreshing...' : 'Refresh' }}
+            </button>
+          </div>
+          <label v-if="procedures.length" class="search-label">
+            Search surgery types
+            <input v-model.trim="searchQuery" type="search" placeholder="Search by name" />
+          </label>
           <p v-if="!procedures.length" class="empty-message">No additional surgery types yet.</p>
-          <div v-for="procedure in procedures" :key="procedure.id" class="procedure-item">
+          <p v-else-if="!filteredProcedures.length" class="empty-message">No matching surgery types.</p>
+          <div v-for="procedure in filteredProcedures" :key="procedure.id" class="procedure-item">
             <div>
               <strong>{{ procedure.name }}</strong>
-              <span>{{ procedure.durationMinutes }} minutes</span>
+              <span>{{ procedure.durationMinutes }} minutes · {{ ownerLabel(procedure) }}</span>
             </div>
             <div v-if="canManage(procedure)" class="item-actions">
               <button type="button" class="edit-btn" @click="startEdit(procedure)">Edit</button>
@@ -54,7 +67,7 @@
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { apiFetch } from '../api/client'
 
 const emit = defineEmits(['updated'])
@@ -63,12 +76,26 @@ const isSaving = ref(false)
 const editingId = ref(null)
 const errorMessage = ref('')
 const procedures = ref([])
+const searchQuery = ref('')
+const isLoading = ref(false)
 const form = reactive({ name: '', durationMinutes: null })
 const currentLicense = localStorage.getItem('userLicense') || ''
 const currentRole = (localStorage.getItem('userRole') || '').toLowerCase()
 
 const canManage = (procedure) =>
   currentRole === 'admin' || String(procedure.createdBy) === String(currentLicense)
+
+const filteredProcedures = computed(() => {
+  const query = searchQuery.value.toLowerCase()
+  return procedures.value.filter((procedure) =>
+    !query || String(procedure.name || '').toLowerCase().includes(query)
+  )
+})
+
+const ownerLabel = (procedure) => {
+  if (String(procedure.createdBy) === String(currentLicense)) return 'Created by you'
+  return `Created by ${procedure.createdByName || procedure.createdBy}`
+}
 
 const resetForm = () => {
   editingId.value = null
@@ -78,11 +105,33 @@ const resetForm = () => {
 }
 
 const loadProcedures = async () => {
+  isLoading.value = true
   const response = await apiFetch('/api/procedures')
-  const data = await response.json()
-  if (!response.ok) throw new Error(data.error || 'Unable to load surgery types')
+  const responseText = await response.text()
+  let data = {}
+  try {
+    data = responseText ? JSON.parse(responseText) : {}
+  } catch {
+    isLoading.value = false
+    throw new Error(`Unable to load surgery types (${response.status})`)
+  }
+  if (!response.ok) {
+    isLoading.value = false
+    throw new Error(data.error || 'Unable to load surgery types')
+  }
   procedures.value = Array.isArray(data) ? data : []
   emit('updated', procedures.value)
+  isLoading.value = false
+}
+
+const refreshProcedures = async () => {
+  errorMessage.value = ''
+  try {
+    await loadProcedures()
+  } catch (error) {
+    isLoading.value = false
+    errorMessage.value = error.message || 'Unable to load surgery types'
+  }
 }
 
 const openManager = async () => {
@@ -91,6 +140,7 @@ const openManager = async () => {
   try {
     await loadProcedures()
   } catch (error) {
+    isLoading.value = false
     errorMessage.value = error.message || 'Unable to load surgery types'
   }
 }
@@ -170,7 +220,13 @@ onMounted(async () => {
 .save-btn:disabled { opacity: .6; cursor: wait; }
 .secondary-btn { background: #edf2f7; color: #47617d; }
 .additional-list { padding: 18px 0 8px; }
-.additional-list h3 { margin-bottom: 10px; }
+.additional-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.additional-list h3 { margin: 0; }
+.procedure-count { display: block; margin-top: 3px; color: #66809d; font-size: 12px; }
+.refresh-btn { border: 1px solid #cbd9e8; border-radius: 7px; padding: 7px 10px; background: #f4f8fd; color: #1a3a7c; font-weight: 700; cursor: pointer; }
+.refresh-btn:disabled { cursor: wait; opacity: .6; }
+.search-label { display: flex; flex-direction: column; gap: 5px; margin: 0 0 8px; color: #47617d; font-size: 12px; font-weight: 700; }
+.search-label input { box-sizing: border-box; width: 100%; border: 1px solid #cbd9e8; border-radius: 8px; padding: 9px; color: #173b62; }
 .procedure-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 0; border-bottom: 1px solid #edf2f7; }
 .procedure-item strong, .procedure-item span { display: block; }
 .procedure-item span { margin-top: 3px; color: #66809d; font-size: 13px; }

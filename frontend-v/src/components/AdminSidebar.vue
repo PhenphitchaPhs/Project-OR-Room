@@ -45,6 +45,11 @@
                         <span class="material-icons">format_list_numbered</span>
                         <span>Queue</span>
                     </button>
+                    <button class="admin-menu-item" :class="{ active: route.path === '/admin-procedures' }"
+                        type="button" @click="navigate('/admin-procedures')">
+                        <span class="material-icons">medical_services</span>
+                        <span>Surgery Types</span>
+                    </button>
                 </nav>
             </aside>
         </transition>

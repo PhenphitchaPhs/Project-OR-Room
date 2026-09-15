@@ -63,6 +63,7 @@ type CustomProcedure = {
   createdBy: string
   createdAt: string
   updatedAt: string
+  createdByName?: string | null
 }
 
 const customProcedureValue = (procedure: Pick<CustomProcedure, 'name' | 'durationMinutes'>) =>
@@ -86,6 +87,23 @@ const getStoredProcedureDuration = async (db: D1Database, procedure: unknown): P
     if (formatted) return Number(formatted.durationMinutes)
 
     throw builtInError
+  }
+}
+
+const recordProcedureAudit = async (
+  db: D1Database,
+  procedureId: number | null,
+  procedureName: string,
+  action: string,
+  actorLicense: string,
+) => {
+  try {
+    await db.prepare(`
+      INSERT INTO surgery_procedure_logs (procedureId, procedureName, action, actorLicense, createdAt)
+      VALUES (?, ?, ?, ?, datetime('now', '+7 hours'))
+    `).bind(procedureId, procedureName, action, actorLicense).run()
+  } catch (error) {
+    console.error('Unable to write surgery procedure audit log:', error)
   }
 }
 
@@ -632,8 +650,10 @@ app.delete('/api/users/:license', requireAdmin, async (c) => {
 app.get('/api/procedures', requireProcedureManager, async (c) => {
   try {
     const { results } = await c.env.DB.prepare(`
-      SELECT id, name, durationMinutes, createdBy, createdAt, updatedAt
-      FROM surgery_procedures
+      SELECT p.id, p.name, p.durationMinutes, p.createdBy, p.createdAt, p.updatedAt,
+        u.doctorName as createdByName
+      FROM surgery_procedures p
+      LEFT JOIN users u ON p.createdBy = u.license
       ORDER BY name COLLATE NOCASE ASC
     `).all<CustomProcedure>()
 
@@ -644,6 +664,24 @@ app.get('/api/procedures', requireProcedureManager, async (c) => {
   } catch (error) {
     console.error('GET /api/procedures failed:', error)
     return c.json({ error: 'Unable to load additional surgery types' }, 500)
+  }
+})
+
+app.get('/api/procedures/audit-logs', requireAdmin, async (c) => {
+  try {
+    const limit = Math.min(Math.max(Number(c.req.query('limit') || 100), 1), 500)
+    const { results } = await c.env.DB.prepare(`
+      SELECT l.id, l.procedureId, l.procedureName, l.action, l.actorLicense,
+        u.doctorName as actorName, l.createdAt
+      FROM surgery_procedure_logs l
+      LEFT JOIN users u ON l.actorLicense = u.license
+      ORDER BY l.id DESC
+      LIMIT ?
+    `).bind(limit).all()
+    return c.json(results)
+  } catch (error) {
+    console.error('GET /api/procedures/audit-logs failed:', error)
+    return c.json({ error: 'Unable to load surgery type history' }, 500)
   }
 })
 
@@ -668,6 +706,9 @@ app.post('/api/procedures', requireProcedureManager, async (c) => {
     const procedure = await c.env.DB.prepare(
       'SELECT id, name, durationMinutes, createdBy, createdAt, updatedAt FROM surgery_procedures WHERE id = ?',
     ).bind(result.meta.last_row_id).first<CustomProcedure>()
+    if (procedure) {
+      await recordProcedureAudit(c.env.DB, procedure.id, procedure.name, 'created', requester.license)
+    }
     return c.json(procedure ? { ...procedure, value: customProcedureValue(procedure) } : { success: true }, 201)
   } catch (error: any) {
     if (String(error?.message || error).toLowerCase().includes('unique')) {
@@ -707,6 +748,9 @@ app.put('/api/procedures/:id', requireProcedureManager, async (c) => {
     const procedure = await c.env.DB.prepare(
       'SELECT id, name, durationMinutes, createdBy, createdAt, updatedAt FROM surgery_procedures WHERE id = ?',
     ).bind(c.req.param('id')).first<CustomProcedure>()
+    if (procedure) {
+      await recordProcedureAudit(c.env.DB, procedure.id, procedure.name, 'updated', requester.license)
+    }
     return c.json(procedure ? { ...procedure, value: customProcedureValue(procedure) } : { success: true })
   } catch (error: any) {
     if (String(error?.message || error).toLowerCase().includes('unique')) {
@@ -721,14 +765,27 @@ app.delete('/api/procedures/:id', requireProcedureManager, async (c) => {
   try {
     const requester = c.get('user')
     const existing = await c.env.DB.prepare(
-      'SELECT createdBy FROM surgery_procedures WHERE id = ?',
-    ).bind(c.req.param('id')).first<{ createdBy: string }>()
+      'SELECT name, createdBy FROM surgery_procedures WHERE id = ?',
+    ).bind(c.req.param('id')).first<{ name: string; createdBy: string }>()
     if (!existing) return c.json({ error: 'Additional surgery type not found' }, 404)
     if (!hasAdminAccess(requester.role) && existing.createdBy !== requester.license) {
       return c.json({ error: 'Only the creator or an administrator can delete this surgery type' }, 403)
     }
 
+    const activeBooking = await c.env.DB.prepare(`
+      SELECT COUNT(*) as count
+      FROM bookings
+      WHERE (procedure = ? OR procedure LIKE ?)
+        AND status NOT IN ('Cancelled', 'Completed', 'Succeed')
+    `).bind(existing.name, `${existing.name} - % mins`).first<{ count: number }>()
+    if (Number(activeBooking?.count || 0) > 0) {
+      return c.json({ error: 'This surgery type is used by an active booking and cannot be deleted' }, 409)
+    }
+
     const result = await c.env.DB.prepare('DELETE FROM surgery_procedures WHERE id = ?').bind(c.req.param('id')).run()
+    if (result.meta.changes) {
+      await recordProcedureAudit(c.env.DB, Number(c.req.param('id')), existing.name, 'deleted', requester.license)
+    }
     return c.json({ success: true })
   } catch (error) {
     console.error('DELETE /api/procedures failed:', error)
