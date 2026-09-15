@@ -9,7 +9,7 @@
         <div class="procedure-modal-header">
           <div>
             <h2>Manage Surgery Types</h2>
-            <p>Additional types can be added, edited, or deleted.</p>
+            <p>Additional types are shared. Only the creator or an administrator can edit or delete them.</p>
           </div>
           <button type="button" class="close-btn" aria-label="Close" @click="closeManager">×</button>
         </div>
@@ -40,7 +40,7 @@
               <strong>{{ procedure.name }}</strong>
               <span>{{ procedure.durationMinutes }} minutes</span>
             </div>
-            <div class="item-actions">
+            <div v-if="canManage(procedure)" class="item-actions">
               <button type="button" class="edit-btn" @click="startEdit(procedure)">Edit</button>
               <button type="button" class="delete-btn" @click="deleteProcedure(procedure)">Delete</button>
             </div>
@@ -64,6 +64,11 @@ const editingId = ref(null)
 const errorMessage = ref('')
 const procedures = ref([])
 const form = reactive({ name: '', durationMinutes: null })
+const currentLicense = localStorage.getItem('userLicense') || ''
+const currentRole = (localStorage.getItem('userRole') || '').toLowerCase()
+
+const canManage = (procedure) =>
+  currentRole === 'admin' || String(procedure.createdBy) === String(currentLicense)
 
 const resetForm = () => {
   editingId.value = null

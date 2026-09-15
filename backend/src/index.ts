@@ -679,6 +679,15 @@ app.post('/api/procedures', requireProcedureManager, async (c) => {
 })
 
 app.put('/api/procedures/:id', requireProcedureManager, async (c) => {
+  const requester = c.get('user')
+  const existing = await c.env.DB.prepare(
+    'SELECT createdBy FROM surgery_procedures WHERE id = ?',
+  ).bind(c.req.param('id')).first<{ createdBy: string }>()
+  if (!existing) return c.json({ error: 'Additional surgery type not found' }, 404)
+  if (!hasAdminAccess(requester.role) && existing.createdBy !== requester.license) {
+    return c.json({ error: 'Only the creator or an administrator can edit this surgery type' }, 403)
+  }
+
   const body = await c.req.json<{ name?: unknown; durationMinutes?: unknown }>()
   const name = typeof body.name === 'string' ? body.name.trim() : ''
   const durationMinutes = Number(body.durationMinutes)
@@ -695,7 +704,6 @@ app.put('/api/procedures/:id', requireProcedureManager, async (c) => {
       SET name = ?, durationMinutes = ?, updatedAt = datetime('now', '+7 hours')
       WHERE id = ?
     `).bind(name, durationMinutes, c.req.param('id')).run()
-    if (!result.meta.changes) return c.json({ error: 'Additional surgery type not found' }, 404)
     const procedure = await c.env.DB.prepare(
       'SELECT id, name, durationMinutes, createdBy, createdAt, updatedAt FROM surgery_procedures WHERE id = ?',
     ).bind(c.req.param('id')).first<CustomProcedure>()
@@ -711,8 +719,16 @@ app.put('/api/procedures/:id', requireProcedureManager, async (c) => {
 
 app.delete('/api/procedures/:id', requireProcedureManager, async (c) => {
   try {
+    const requester = c.get('user')
+    const existing = await c.env.DB.prepare(
+      'SELECT createdBy FROM surgery_procedures WHERE id = ?',
+    ).bind(c.req.param('id')).first<{ createdBy: string }>()
+    if (!existing) return c.json({ error: 'Additional surgery type not found' }, 404)
+    if (!hasAdminAccess(requester.role) && existing.createdBy !== requester.license) {
+      return c.json({ error: 'Only the creator or an administrator can delete this surgery type' }, 403)
+    }
+
     const result = await c.env.DB.prepare('DELETE FROM surgery_procedures WHERE id = ?').bind(c.req.param('id')).run()
-    if (!result.meta.changes) return c.json({ error: 'Additional surgery type not found' }, 404)
     return c.json({ success: true })
   } catch (error) {
     console.error('DELETE /api/procedures failed:', error)
