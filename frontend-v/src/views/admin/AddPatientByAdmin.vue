@@ -508,7 +508,8 @@ const submitForm = async () => {
         if (res.ok) {
             showAlert('Booking added successfully by admin!', true)
             setTimeout(() => {
-                router.push('/admin-home')
+                const today = new Date().toISOString().split('T')[0]
+                router.push(form.date > today ? '/admin-home?tab=upcoming' : '/admin-home')
             }, 1500)
         } else {
             const errData = await res.json().catch(() => ({}))

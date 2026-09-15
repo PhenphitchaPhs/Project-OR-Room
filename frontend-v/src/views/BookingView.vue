@@ -570,10 +570,12 @@ const submitForm = async () => {
             showAlert(bookingId ? 'Booking updated successfully!' : 'Booking created successfully!', true)
             setTimeout(() => {
                 const isAdmin = localStorage.getItem('userRole') === 'admin'
+                const today = new Date().toISOString().split('T')[0]
+                const targetTab = form.date > today ? '?tab=upcoming' : ''
                 if (isAdmin) {
-                    router.push('/admin-home')
+                    router.push(`/admin-home${targetTab}`)
                 } else {
-                    router.push(route.query.restore === 'true' ? '/home?tab=upcoming' : '/home')
+                    router.push(route.query.restore === 'true' || targetTab ? '/home?tab=upcoming' : '/home')
                 }
             }, 1500)
         } else {

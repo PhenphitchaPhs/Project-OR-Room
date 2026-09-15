@@ -986,6 +986,9 @@ onMounted(async () => {
     const savedLicense = localStorage.getItem('userLicense')
     if (savedLicense) userLicense.value = savedLicense
 
+    const tabParam = new URLSearchParams(window.location.search).get('tab')
+    if (tabParam === 'upcoming') filter.value = FILTERS.UPCOMING
+
     try {
         const res = await apiFetch('/api/bookings')
         const data = await res.json()
