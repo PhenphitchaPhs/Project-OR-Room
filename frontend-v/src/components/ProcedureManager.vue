@@ -21,7 +21,8 @@
           </label>
           <label>
             Estimated duration (minutes)
-            <input v-model.number="form.durationMinutes" type="number" min="1" max="1440" step="1" placeholder="50" required />
+            <input v-model.number="form.durationMinutes" type="number" min="1" max="1440" step="1" placeholder="50"
+              required />
           </label>
           <div class="form-actions">
             <button v-if="editingId" type="button" class="secondary-btn" @click="resetForm">Cancel edit</button>
@@ -55,12 +56,31 @@
             </div>
             <div v-if="canManage(procedure)" class="item-actions">
               <button type="button" class="edit-btn" @click="startEdit(procedure)">Edit</button>
-              <button type="button" class="delete-btn" @click="deleteProcedure(procedure)">Delete</button>
+              <button type="button" class="delete-btn" @click="requestDelete(procedure)">Delete</button>
             </div>
           </div>
         </div>
 
         <p class="built-in-note">Built-in surgery types are protected and cannot be edited or deleted.</p>
+      </div>
+    </div>
+
+    <!-- Custom delete confirmation dialog, replacing window.confirm -->
+    <div v-if="pendingDelete" class="confirm-overlay" @click.self="cancelDelete">
+      <div class="confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="confirm-delete-title">
+        <h3 id="confirm-delete-title">Delete surgery type?</h3>
+        <p class="confirm-lead">You're about to permanently delete:</p>
+        <p class="confirm-target">{{ pendingDelete.name }}</p>
+        <p class="confirm-note">This can't be undone.</p>
+        <p v-if="deleteError" class="error-message">{{ deleteError }}</p>
+        <div class="confirm-actions">
+          <button type="button" class="secondary-btn" :disabled="isDeleting" @click="cancelDelete">
+            Cancel
+          </button>
+          <button type="button" class="delete-confirm-btn" :disabled="isDeleting" @click="confirmDelete">
+            {{ isDeleting ? 'Deleting...' : 'Delete' }}
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -81,6 +101,11 @@ const isLoading = ref(false)
 const form = reactive({ name: '', durationMinutes: null })
 const currentLicense = localStorage.getItem('userLicense') || ''
 const currentRole = (localStorage.getItem('userRole') || '').toLowerCase()
+
+// Delete confirmation dialog state
+const pendingDelete = ref(null)
+const isDeleting = ref(false)
+const deleteError = ref('')
 
 const canManage = (procedure) =>
   currentRole === 'admin' || String(procedure.createdBy) === String(currentLicense)
@@ -178,17 +203,34 @@ const startEdit = (procedure) => {
   errorMessage.value = ''
 }
 
-const deleteProcedure = async (procedure) => {
-  if (!window.confirm(`Delete "${procedure.name}"?`)) return
-  errorMessage.value = ''
+// Open the custom confirm dialog instead of window.confirm
+const requestDelete = (procedure) => {
+  pendingDelete.value = procedure
+  deleteError.value = ''
+}
+
+const cancelDelete = () => {
+  if (isDeleting.value) return
+  pendingDelete.value = null
+  deleteError.value = ''
+}
+
+const confirmDelete = async () => {
+  const procedure = pendingDelete.value
+  if (!procedure) return
+  isDeleting.value = true
+  deleteError.value = ''
   try {
     const response = await apiFetch(`/api/procedures/${procedure.id}`, { method: 'DELETE' })
     const data = await response.json()
     if (!response.ok) throw new Error(data.error || 'Unable to delete surgery type')
     if (editingId.value === procedure.id) resetForm()
     await loadProcedures()
+    pendingDelete.value = null
   } catch (error) {
-    errorMessage.value = error.message || 'Unable to delete surgery type'
+    deleteError.value = error.message || 'Unable to delete surgery type'
+  } finally {
+    isDeleting.value = false
   }
 }
 
@@ -202,39 +244,325 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.procedure-manager { margin: 0 0 12px; }
-.manage-procedures-btn { border: 1px solid #1a3a7c; background: #eef5ff; color: #1a3a7c; border-radius: 8px; padding: 8px 12px; font-weight: 700; cursor: pointer; }
-.manage-procedures-btn:hover { background: #dceaff; }
-.procedure-modal-overlay { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(15, 42, 71, .45); }
-.procedure-modal { width: min(620px, 100%); max-height: 90vh; overflow-y: auto; background: #fff; border-radius: 16px; padding: 22px; box-shadow: 0 18px 50px rgba(15, 42, 71, .25); color: #173b62; }
-.procedure-modal-header { display: flex; justify-content: space-between; gap: 15px; border-bottom: 1px solid #e1eaf4; padding-bottom: 14px; }
-.procedure-modal h2, .procedure-modal h3 { margin: 0; color: #0f2a47; }
-.procedure-modal-header p { margin: 5px 0 0; color: #66809d; font-size: 13px; }
-.close-btn { border: 0; background: transparent; font-size: 28px; color: #66809d; cursor: pointer; line-height: 1; }
-.procedure-form { display: grid; grid-template-columns: 1fr 180px; gap: 12px; padding: 18px 0; border-bottom: 1px solid #e1eaf4; }
-.procedure-form label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 700; }
-.procedure-form input { width: 100%; box-sizing: border-box; border: 1px solid #cbd9e8; border-radius: 8px; padding: 10px; color: #173b62; }
-.form-actions { grid-column: 1 / -1; display: flex; gap: 8px; justify-content: flex-end; }
-.save-btn, .secondary-btn, .edit-btn, .delete-btn { border: 0; border-radius: 7px; padding: 8px 12px; font-weight: 700; cursor: pointer; }
-.save-btn { background: #1a3a7c; color: #fff; }
-.save-btn:disabled { opacity: .6; cursor: wait; }
-.secondary-btn { background: #edf2f7; color: #47617d; }
-.additional-list { padding: 18px 0 8px; }
-.additional-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
-.additional-list h3 { margin: 0; }
-.procedure-count { display: block; margin-top: 3px; color: #66809d; font-size: 12px; }
-.refresh-btn { border: 1px solid #cbd9e8; border-radius: 7px; padding: 7px 10px; background: #f4f8fd; color: #1a3a7c; font-weight: 700; cursor: pointer; }
-.refresh-btn:disabled { cursor: wait; opacity: .6; }
-.search-label { display: flex; flex-direction: column; gap: 5px; margin: 0 0 8px; color: #47617d; font-size: 12px; font-weight: 700; }
-.search-label input { box-sizing: border-box; width: 100%; border: 1px solid #cbd9e8; border-radius: 8px; padding: 9px; color: #173b62; }
-.procedure-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 0; border-bottom: 1px solid #edf2f7; }
-.procedure-item strong, .procedure-item span { display: block; }
-.procedure-item span { margin-top: 3px; color: #66809d; font-size: 13px; }
-.item-actions { display: flex; gap: 6px; flex-shrink: 0; }
-.edit-btn { background: #e7f0ff; color: #1a3a7c; }
-.delete-btn { background: #fee2e2; color: #b91c1c; }
-.empty-message, .built-in-note { color: #66809d; font-size: 13px; }
-.built-in-note { margin: 10px 0 0; padding-top: 12px; border-top: 1px solid #e1eaf4; }
-.error-message { grid-column: 1 / -1; margin: 0; color: #b91c1c; font-size: 13px; }
-@media (max-width: 560px) { .procedure-form { grid-template-columns: 1fr; } }
+.procedure-manager {
+  margin: 0 0 12px;
+}
+
+.manage-procedures-btn {
+  border: 1px solid #1a3a7c;
+  background: #eef5ff;
+  color: #1a3a7c;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.manage-procedures-btn:hover {
+  background: #dceaff;
+}
+
+.procedure-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(15, 42, 71, .45);
+}
+
+.procedure-modal {
+  width: min(620px, 100%);
+  max-height: 90vh;
+  overflow-y: auto;
+  background: #fff;
+  border-radius: 16px;
+  padding: 22px;
+  box-shadow: 0 18px 50px rgba(15, 42, 71, .25);
+  color: #173b62;
+}
+
+.procedure-modal-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+  border-bottom: 1px solid #e1eaf4;
+  padding-bottom: 14px;
+}
+
+.procedure-modal h2,
+.procedure-modal h3 {
+  margin: 0;
+  color: #0f2a47;
+}
+
+.procedure-modal-header p {
+  margin: 5px 0 0;
+  color: #66809d;
+  font-size: 13px;
+}
+
+.close-btn {
+  border: 0;
+  background: transparent;
+  font-size: 28px;
+  color: #66809d;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.procedure-form {
+  display: grid;
+  grid-template-columns: 1fr 180px;
+  gap: 12px;
+  padding: 18px 0;
+  border-bottom: 1px solid #e1eaf4;
+}
+
+.procedure-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.procedure-form input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #cbd9e8;
+  border-radius: 8px;
+  padding: 10px;
+  color: #173b62;
+}
+
+.form-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.save-btn,
+.secondary-btn,
+.edit-btn,
+.delete-btn {
+  border: 0;
+  border-radius: 7px;
+  padding: 8px 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.save-btn {
+  background: #1a3a7c;
+  color: #fff;
+}
+
+.save-btn:disabled {
+  opacity: .6;
+  cursor: wait;
+}
+
+.secondary-btn {
+  background: #edf2f7;
+  color: #47617d;
+}
+
+.additional-list {
+  padding: 18px 0 8px;
+}
+
+.additional-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.additional-list h3 {
+  margin: 0;
+}
+
+.procedure-count {
+  display: block;
+  margin-top: 3px;
+  color: #66809d;
+  font-size: 12px;
+}
+
+.refresh-btn {
+  border: 1px solid #cbd9e8;
+  border-radius: 7px;
+  padding: 7px 10px;
+  background: #f4f8fd;
+  color: #1a3a7c;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.refresh-btn:disabled {
+  cursor: wait;
+  opacity: .6;
+}
+
+.search-label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: 0 0 8px;
+  color: #47617d;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.search-label input {
+  box-sizing: border-box;
+  width: 100%;
+  border: 1px solid #cbd9e8;
+  border-radius: 8px;
+  padding: 9px;
+  color: #173b62;
+}
+
+.procedure-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid #edf2f7;
+}
+
+.procedure-item strong,
+.procedure-item span {
+  display: block;
+}
+
+.procedure-item span {
+  margin-top: 3px;
+  color: #66809d;
+  font-size: 13px;
+}
+
+.item-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.edit-btn {
+  background: #e7f0ff;
+  color: #1a3a7c;
+}
+
+.delete-btn {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.empty-message,
+.built-in-note {
+  color: #66809d;
+  font-size: 13px;
+}
+
+.built-in-note {
+  margin: 10px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid #e1eaf4;
+}
+
+.error-message {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #b91c1c;
+  font-size: 13px;
+}
+
+@media (max-width: 560px) {
+  .procedure-form {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Custom delete confirmation dialog */
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  box-sizing: border-box;
+  background: rgba(15, 42, 71, .55);
+}
+
+.confirm-dialog {
+  width: min(400px, 100%);
+  box-sizing: border-box;
+  background: #fff;
+  border-radius: 14px;
+  padding: 22px;
+  box-shadow: 0 20px 55px rgba(15, 42, 71, .3);
+  color: #173b62;
+}
+
+.confirm-dialog h3 {
+  margin: 0 0 12px;
+  color: #0f2a47;
+  font-size: 18px;
+}
+
+.confirm-lead {
+  margin: 0 0 8px;
+  color: #47617d;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.confirm-target {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #f0f5fb;
+  border: 1px solid #dde7f2;
+  color: #0f2a47;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.confirm-note {
+  margin: 0;
+  color: #66809d;
+  font-size: 13px;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 18px;
+}
+
+.delete-confirm-btn {
+  border: 0;
+  border-radius: 7px;
+  padding: 8px 14px;
+  font-weight: 700;
+  cursor: pointer;
+  background: #b91c1c;
+  color: #fff;
+}
+
+.delete-confirm-btn:disabled {
+  opacity: .6;
+  cursor: wait;
+}
 </style>
