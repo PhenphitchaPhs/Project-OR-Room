@@ -238,7 +238,7 @@
                                             item.labNote || '-' }}</div>
                                         <div class="detail-row"><strong>Admission:</strong> {{ item.admDate || '-' }} |
                                             {{ item.admNote || '-' }}</div>
-                                        <div class="detail-row"><strong>Notes:</strong> {{ item.notes || '-' }}</div>
+                                        <div class="detail-row"><strong>Surgery Details:</strong> {{ item.notes || '-' }}</div>
                                     </div>
                                 </transition>
                                 <div class="case-actions">
@@ -339,7 +339,7 @@
                                             item.labNote || '-' }}</div>
                                         <div class="detail-row"><strong>Admission:</strong> {{ item.admDate || '-' }} |
                                             {{ item.admNote || '-' }}</div>
-                                        <div class="detail-row"><strong>Notes:</strong> {{ item.notes || '-' }}</div>
+                                        <div class="detail-row"><strong>Surgery Details:</strong> {{ item.notes || '-' }}</div>
                                     </div>
 
                                 </transition>
@@ -436,7 +436,7 @@
                                             item.labNote || '-' }}</div>
                                         <div class="detail-row"><strong>Admission:</strong> {{ item.admDate || '-' }} |
                                             {{ item.admNote || '-' }}</div>
-                                        <div class="detail-row"><strong>Notes:</strong> {{ item.notes || '-' }}</div>
+                                        <div class="detail-row"><strong>Surgery Details:</strong> {{ item.notes || '-' }}</div>
                                     </div>
 
                                 </transition>
@@ -520,7 +520,7 @@
                                             item.labNote || '-' }}</div>
                                         <div class="detail-row"><strong>Admission:</strong> {{ item.admDate || '-' }} |
                                             {{ item.admNote || '-' }}</div>
-                                        <div class="detail-row"><strong>Notes:</strong> {{ item.notes || '-' }}</div>
+                                        <div class="detail-row"><strong>Surgery Details:</strong> {{ item.notes || '-' }}</div>
                                     </div>
 
                                 </transition>
