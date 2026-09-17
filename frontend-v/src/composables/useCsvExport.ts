@@ -12,6 +12,7 @@ export interface Booking {
   date?: string
   underlying?: string
   diagnosis?: string
+  surgeryDetails?: string
   cxrDate?: string
   cxrNote?: string
   ecgDate?: string
