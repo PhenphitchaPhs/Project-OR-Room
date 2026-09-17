@@ -110,6 +110,8 @@
                             <option v-for="n in orRooms" :key="n" :value="`OR-${n}`">OR-{{ n }}</option>
                         </select>
                     </div>
+                    <textarea v-model="form.surgeryDetails" class="input-field green-theme surgery-details-field"
+                        placeholder="Surgery Details (additional surgical information)" rows="3"></textarea>
                 </div>
 
                 <div class="section-group">
@@ -193,7 +195,7 @@ const customProcedures = ref([])
 const form = reactive({
     hn: '', fullName: '', age: '', gender: '', disease: '', diagnosis: '',
     procedure: '', customProcedure: '', customProcedureMinutes: '',
-    date: '', room: '', notes: '', doctorLicense: '',
+    date: '', room: '', surgeryDetails: '', notes: '', doctorLicense: '',
     cxrDate: '', cxrNote: '',
     ecgDate: '', ecgNote: '',
     labDate: '', labNote: '',
@@ -484,6 +486,7 @@ const submitForm = async () => {
         procedure: finalProcedure,
         date: form.date,
         room: form.room,
+        surgeryDetails: form.surgeryDetails || '',
         underlying: form.disease || '',
         diagnosis: form.diagnosis || '',
         notes: form.notes,
@@ -608,6 +611,14 @@ const goHome = () => {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 15px;
+}
+
+.surgery-details-field {
+    width: 100%;
+    min-height: 84px;
+    margin-top: 14px;
+    box-sizing: border-box;
+    resize: vertical;
 }
 
 .split-input-row {
