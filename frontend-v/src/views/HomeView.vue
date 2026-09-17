@@ -199,7 +199,7 @@
                                             item.labNote || '-' }}</div>
                                         <div class="detail-row"><strong>Admission:</strong> {{ item.admDate || '-' }} |
                                             {{ item.admNote || '-' }}</div>
-                                        <div class="detail-row"><strong>Notes:</strong> {{ item.notes || '-' }}</div>
+                                        <div class="detail-row"><strong>Surgery Details:</strong> {{ item.notes || '-' }}</div>
                                     </div>
                                 </transition>
 
@@ -361,7 +361,7 @@
                                                     </div>
 
                                                     <div class="detail-row">
-                                                        <strong>Notes:</strong>
+                                                        <strong>Surgery Details:</strong>
                                                         {{ item.notes || '-' }}
                                                     </div>
 
@@ -494,7 +494,7 @@
                                                         '-' }} |
                                                         {{ item.admNote || '-' }}</div>
 
-                                                    <div class="detail-row"><strong>Notes:</strong> {{ item.notes || '-'
+                                                    <div class="detail-row"><strong>Surgery Details:</strong> {{ item.notes || '-'
                                                         }}
                                                     </div>
 
@@ -670,7 +670,7 @@
                                                 </div>
 
                                                 <div class="detail-row">
-                                                    <strong>Notes:</strong>
+                                                    <strong>Surgery Details:</strong>
                                                     {{ item.notes || '-' }}
                                                 </div>
 
@@ -804,7 +804,7 @@
                                                     </div>
 
                                                     <div class="detail-row">
-                                                        <strong>Notes:</strong>
+                                                        <strong>Surgery Details:</strong>
                                                         {{ item.notes || '-' }}
                                                     </div>
 
