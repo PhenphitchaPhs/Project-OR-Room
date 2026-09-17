@@ -101,6 +101,8 @@
                             <option v-for="n in orRooms" :key="n" :value="`OR-${n}`">OR-{{ n }}</option>
                         </select>
                     </div>
+                    <textarea v-model="form.surgeryDetails" class="input-field green-theme surgery-details-field"
+                        placeholder="Surgery Details (additional surgical information)" rows="3"></textarea>
                 </div>
 
                 <div class="section-group">
@@ -197,7 +199,7 @@ const showAlert = (message, isSuccess = false) => {
 
 const form = reactive({
     hn: '', fullName: '', age: '', gender: '', disease: '', diagnosis: '',
-    procedure: '', date: '', room: '', notes: '',
+    procedure: '', date: '', room: '', surgeryDetails: '', notes: '',
     cxrDate: '', cxrNote: '',
     ecgDate: '', ecgNote: '',
     labDate: '', labNote: '',
@@ -318,6 +320,7 @@ onMounted(async () => {
                 form.procedure = booking.procedure || ''
                 form.date = booking.date || ''
                 form.room = booking.room || ''
+                form.surgeryDetails = booking.surgeryDetails || ''
                 form.notes = booking.notes || ''
 
                 form.cxrDate = booking.cxrDate || ''
@@ -540,6 +543,7 @@ const submitForm = async () => {
         durationMinutes: durationMinutes,
         date: form.date,
         room: form.room,
+        surgeryDetails: form.surgeryDetails || '',
         underlying: form.disease || '',
         diagnosis: form.diagnosis || '',
         notes: form.notes,
@@ -720,6 +724,14 @@ const goHome = () => {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 15px;
+}
+
+.surgery-details-field {
+    width: 100%;
+    min-height: 84px;
+    margin-top: 14px;
+    box-sizing: border-box;
+    resize: vertical;
 }
 
 .split-input-row {
