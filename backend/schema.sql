@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS bookings (
   date TEXT NOT NULL,
   underlying TEXT,                -- 👈 โรคประจำตัว
   diagnosis TEXT,                 -- 👈 การวินิจฉัยโรค
+  surgeryDetails TEXT,            -- 👈 รายละเอียดเพิ่มเติมเกี่ยวกับการผ่าตัด
   cxrDate TEXT,        -- 👈 เพิ่มข้อมูล CXR
   cxrNote TEXT,
   ecgDate TEXT,        -- 👈 เพิ่มข้อมูล ECG
