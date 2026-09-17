@@ -22,6 +22,7 @@
                         </p>
                         <p><strong>Admission:</strong> {{ selectedCase.admDate || '-' }} | {{ selectedCase.admNote ||
                             '-' }}</p>
+                        <p><strong>Surgery Details:</strong> {{ selectedCase.surgeryDetails || '-' }}</p>
                         <p><strong>Other Notes:</strong> {{ selectedCase.notes || '-' }}</p>
                     </div>
                     <button class="close-detail-btn" @click="closeDetailModal">Close</button>
@@ -199,6 +200,7 @@
                                             item.labNote || '-' }}</div>
                                         <div class="detail-row"><strong>Admission:</strong> {{ item.admDate || '-' }} |
                                             {{ item.admNote || '-' }}</div>
+                                        <div class="detail-row"><strong>Surgery Details:</strong> {{ item.surgeryDetails || '-' }}</div>
                                         <div class="detail-row"><strong>Notes:</strong> {{ item.notes || '-' }}</div>
                                     </div>
                                 </transition>
@@ -361,6 +363,10 @@
                                                     </div>
 
                                                     <div class="detail-row">
+                                                        <strong>Surgery Details:</strong>
+                                                        {{ item.surgeryDetails || '-' }}
+                                                    </div>
+                                                    <div class="detail-row">
                                                         <strong>Notes:</strong>
                                                         {{ item.notes || '-' }}
                                                     </div>
@@ -494,6 +500,9 @@
                                                         '-' }} |
                                                         {{ item.admNote || '-' }}</div>
 
+                                                    <div class="detail-row"><strong>Surgery Details:</strong> {{ item.surgeryDetails || '-'
+                                                        }}
+                                                    </div>
                                                     <div class="detail-row"><strong>Notes:</strong> {{ item.notes || '-'
                                                         }}
                                                     </div>
@@ -670,6 +679,10 @@
                                                 </div>
 
                                                 <div class="detail-row">
+                                                    <strong>Surgery Details:</strong>
+                                                    {{ item.surgeryDetails || '-' }}
+                                                </div>
+                                                <div class="detail-row">
                                                     <strong>Notes:</strong>
                                                     {{ item.notes || '-' }}
                                                 </div>
@@ -803,6 +816,10 @@
                                                         {{ item.admNote || '-' }}
                                                     </div>
 
+                                                    <div class="detail-row">
+                                                        <strong>Surgery Details:</strong>
+                                                        {{ item.surgeryDetails || '-' }}
+                                                    </div>
                                                     <div class="detail-row">
                                                         <strong>Notes:</strong>
                                                         {{ item.notes || '-' }}
