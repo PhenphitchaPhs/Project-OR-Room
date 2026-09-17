@@ -101,13 +101,6 @@
                             <option v-for="n in orRooms" :key="n" :value="`OR-${n}`">OR-{{ n }}</option>
                         </select>
                     </div>
-
-                    <div style="margin-top: 16px;">
-                        <label class="mini-label" style="display: block; margin-bottom: 6px;">Surgery Details</label>
-                        <textarea v-model="form.notes"
-                            placeholder="Enter additional surgery details..."
-                            class="input-field blue-theme note-box" rows="3"></textarea>
-                    </div>
                 </div>
 
                 <div class="section-group">
@@ -146,6 +139,12 @@
                             </div>
                         </div>
                     </div>
+                </div>
+
+                <div class="section-group">
+                    <label class="group-label">Other Remarks</label>
+                    <textarea v-model="form.notes" placeholder="Additional details..."
+                        class="input-field blue-theme note-box" rows="2"></textarea>
                 </div>
 
                 <div class="btn-area">
