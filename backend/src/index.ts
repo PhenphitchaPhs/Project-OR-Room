@@ -941,14 +941,14 @@ app.post('/api/bookings', async (c) => {
 
     await c.env.DB.prepare(`
       INSERT INTO bookings (
-        hn, fullName, dob, age, gender, procedure, durationMinutes, date, underlying, diagnosis,
+        hn, fullName, dob, age, gender, procedure, durationMinutes, date, underlying, diagnosis, surgeryDetails,
         cxrDate, cxrNote, ecgDate, ecgNote, labDate, labNote, admDate, admNote,
         notes, status, room, doctorLicense, createdAt
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now', '+7 hours'))
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now', '+7 hours'))
     `).bind(
       b.hn, b.fullName, b.dob, b.age, b.gender, b.procedure, durationMinutes,
-      b.date, b.underlying, b.diagnosis,
+      b.date, b.underlying, b.diagnosis, b.surgeryDetails || '',
       b.cxrDate, b.cxrNote, b.ecgDate, b.ecgNote, b.labDate, b.labNote, b.admDate, b.admNote,
       b.notes, 'Upcoming', b.room || 'OR-01', doctorLicense
     ).run()
@@ -1033,12 +1033,12 @@ app.put('/api/bookings/:id', async (c) => {
 
     await c.env.DB.prepare(`
       UPDATE bookings SET
-        hn = ?, fullName = ?, age = ?, gender = ?, procedure = ?, durationMinutes = ?, date = ?, room = ?, underlying = ?, diagnosis = ?,
+        hn = ?, fullName = ?, age = ?, gender = ?, procedure = ?, durationMinutes = ?, date = ?, room = ?, underlying = ?, diagnosis = ?, surgeryDetails = ?,
         cxrDate = ?, cxrNote = ?, ecgDate = ?, ecgNote = ?, labDate = ?, labNote = ?, admDate = ?, admNote = ?,
         notes = ?
       WHERE id = ?
     `).bind(
-      b.hn, b.fullName, b.age, b.gender, b.procedure, durationMinutes, b.date, b.room || 'OR-01', b.underlying, b.diagnosis,
+      b.hn, b.fullName, b.age, b.gender, b.procedure, durationMinutes, b.date, b.room || 'OR-01', b.underlying, b.diagnosis, b.surgeryDetails || '',
       b.cxrDate, b.cxrNote, b.ecgDate, b.ecgNote, b.labDate, b.labNote, b.admDate, b.admNote,
       b.notes, id
     ).run()
