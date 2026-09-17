@@ -13,6 +13,7 @@ npx wrangler d1 execute or_room_db --remote --file=./migrate-patients.sql
 npx wrangler d1 execute or_room_db --remote --file=./migrate-add-duration-minutes.sql
 npx wrangler d1 execute or_room_db --remote --file=./migrate-surgery-procedures.sql
 npx wrangler d1 execute or_room_db --remote --file=./migrate-surgery-procedure-logs.sql
+npx wrangler d1 execute or_room_db --remote --file=./migrate-add-surgery-details.sql
 ```
 
 For local development, replace `--remote` with `--local`. Do not run the duration migration again after it has already been applied, because SQLite/D1 does not support `ADD COLUMN IF NOT EXISTS`.
@@ -20,6 +21,8 @@ For local development, replace `--remote` with `--local`. Do not run the duratio
 The surgery procedures migration creates the table for user-managed surgery types. Built-in surgery types remain protected in the application and are not editable or deletable.
 
 For databases where `migrate-surgery-procedures.sql` was already applied, run `migrate-surgery-procedure-logs.sql` once to enable the audit history.
+
+For an existing database, run `migrate-add-surgery-details.sql` once before deploying the backend that saves Surgery Details. This adds the `surgeryDetails` column required to retain and return the value.
 
 ```
 open http://localhost:3000
