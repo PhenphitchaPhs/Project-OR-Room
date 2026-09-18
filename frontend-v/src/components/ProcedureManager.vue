@@ -43,13 +43,8 @@
               {{ isLoading ? 'Refreshing...' : 'Refresh' }}
             </button>
           </div>
-          <label v-if="procedures.length" class="search-label">
-            Search surgery types
-            <input v-model.trim="searchQuery" type="search" placeholder="Search by name" />
-          </label>
           <p v-if="!procedures.length" class="empty-message">No additional surgery types yet.</p>
-          <p v-else-if="!filteredProcedures.length" class="empty-message">No matching surgery types.</p>
-          <div v-for="procedure in filteredProcedures" :key="procedure.id" class="procedure-item">
+          <div v-for="procedure in procedures" :key="procedure.id" class="procedure-item">
             <div>
               <strong>{{ procedure.name }}</strong>
               <span>{{ procedure.durationMinutes }} minutes · {{ ownerLabel(procedure) }}</span>
@@ -87,7 +82,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { apiFetch } from '../api/client'
 
 const emit = defineEmits(['updated'])
@@ -96,7 +91,6 @@ const isSaving = ref(false)
 const editingId = ref(null)
 const errorMessage = ref('')
 const procedures = ref([])
-const searchQuery = ref('')
 const isLoading = ref(false)
 const form = reactive({ name: '', durationMinutes: null })
 const currentLicense = localStorage.getItem('userLicense') || ''
@@ -109,13 +103,6 @@ const deleteError = ref('')
 
 const canManage = (procedure) =>
   currentRole === 'admin' || String(procedure.createdBy) === String(currentLicense)
-
-const filteredProcedures = computed(() => {
-  const query = searchQuery.value.toLowerCase()
-  return procedures.value.filter((procedure) =>
-    !query || String(procedure.name || '').toLowerCase().includes(query)
-  )
-})
 
 const ownerLabel = (procedure) => {
   if (String(procedure.createdBy) === String(currentLicense)) return 'Created by you'
@@ -407,25 +394,6 @@ onMounted(async () => {
 .refresh-btn:disabled {
   cursor: wait;
   opacity: .6;
-}
-
-.search-label {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  margin: 0 0 8px;
-  color: #47617d;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.search-label input {
-  box-sizing: border-box;
-  width: 100%;
-  border: 1px solid #cbd9e8;
-  border-radius: 8px;
-  padding: 9px;
-  color: #173b62;
 }
 
 .procedure-item {
