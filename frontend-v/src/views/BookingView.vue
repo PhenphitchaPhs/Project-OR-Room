@@ -56,17 +56,24 @@
                     </label>
                     <ProcedureManager @updated="setCustomProcedures" />
                     <div class="grid-2-col">
-                        <ProcedureSelect v-model="form.procedure" :groups="procedureGroups"
-                            :custom-procedures="customProcedures" @change="checkValidDate" />
+                        <div style="min-width: 0;">
+                            <div class="date-label surgery-field-label">Surgery type <span class="required">*</span></div>
+                            <ProcedureSelect v-model="form.procedure" :groups="procedureGroups"
+                                :custom-procedures="customProcedures" @change="checkValidDate" />
+                            <select v-model="form.room" class="input-field green-theme room-select" @change="checkValidDate" required>
+                                <option value="" disabled>Select OR Room</option>
+                                <option v-for="n in orRooms" :key="n" :value="`OR-${n}`">OR-{{ n }}</option>
+                            </select>
+                        </div>
 
                         <div style="display: flex; flex-direction: column;">
-                            <label class="date-label">
+
+                            <label for="surgery-date" class="date-label surgery-field-label">
                                 📅 Surgery date (Gregorian calendar only)
                                 <span class="required">*</span>
                             </label>
-
-                            <input type="date" v-model="form.date" :min="minDate" :max="maxDate" @blur="checkValidDate"
-                                class="input-field green-theme" :readonly="isDateLocked && !!form.date"
+                            <input id="surgery-date" type="date" v-model="form.date" :min="minDate" :max="maxDate" @blur="checkValidDate"
+                                class="input-field green-theme surgery-date-field" :readonly="isDateLocked && !!form.date"
                                 :class="{ 'locked-field': isDateLocked && form.date }" required />
 
                             <span class="date-hint">
@@ -84,12 +91,9 @@
                             </span>
                         </div>
 
-                        <select v-model="form.room" class="input-field green-theme" @change="checkValidDate" required>
-                            <option value="" disabled>Select OR Room</option>
-                            <option v-for="n in orRooms" :key="n" :value="`OR-${n}`">OR-{{ n }}</option>
-                        </select>
                     </div>
-                    <textarea v-model="form.surgeryDetails" class="input-field green-theme surgery-details-field"
+                    <label for="surgery-details" class="surgery-details-label">Surgery Details</label>
+                    <textarea id="surgery-details" v-model="form.surgeryDetails" class="input-field green-theme surgery-details-field"
                         placeholder="Surgery Details (additional surgical information)" rows="3"></textarea>
                 </div>
 
@@ -132,7 +136,7 @@
                 </div>
 
                 <div class="section-group">
-                    <label class="group-label">Other Remarks</label>
+                    <label class="group-label">Note</label>
                     <textarea v-model="form.notes" placeholder="Additional details..."
                         class="input-field blue-theme note-box" rows="2"></textarea>
                 </div>
@@ -716,10 +720,43 @@ const goHome = () => {
     gap: 15px;
 }
 
+.room-select {
+    margin-top: 10px;
+    height: 46px;
+    box-sizing: border-box;
+}
+
+.surgery-date-field {
+    height: 46px;
+    min-width: 0;
+    padding: 10px 14px;
+}
+
+.surgery-field-label {
+    display: block;
+    min-height: 38px;
+    line-height: 19px;
+}
+
+label.surgery-field-label {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+}
+
+.surgery-details-label {
+    display: block;
+    margin-top: 14px;
+    margin-bottom: 6px;
+    color: #173b62;
+    font-size: 16px;
+    font-weight: 700;
+}
+
 .surgery-details-field {
     width: 100%;
     min-height: 84px;
-    margin-top: 14px;
+    margin-top: 0;
     box-sizing: border-box;
     resize: vertical;
 }

@@ -102,7 +102,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onOutsideClick
 
 <style scoped>
 .procedure-select { position: relative; min-width: 0; width: 100%; align-self: start; }
-.select-trigger { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; min-height: 46px; padding: 12px 14px; border: 1px solid #d6e2f1; border-radius: 8px; background: #f4f8fd; color: #173b62; font: inherit; text-align: left; cursor: pointer; }
+.select-trigger { display: flex; align-items: center; justify-content: space-between; gap: 10px; box-sizing: border-box; width: 100%; height: 46px; padding: 10px 14px; border: 1px solid #d6e2f1; border-radius: 10px; background: #f4f8fd; color: #173b62; font: inherit; font-size: 14px; text-align: left; cursor: pointer; }
 .select-trigger > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .placeholder { color: #64748b; }
 .select-trigger:focus-visible, .search-input:focus { outline: 2px solid #1a3a7c; outline-offset: 2px; }

@@ -871,29 +871,6 @@
                 </div>
             </div>
 
-            <div class="info-section">
-                <div class="info-header">
-                    <span class="material-icons info-icon">info</span>
-                    <h3>Additional Information</h3>
-                </div>
-
-                <ul class="info-list">
-                    <li>
-                        <span class="material-icons check-bullet">check</span>
-                        Cases can be canceled before surgery date.
-                    </li>
-
-                    <li>
-                        <span class="material-icons check-bullet">check</span>
-                        Please arrive on time for the convenience of everyone.
-                    </li>
-
-                    <li>
-                        <span class="material-icons check-bullet">check</span>
-                        If there is a problem, please contact staff.
-                    </li>
-                </ul>
-            </div>
 
         </div>
 
