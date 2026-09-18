@@ -129,7 +129,7 @@ const USER_COLUMNS: ColumnDef[] = [
   { header: 'Age/Gender', width: 40, value: (row) => `${dash(row.age)}/${genderLabel(row.gender)}` },
   { header: 'Diagnosis', width: 83, value: (row) => dash(row.diagnosis) },
   { header: 'Procedure', width: 84, value: (row) => dash(row.procedure) },
-  { header: 'Surgery Details', width: 80, value: (row) => dash(row.surgeryDetails) },
+  { header: 'Additional Surgery Details', width: 80, value: (row) => dash(row.surgeryDetails) },
   { header: 'Surgery date', width: 52, value: (row) => formatThaiDate(row.date) },
   { header: 'Room', width: 34, value: (row) => dash(row.room) },
 
@@ -143,7 +143,7 @@ const ADMIN_COLUMNS: ColumnDef[] = [
   { header: 'Age/Gender', width: 41, value: (row) => `${dash(row.age)}/${genderLabel(row.gender)}` },
   { header: 'Diagnosis', width: 68, value: (row) => dash(row.diagnosis) },
   { header: 'Procedure', width: 72, value: (row) => dash(row.procedure) },
-  { header: 'Surgery Details', width: 80, value: (row) => dash(row.surgeryDetails) },
+  { header: 'Additional Surgery Details', width: 80, value: (row) => dash(row.surgeryDetails) },
   { header: 'Surgery date', width: 54, value: (row) => formatThaiDate(row.date) },
   { header: 'Room', width: 36, value: (row) => dash(row.room) },
   { header: 'Doctor name', width: 66, value: (row, meta) => doctorNameOf(row, meta) },
@@ -426,7 +426,7 @@ function drawSingleCase(doc: any, row: ExportedRow) {
     ['Underlying condition', dash(row.underlying)],
     ['Diagnosis', dash(row.diagnosis)],
     ['Procedure', dash(row.procedure)],
-    ['Surgery Details', dash(row.surgeryDetails)],
+    ['Additional Surgery Details', dash(row.surgeryDetails)],
     ['Surgery date', formatThaiDate(row.date)],
     ['Operating room', dash(row.room)],
 

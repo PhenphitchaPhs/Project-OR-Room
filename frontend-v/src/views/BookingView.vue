@@ -92,9 +92,9 @@
                         </div>
 
                     </div>
-                    <label for="surgery-details" class="surgery-details-label">Surgery Details</label>
+                    <label for="surgery-details" class="surgery-details-label">Additional Surgery Details</label>
                     <textarea id="surgery-details" v-model="form.surgeryDetails" class="input-field green-theme surgery-details-field"
-                        placeholder="Surgery Details (additional surgical information)" rows="3"></textarea>
+                        placeholder="Enter additional surgery details..." rows="3"></textarea>
                 </div>
 
                 <div class="section-group">

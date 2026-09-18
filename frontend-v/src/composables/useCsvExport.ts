@@ -173,7 +173,7 @@ const CSV_COLUMNS: ColumnDef[] = [
   { header: 'Underlying condition', value: (row) => dash(row.underlying) },
   { header: 'Diagnosis', value: (row) => dash(row.diagnosis) },
   { header: 'Procedure', value: (row) => dash(row.procedure) },
-  { header: 'Surgery Details', value: (row) => dash(row.surgeryDetails) },
+  { header: 'Additional Surgery Details', value: (row) => dash(row.surgeryDetails) },
   { header: 'Room', value: (row) => dash(row.room) },
   { header: 'Surgery date', value: (row) => dash(toDateKey(row.date)) },
 
