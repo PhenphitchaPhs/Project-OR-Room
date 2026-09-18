@@ -209,6 +209,7 @@
 
                                     <div class="grid-row single">
                                         <span><strong>Procedure:</strong> {{ item.procedure }}</span>
+                                        <span><strong>Additional Surgery Details:</strong> {{ item.surgeryDetails || '-' }}</span>
                                     </div>
                                     <div class="grid-row single">
                                         <span>
@@ -238,7 +239,7 @@
                                             item.labNote || '-' }}</div>
                                         <div class="detail-row"><strong>Admission:</strong> {{ item.admDate || '-' }} |
                                             {{ item.admNote || '-' }}</div>
-                                        <div class="detail-row"><strong>Surgery Details:</strong> {{ item.surgeryDetails || '-' }}</div>
+                                        <div class="detail-row"><strong>Additional Surgery Details:</strong> {{ item.surgeryDetails || '-' }}</div>
                                         <div class="detail-row"><strong>Notes:</strong> {{ item.notes || '-' }}</div>
                                     </div>
                                 </transition>
@@ -311,6 +312,7 @@
 
                                     <div class="grid-row single">
                                         <span><strong>Procedure:</strong> {{ item.procedure }}</span>
+                                        <span><strong>Additional Surgery Details:</strong> {{ item.surgeryDetails || '-' }}</span>
                                     </div>
                                     <div class="grid-row single">
                                         <span>
@@ -340,7 +342,7 @@
                                             item.labNote || '-' }}</div>
                                         <div class="detail-row"><strong>Admission:</strong> {{ item.admDate || '-' }} |
                                             {{ item.admNote || '-' }}</div>
-                                        <div class="detail-row"><strong>Surgery Details:</strong> {{ item.surgeryDetails || '-' }}</div>
+                                        <div class="detail-row"><strong>Additional Surgery Details:</strong> {{ item.surgeryDetails || '-' }}</div>
                                         <div class="detail-row"><strong>Notes:</strong> {{ item.notes || '-' }}</div>
                                     </div>
 
@@ -409,6 +411,7 @@
 
                                     <div class="grid-row single">
                                         <span><strong>Procedure:</strong> {{ item.procedure }}</span>
+                                        <span><strong>Additional Surgery Details:</strong> {{ item.surgeryDetails || '-' }}</span>
                                     </div>
                                     <div class="grid-row single">
                                         <span>
@@ -438,7 +441,7 @@
                                             item.labNote || '-' }}</div>
                                         <div class="detail-row"><strong>Admission:</strong> {{ item.admDate || '-' }} |
                                             {{ item.admNote || '-' }}</div>
-                                        <div class="detail-row"><strong>Surgery Details:</strong> {{ item.surgeryDetails || '-' }}</div>
+                                        <div class="detail-row"><strong>Additional Surgery Details:</strong> {{ item.surgeryDetails || '-' }}</div>
                                         <div class="detail-row"><strong>Notes:</strong> {{ item.notes || '-' }}</div>
                                     </div>
 
@@ -494,6 +497,7 @@
 
                                     <div class="grid-row single">
                                         <span><strong>Procedure:</strong> {{ item.procedure }}</span>
+                                        <span><strong>Additional Surgery Details:</strong> {{ item.surgeryDetails || '-' }}</span>
                                     </div>
                                     <div class="grid-row single">
                                         <span>
@@ -523,7 +527,7 @@
                                             item.labNote || '-' }}</div>
                                         <div class="detail-row"><strong>Admission:</strong> {{ item.admDate || '-' }} |
                                             {{ item.admNote || '-' }}</div>
-                                        <div class="detail-row"><strong>Surgery Details:</strong> {{ item.surgeryDetails || '-' }}</div>
+                                        <div class="detail-row"><strong>Additional Surgery Details:</strong> {{ item.surgeryDetails || '-' }}</div>
                                         <div class="detail-row"><strong>Notes:</strong> {{ item.notes || '-' }}</div>
                                     </div>
 
@@ -790,7 +794,7 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { useCsvExport } from '../../composables/useCsvExport'
+import { normalizeBooking, useCsvExport } from '../../composables/useCsvExport'
 import {
     buildQueueReportPdf,
     buildReportFileName,
@@ -983,7 +987,7 @@ onMounted(async () => {
         const res = await apiFetch('/api/bookings')
         const data = await res.json()
 
-        bookings.value = Array.isArray(data) ? data : []
+        bookings.value = Array.isArray(data) ? data.map(normalizeBooking) : []
 
         for (const item of bookings.value) {
             if (
@@ -1411,7 +1415,8 @@ const confirmExport = async () => {
             return
         }
 
-        const rows = await res.json()
+        const responseRows = await res.json()
+        const rows = Array.isArray(responseRows) ? responseRows.map(normalizeBooking) : []
         if (!Array.isArray(rows) || rows.length === 0) {
             exportError.value = 'No bookings found for the selected filters'
             return

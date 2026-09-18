@@ -13,6 +13,8 @@ export interface Booking {
   underlying?: string
   diagnosis?: string
   surgeryDetails?: string
+  additionalSurgeryDetails?: string
+  additional_surgery_details?: string
   cxrDate?: string
   cxrNote?: string
   ecgDate?: string
@@ -32,6 +34,21 @@ export interface Booking {
 }
 
 type ExportRow = Booking & { __queueNo?: number }
+
+/**
+ * Keep the display/export path compatible with records returned by older API
+ * versions and with imported records that used the longer field name.
+ */
+export const surgeryDetailsOf = (row: Booking | null | undefined): string => {
+  if (!row) return ''
+  const candidates = [row.surgeryDetails, row.additionalSurgeryDetails, row.additional_surgery_details]
+  return String(candidates.find((value) => String(value ?? '').trim() !== '') ?? '')
+}
+
+export const normalizeBooking = <T extends Booking>(row: T): T => ({
+  ...row,
+  surgeryDetails: surgeryDetailsOf(row),
+})
 
 const BOM = '\uFEFF'
 const CRLF = '\r\n'
@@ -173,7 +190,7 @@ const CSV_COLUMNS: ColumnDef[] = [
   { header: 'Underlying condition', value: (row) => dash(row.underlying) },
   { header: 'Diagnosis', value: (row) => dash(row.diagnosis) },
   { header: 'Procedure', value: (row) => dash(row.procedure) },
-  { header: 'Additional Surgery Details', value: (row) => dash(row.surgeryDetails) },
+  { header: 'Additional Surgery Details', value: (row) => dash(surgeryDetailsOf(row)) },
   { header: 'Room', value: (row) => dash(row.room) },
   { header: 'Surgery date', value: (row) => dash(toDateKey(row.date)) },
 

@@ -22,7 +22,7 @@
                         </p>
                         <p><strong>Admission:</strong> {{ selectedCase.admDate || '-' }} | {{ selectedCase.admNote ||
                             '-' }}</p>
-                        <p><strong>Surgery Details:</strong> {{ selectedCase.surgeryDetails || '-' }}</p>
+                        <p><strong>Additional Surgery Details:</strong> {{ selectedCase.surgeryDetails || '-' }}</p>
                         <p><strong>Other Notes:</strong> {{ selectedCase.notes || '-' }}</p>
                     </div>
                     <button class="close-detail-btn" @click="closeDetailModal">Close</button>
@@ -176,6 +176,8 @@
                                     </div>
                                     <div class="grid-row single"><span><strong>Procedure:</strong> {{ item.procedure
                                             }}</span></div>
+                                    <div class="grid-row single"><span><strong>Additional Surgery Details:</strong>
+                                            {{ item.surgeryDetails || '-' }}</span></div>
                                 </div>
 
                                 <transition name="expand">
@@ -200,7 +202,7 @@
                                             item.labNote || '-' }}</div>
                                         <div class="detail-row"><strong>Admission:</strong> {{ item.admDate || '-' }} |
                                             {{ item.admNote || '-' }}</div>
-                                        <div class="detail-row"><strong>Surgery Details:</strong> {{ item.surgeryDetails || '-' }}</div>
+                                        <div class="detail-row"><strong>Additional Surgery Details:</strong> {{ item.surgeryDetails || '-' }}</div>
                                         <div class="detail-row"><strong>Notes:</strong> {{ item.notes || '-' }}</div>
                                     </div>
                                 </transition>
@@ -293,6 +295,7 @@
 
                                                 <div class="grid-row single">
                                                     <span><strong>Procedure:</strong> {{ item.procedure }}</span>
+                                                    <span><strong>Additional Surgery Details:</strong> {{ item.surgeryDetails || '-' }}</span>
                                                 </div>
 
                                             </div>
@@ -363,7 +366,7 @@
                                                     </div>
 
                                                     <div class="detail-row">
-                                                        <strong>Surgery Details:</strong>
+                                                        <strong>Additional Surgery Details:</strong>
                                                         {{ item.surgeryDetails || '-' }}
                                                     </div>
                                                     <div class="detail-row">
@@ -500,7 +503,7 @@
                                                         '-' }} |
                                                         {{ item.admNote || '-' }}</div>
 
-                                                    <div class="detail-row"><strong>Surgery Details:</strong> {{ item.surgeryDetails || '-'
+                                                    <div class="detail-row"><strong>Additional Surgery Details:</strong> {{ item.surgeryDetails || '-'
                                                         }}
                                                     </div>
                                                     <div class="detail-row"><strong>Notes:</strong> {{ item.notes || '-'
@@ -602,6 +605,7 @@
 
                                             <div class="grid-row single">
                                                 <span><strong>Procedure:</strong> {{ item.procedure }}</span>
+                                                <span><strong>Additional Surgery Details:</strong> {{ item.surgeryDetails || '-' }}</span>
                                             </div>
                                         </div>
                                         <div class="see-more-toggle">
@@ -679,7 +683,7 @@
                                                 </div>
 
                                                 <div class="detail-row">
-                                                    <strong>Surgery Details:</strong>
+                                                    <strong>Additional Surgery Details:</strong>
                                                     {{ item.surgeryDetails || '-' }}
                                                 </div>
                                                 <div class="detail-row">
@@ -748,6 +752,7 @@
 
                                                 <div class="grid-row single">
                                                     <span><strong>Procedure:</strong> {{ item.procedure }}</span>
+                                                    <span><strong>Additional Surgery Details:</strong> {{ item.surgeryDetails || '-' }}</span>
                                                 </div>
                                             </div>
 
@@ -817,7 +822,7 @@
                                                     </div>
 
                                                     <div class="detail-row">
-                                                        <strong>Surgery Details:</strong>
+                                                        <strong>Additional Surgery Details:</strong>
                                                         {{ item.surgeryDetails || '-' }}
                                                     </div>
                                                     <div class="detail-row">
@@ -1077,7 +1082,7 @@ import { useRouter, useRoute } from 'vue-router'
 import VueDatePicker from '@vuepic/vue-datepicker'
 import draggable from 'vuedraggable'
 import '@vuepic/vue-datepicker/dist/main.css'
-import { useCsvExport } from '../composables/useCsvExport'
+import { normalizeBooking, useCsvExport } from '../composables/useCsvExport'
 import { buildQueueReportPdf, buildReportFileName, formatThaiDate } from '../components/report/QueueReportPdf'
 import { apiFetch } from '../api/client'
 
@@ -1904,7 +1909,7 @@ const fetchBookings = async () => {
 
         const response = await apiFetch(`${API_URL}?license=${encodeURIComponent(license || '')}`)
         const data = await response.json()
-        bookings.value = Array.isArray(data) ? data : []
+        bookings.value = Array.isArray(data) ? data.map(normalizeBooking) : []
     } catch (error) { console.error("❌ ดึงคิวไม่สำเร็จ:", error) }
     finally { isLoading.value = false }
 
