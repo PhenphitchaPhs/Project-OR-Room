@@ -80,13 +80,6 @@
               </div>
             </li>
 
-            <li @click="goTo('/procedures')">
-              <div class="menu-item">
-                <span class="menu-icon"><span class="material-icons">medical_services</span></span>
-                <span class="menu-text">Surgery Types</span>
-              </div>
-            </li>
-
           </ul>
         </nav>
       </aside>
