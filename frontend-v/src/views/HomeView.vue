@@ -175,7 +175,7 @@
                                     <div class="grid-row"><span><strong>Patient:</strong> {{ item.fullName }}</span>
                                     </div>
                                     <div class="grid-row single"><span><strong>Procedure:</strong> {{ item.procedure
-                                            }}</span></div>
+                                    }}</span></div>
                                     <div class="grid-row single"><span><strong>Additional Surgery Details:</strong>
                                             {{ item.surgeryDetails || '-' }}</span></div>
                                 </div>
@@ -192,7 +192,7 @@
                                         <div class="detail-row"><strong>Diagnosis:</strong> {{
                                             item.diagnosis || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                            }}</div>
+                                        }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
                                             item.cxrNote || '-' }}</div>
@@ -202,7 +202,8 @@
                                             item.labNote || '-' }}</div>
                                         <div class="detail-row"><strong>Admission:</strong> {{ item.admDate || '-' }} |
                                             {{ item.admNote || '-' }}</div>
-                                        <div class="detail-row"><strong>Additional Surgery Details:</strong> {{ item.surgeryDetails || '-' }}</div>
+                                        <div class="detail-row"><strong>Additional Surgery Details:</strong> {{
+                                            item.surgeryDetails || '-' }}</div>
                                         <div class="detail-row"><strong>Notes:</strong> {{ item.notes || '-' }}</div>
                                     </div>
                                 </transition>
@@ -225,7 +226,7 @@
 
                                 <div class="see-more-toggle">
                                     <span class="see-more-text">{{ expandedId === item.id ? 'See less' : 'See more'
-                                        }}</span>
+                                    }}</span>
                                     <span class="material-icons see-more-icon">{{ expandedId === item.id ? 'expand_less'
                                         : 'expand_more' }}</span>
                                 </div>
@@ -295,7 +296,8 @@
 
                                                 <div class="grid-row single">
                                                     <span><strong>Procedure:</strong> {{ item.procedure }}</span>
-                                                    <span><strong>Additional Surgery Details:</strong> {{ item.surgeryDetails || '-' }}</span>
+                                                    <span><strong>Additional Surgery Details:</strong> {{
+                                                        item.surgeryDetails || '-' }}</span>
                                                 </div>
 
                                             </div>
@@ -470,7 +472,7 @@
                                                 <div v-if="expandedId === item.id" class="case-detail">
                                                     <div class="detail-row"><strong>HN:</strong> {{ item.hn }}</div>
                                                     <div class="detail-row"><strong>Full Name:</strong> {{ item.fullName
-                                                        }}
+                                                    }}
                                                     </div>
                                                     <div class="detail-row"><strong>Age:</strong> {{ item.age }}</div>
                                                     <div>
@@ -483,19 +485,19 @@
                                                         item.diagnosis || '-' }}</div>
                                                     <div class="detail-row"><strong>Proposed Procedure:</strong> {{
                                                         item.procedure
-                                                        }}</div>
+                                                    }}</div>
                                                     <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
 
                                                     <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-'
-                                                        }}
+                                                    }}
                                                         | {{
                                                             item.cxrNote || '-' }}</div>
                                                     <div class="detail-row"><strong>ECG:</strong> {{ item.ecgDate || '-'
-                                                        }}
+                                                    }}
                                                         | {{
                                                             item.ecgNote || '-' }}</div>
                                                     <div class="detail-row"><strong>Lab:</strong> {{ item.labDate || '-'
-                                                        }}
+                                                    }}
                                                         | {{
                                                             item.labNote || '-' }}</div>
                                                     <div class="detail-row"><strong>Admission:</strong> {{ item.admDate
@@ -503,11 +505,12 @@
                                                         '-' }} |
                                                         {{ item.admNote || '-' }}</div>
 
-                                                    <div class="detail-row"><strong>Additional Surgery Details:</strong> {{ item.surgeryDetails || '-'
+                                                    <div class="detail-row"><strong>Additional Surgery Details:</strong>
+                                                        {{ item.surgeryDetails || '-'
                                                         }}
                                                     </div>
                                                     <div class="detail-row"><strong>Notes:</strong> {{ item.notes || '-'
-                                                        }}
+                                                    }}
                                                     </div>
 
                                                 </div>
@@ -605,7 +608,8 @@
 
                                             <div class="grid-row single">
                                                 <span><strong>Procedure:</strong> {{ item.procedure }}</span>
-                                                <span><strong>Additional Surgery Details:</strong> {{ item.surgeryDetails || '-' }}</span>
+                                                <span><strong>Additional Surgery Details:</strong> {{
+                                                    item.surgeryDetails || '-' }}</span>
                                             </div>
                                         </div>
                                         <div class="see-more-toggle">
@@ -752,7 +756,9 @@
 
                                                 <div class="grid-row single">
                                                     <span><strong>Procedure:</strong> {{ item.procedure }}</span>
-                                                    <span><strong>Additional Surgery Details:</strong> {{ item.surgeryDetails || '-' }}</span>
+                                                    <span><strong>Additional Surgery Details:</strong> {{
+                                                        item.surgeryDetails || '-'
+                                                        }}</span>
                                                 </div>
                                             </div>
 
@@ -974,7 +980,7 @@
                     <span class="sheet-option-text">
                         <strong>PDF</strong>
                         <small>{{ isExportingCase ? 'Generating file…' : 'Printable booking summary'
-                        }}</small>
+                            }}</small>
                     </span>
                 </button>
 
@@ -3389,9 +3395,7 @@ input[type="checkbox"] {
     flex-wrap: wrap;
 }
 
-.dp__theme_light {
-
-}
+.dp__theme_light {}
 
 .dp__menu {
     border-radius: 20px;
