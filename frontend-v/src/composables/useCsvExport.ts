@@ -65,19 +65,19 @@ export const genderLabel = (value: unknown): string => {
   return '-'
 }
 
-const STATUS_LABELS: Record<string, string> = {
+const STATUS_LABELS = {
   upcoming: 'Upcoming',
   complete: 'Completed',
   completed: 'Completed',
   succeed: 'Completed',
   cancelled: 'Cancelled',
   canceled: 'Cancelled',
-}
+} satisfies Record<string, string>
 
 export const statusLabel = (value: unknown): string => {
   const key = String(value || '').toLowerCase().trim()
   if (!key) return STATUS_LABELS.upcoming
-  return STATUS_LABELS[key] || String(value)
+  return STATUS_LABELS[key as keyof typeof STATUS_LABELS] ?? String(value)
 }
 
 const pairLabel = (dateValue: unknown, noteValue: unknown): string => {
@@ -194,12 +194,12 @@ const CSV_COLUMNS: ColumnDef[] = [
   { header: 'Room', value: (row) => dash(row.room) },
   { header: 'Surgery date', value: (row) => dash(toDateKey(row.date)) },
 
-  { header: 'Status', value: (row) => dash(row.status) },
+  { header: 'Status', value: (row) => statusLabel(row.status) },
   { header: 'CXR (Date/Notes)', value: (row) => pairLabel(row.cxrDate, row.cxrNote) },
   { header: 'ECG (Date/Notes)', value: (row) => pairLabel(row.ecgDate, row.ecgNote) },
   { header: 'Lab (Date/Notes)', value: (row) => pairLabel(row.labDate, row.labNote) },
   { header: 'Admission (Date/Notes)', value: (row) => pairLabel(row.admDate, row.admNote) },
-  { header: 'Notes', value: (row) => dash(row.notes) },
+  { header: 'Note', value: (row) => dash(row.notes) },
 ]
 
 const ADMIN_COLUMNS: ColumnDef[] = [

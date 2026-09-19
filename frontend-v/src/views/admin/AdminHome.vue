@@ -794,7 +794,7 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { normalizeBooking, useCsvExport } from '../../composables/useCsvExport'
+import { normalizeBooking, statusLabel, useCsvExport } from '../../composables/useCsvExport'
 import {
     buildQueueReportPdf,
     buildReportFileName,
@@ -1020,7 +1020,7 @@ onMounted(async () => {
         const res2 = await apiFetch('/api/users')
         const users = await res2.json()
         if (Array.isArray(users)) {
-            doctorList.value = users
+            doctorList.value = users.filter(u => u.role === 'user')
             users.forEach(u => { doctorMap.value[u.license] = u.doctorName })
         }
     } catch (e) { console.error('ดึงรายชื่อหมอไม่สำเร็จ', e) }
@@ -1226,7 +1226,7 @@ const exportRows = computed(() => {
         rows = rows.filter(item => selectedDoctors.value.includes(item.doctorLicense))
     }
     if (selectedStatuses.value.length) {
-        rows = rows.filter(item => selectedStatuses.value.includes(item.status))
+        rows = rows.filter(item => selectedStatuses.value.includes(statusLabel(item.status)))
     }
 
     const { from, to } = exportDateRange.value

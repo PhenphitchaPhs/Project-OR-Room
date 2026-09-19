@@ -24,6 +24,26 @@ For databases where `migrate-surgery-procedures.sql` was already applied, run `m
 
 For an existing database, run `migrate-add-surgery-details.sql` once before deploying the backend that saves Surgery Details. This adds the `surgeryDetails` column required to retain and return the value.
 
+## Isolated export E2E staging
+
+`wrangler.toml` has a separate `staging` Worker and D1 binding (`or_room_staging`). It does not share the production database, and staging has no cron trigger. Provision it with a Cloudflare-authenticated Wrangler CLI:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File e2e\provision-staging.ps1
+```
+
+The script applies the schema, deploys the staging Worker with an independent random `JWT_SECRET`, resets the dedicated staging `bookings`, `patients`, and `users` tables, and inserts only synthetic export fixtures. It generates a test-only password and saves the staging URL and password to `frontend-v/.env.staging.local`, which is ignored by Git. Re-running the script resets those staging tables again.
+
+Run the browser plus real Worker/D1 integration suite from `frontend-v`:
+
+```powershell
+$env:PLAYWRIGHT_STAGING='1'
+$env:PLAYWRIGHT_BROWSER_CHANNEL='chrome'
+npm.cmd run test:e2e -- --project=chromium e2e/admin-export-staging.spec.ts
+```
+
+The staging test loads `.env.staging.local`, requires the Vite API proxy target to match the staging Worker URL, logs in through `/api/login`, and exercises the real export endpoint. The test database contains ten synthetic bookings with fixed January/March 2099 boundary dates, multiple doctors and rooms, all CSV statuses, and a leading-zero HN; no production records are copied.
+
 ```
 open http://localhost:3000
 

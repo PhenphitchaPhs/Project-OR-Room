@@ -851,6 +851,10 @@ app.get('/api/bookings/export', requireAdmin, async (c) => {
     const to = c.req.query('to')
     const id = c.req.query('id')
 
+    if (from && to && from > to) {
+      return c.json({ error: 'Start date must be before or equal to end date' }, 400)
+    }
+
     const conditions: string[] = []
     const params: (string | number)[] = []
 
@@ -867,8 +871,12 @@ app.get('/api/bookings/export', requireAdmin, async (c) => {
       params.push(...doctors)
     }
     if (statuses.length) {
-      conditions.push(`status IN (${statuses.map(() => '?').join(',')})`)
-      params.push(...statuses)
+      // Older records use Succeed for the UI's Completed status.
+      const storedStatuses = [...new Set(statuses.flatMap((status) =>
+        status === 'Completed' ? ['Completed', 'Succeed'] : [status],
+      ))]
+      conditions.push(`status IN (${storedStatuses.map(() => '?').join(',')})`)
+      params.push(...storedStatuses)
     }
     if (from) {
       conditions.push('date >= ?')

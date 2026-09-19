@@ -1,5 +1,16 @@
 import process from 'node:process'
 import { defineConfig, devices } from '@playwright/test'
+import { loadEnv } from 'vite'
+
+if (process.env.PLAYWRIGHT_STAGING === '1') {
+  const stagingEnv = loadEnv('staging', process.cwd(), '')
+  for (const [key, value] of Object.entries(stagingEnv)) {
+    if (!process.env[key]) process.env[key] = value
+  }
+}
+
+const externalBaseURL = process.env.PLAYWRIGHT_BASE_URL
+const browserChannel = process.env.PLAYWRIGHT_BROWSER_CHANNEL
 
 export default defineConfig({
   testDir: './e2e',
@@ -22,7 +33,7 @@ export default defineConfig({
 
     actionTimeout: 0,
 
-    baseURL: process.env.CI ? 'http://localhost:4173' : 'http://localhost:5173',
+    baseURL: externalBaseURL || (process.env.CI ? 'http://localhost:4173' : 'http://localhost:5173'),
 
     trace: 'on-first-retry',
 
@@ -34,6 +45,7 @@ export default defineConfig({
       name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
+        ...(browserChannel ? { channel: browserChannel } : {}),
       },
     },
     {
@@ -51,7 +63,7 @@ export default defineConfig({
 
   ],
 
-  webServer: {
+  webServer: externalBaseURL ? undefined : {
 
     command: process.env.CI ? 'npm run preview' : 'npm run dev',
     port: process.env.CI ? 4173 : 5173,
