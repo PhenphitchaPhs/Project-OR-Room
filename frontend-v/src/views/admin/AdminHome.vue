@@ -110,9 +110,16 @@
                 </button>
 
                 <div class="search-box">
-                    <span class="material-icons">search</span>
-                    <input v-model="searchQuery" type="text" placeholder="Search HN, Patient, Doctor..." />
+                    <span class="material-icons search-icon">search</span>
+                    <input type="text" v-model="searchQuery" placeholder="Search patient, HN, procedure, doctor"
+                        @keyup.enter="performGlobalSearch" />
+                    <button v-if="searchQuery" class="btn-clear-search" @click="clearGlobalSearch" title="Clear search">
+                        <span class="material-icons">close</span>
+                    </button>
                 </div>
+                <button class="btn-search-confirm" @click="performGlobalSearch">
+                    <span class="material-icons">search</span> Search
+                </button>
             </div>
 
             <h1 class="main-title">Surgery Queue Management</h1>
@@ -147,7 +154,15 @@
             </div>
 
             <div class="queue-card">
-                <div class="queue-filter">
+                <div v-if="isSearchMode" class="search-mode-header">
+                    <span class="material-icons">manage_search</span>
+                    <span>Search results</span>
+                    <button class="btn-back-to-tabs" @click="clearGlobalSearch">
+                        <span class="material-icons">close</span> Close search
+                    </button>
+                </div>
+
+                <div v-else class="queue-filter">
                     <button :class="{ active: filter === FILTERS.TODAY }" @click="filter = FILTERS.TODAY">
                         Today
                     </button>
@@ -159,7 +174,7 @@
                         Passed
                     </button>
                 </div>
-                <div v-if="filter === FILTERS.PASS" class="sub-filter">
+                <div v-if="!isSearchMode && filter === FILTERS.PASS" class="sub-filter">
                     <button :class="{ active: passFilter === 'Completed' }" @click="passFilter = 'Completed'">
                         Completed
                     </button>
@@ -170,7 +185,109 @@
                 </div>
 
                 <div class="tab-content-wrapper">
-                    <div v-if="filter === FILTERS.TODAY">
+                    <div v-if="isSearchMode" class="global-search-results">
+
+                        <div v-if="searchResults.length === 0" class="empty-state">
+                            <div class="icon-wrap"><span class="material-icons">search_off</span></div>
+                            <h3>No results found</h3>
+                            <p class="sub-text">Try searching by name, HN, procedure, or doctor</p>
+                        </div>
+
+                        <div v-else>
+                            <p class="search-result-count">{{ searchResults.length }} result(s) found</p>
+
+                            <div v-for="item in searchResults" :key="item.id + '-' + item.__statusLabel"
+                                class="case-card search-result-item" :class="{
+                                    'card-cancelled': item.__statusLabel === 'Cancelled',
+                                    'card-completed': item.__statusLabel === 'Completed'
+                                }" @click="toggleDetail(item.id)">
+
+                                <div class="status-badge" :class="'badge-' + item.__statusLabel.toLowerCase()">
+                                    {{ item.__statusLabel }}
+                                </div>
+
+                                <div class="case-grid">
+                                    <div class="grid-row row-date-room">
+                                        <span><strong>Surgery Date:</strong> {{ item.date }}</span>
+                                    </div>
+                                    <span v-if="item.room" class="room-tag-floating">
+                                        <span class="material-icons">meeting_room</span>{{ item.room }}
+                                    </span>
+                                    <div class="grid-row">
+                                        <span><strong>HN:</strong> {{ item.hn }}</span>
+                                        <span><strong>Age:</strong> {{ item.age }} years</span>
+                                    </div>
+                                    <div class="grid-row"><span><strong>Patient:</strong> {{ item.fullName }}</span>
+                                    </div>
+                                    <div class="grid-row single"><span><strong>Procedure:</strong> {{ item.procedure
+                                            }}</span></div>
+                                    <div class="grid-row single"><span><strong>Additional Surgery Details:</strong>
+                                            {{ item.surgeryDetails || '-' }}</span></div>
+                                    <div class="grid-row single">
+                                        <span>
+                                            <strong>Doctor:</strong>
+                                            {{ doctorMap[item.doctorLicense] || item.doctorLicense || '-' }}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <transition name="expand">
+                                    <div v-if="expandedId === item.id" class="case-detail">
+                                        <div class="detail-row"><strong>HN:</strong> {{ item.hn }}</div>
+                                        <div class="detail-row"><strong>Full Name:</strong> {{ item.fullName }}</div>
+                                        <div class="detail-row"><strong>Age:</strong> {{ item.age }}</div>
+                                        <div class="detail-row"><strong>Gender:</strong> {{ item.gender === 'male' ?
+                                            'ชาย' : 'หญิง' }}</div>
+                                        <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
+                                            item.underlying || '-' }}</div>
+                                        <div class="detail-row"><strong>Diagnosis:</strong> {{
+                                            item.diagnosis || '-' }}</div>
+                                        <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
+                                            }}</div>
+                                        <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
+                                        <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
+                                            item.cxrNote || '-' }}</div>
+                                        <div class="detail-row"><strong>ECG:</strong> {{ item.ecgDate || '-' }} | {{
+                                            item.ecgNote || '-' }}</div>
+                                        <div class="detail-row"><strong>Lab:</strong> {{ item.labDate || '-' }} | {{
+                                            item.labNote || '-' }}</div>
+                                        <div class="detail-row"><strong>Admission:</strong> {{ item.admDate || '-' }} |
+                                            {{ item.admNote || '-' }}</div>
+                                        <div class="detail-row"><strong>Additional Surgery Details:</strong> {{
+                                            item.surgeryDetails || '-' }}</div>
+                                        <div class="detail-row"><strong>Notes:</strong> {{ item.notes || '-' }}</div>
+                                    </div>
+                                </transition>
+
+                                <div class="case-actions">
+                                    <template
+                                        v-if="item.__statusLabel === 'Today' || item.__statusLabel === 'Upcoming'">
+                                        <button class="btn-edit"
+                                            @click.stop="router.push(`/booking/${item.id}`)">Edit</button>
+                                        <button class="btn-delete"
+                                            @click.stop="openCancelModal(item.id)">Cancel</button>
+                                    </template>
+                                    <button v-if="item.__statusLabel === 'Cancelled'" class="btn-restore"
+                                        @click.stop="moveBackToUpcoming(item.id)">
+                                        <span class="material-icons">restore</span> Back to Upcoming
+                                    </button>
+                                    <button class="btn-export-case" title="Export this booking"
+                                        @click.stop="openCaseExport(item)">
+                                        <span class="material-icons">download</span> Export
+                                    </button>
+                                </div>
+
+                                <div class="see-more-toggle">
+                                    <span class="see-more-text">{{ expandedId === item.id ? 'See less' : 'See more'
+                                        }}</span>
+                                    <span class="material-icons see-more-icon">{{ expandedId === item.id ?
+                                        'expand_less' : 'expand_more' }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-if="!isSearchMode && filter === FILTERS.TODAY">
 
                         <div v-if="todayCases.length === 0" class="empty-state">
                             <div class="icon-wrap">
@@ -209,7 +326,8 @@
 
                                     <div class="grid-row single">
                                         <span><strong>Procedure:</strong> {{ item.procedure }}</span>
-                                        <span><strong>Additional Surgery Details:</strong> {{ item.surgeryDetails || '-' }}</span>
+                                        <span><strong>Additional Surgery Details:</strong> {{ item.surgeryDetails || '-'
+                                            }}</span>
                                     </div>
                                     <div class="grid-row single">
                                         <span>
@@ -229,7 +347,7 @@
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                            }}</div>
+                                        }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
                                             item.cxrNote || '-' }}</div>
@@ -239,7 +357,9 @@
                                             item.labNote || '-' }}</div>
                                         <div class="detail-row"><strong>Admission:</strong> {{ item.admDate || '-' }} |
                                             {{ item.admNote || '-' }}</div>
-                                        <div class="detail-row"><strong>Additional Surgery Details:</strong> {{ item.surgeryDetails || '-' }}</div>
+                                        <div class="detail-row"><strong>Additional Surgery Details:</strong> {{
+                                            item.surgeryDetails || '-'
+                                            }}</div>
                                         <div class="detail-row"><strong>Notes:</strong> {{ item.notes || '-' }}</div>
                                     </div>
                                 </transition>
@@ -273,7 +393,7 @@
                         </div>
 
                     </div>
-                    <div v-if="filter === FILTERS.UPCOMING">
+                    <div v-if="!isSearchMode && filter === FILTERS.UPCOMING">
                         <div v-if="upcomingCases.length === 0" class="empty-state">
                             <div class="icon-wrap"><span class="material-icons">assignment</span></div>
                             <h3>No upcoming surgery cases</h3>
@@ -312,7 +432,8 @@
 
                                     <div class="grid-row single">
                                         <span><strong>Procedure:</strong> {{ item.procedure }}</span>
-                                        <span><strong>Additional Surgery Details:</strong> {{ item.surgeryDetails || '-' }}</span>
+                                        <span><strong>Additional Surgery Details:</strong> {{ item.surgeryDetails || '-'
+                                            }}</span>
                                     </div>
                                     <div class="grid-row single">
                                         <span>
@@ -332,7 +453,7 @@
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                            }}</div>
+                                        }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
                                             item.cxrNote || '-' }}</div>
@@ -342,7 +463,9 @@
                                             item.labNote || '-' }}</div>
                                         <div class="detail-row"><strong>Admission:</strong> {{ item.admDate || '-' }} |
                                             {{ item.admNote || '-' }}</div>
-                                        <div class="detail-row"><strong>Additional Surgery Details:</strong> {{ item.surgeryDetails || '-' }}</div>
+                                        <div class="detail-row"><strong>Additional Surgery Details:</strong> {{
+                                            item.surgeryDetails || '-'
+                                            }}</div>
                                         <div class="detail-row"><strong>Notes:</strong> {{ item.notes || '-' }}</div>
                                     </div>
 
@@ -379,7 +502,7 @@
 
                     </div>
 
-                    <div v-if="filter === FILTERS.PASS && passFilter === 'Completed'">
+                    <div v-if="!isSearchMode && filter === FILTERS.PASS && passFilter === 'Completed'">
                         <div v-if="completedCases.length === 0" class="empty-state">
                             <div class="icon-wrap"><span class="material-icons">check_circle</span></div>
                             <h3>No completed surgery cases</h3>
@@ -411,7 +534,8 @@
 
                                     <div class="grid-row single">
                                         <span><strong>Procedure:</strong> {{ item.procedure }}</span>
-                                        <span><strong>Additional Surgery Details:</strong> {{ item.surgeryDetails || '-' }}</span>
+                                        <span><strong>Additional Surgery Details:</strong> {{ item.surgeryDetails || '-'
+                                            }}</span>
                                     </div>
                                     <div class="grid-row single">
                                         <span>
@@ -431,7 +555,7 @@
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                            }}</div>
+                                        }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
                                             item.cxrNote || '-' }}</div>
@@ -441,7 +565,9 @@
                                             item.labNote || '-' }}</div>
                                         <div class="detail-row"><strong>Admission:</strong> {{ item.admDate || '-' }} |
                                             {{ item.admNote || '-' }}</div>
-                                        <div class="detail-row"><strong>Additional Surgery Details:</strong> {{ item.surgeryDetails || '-' }}</div>
+                                        <div class="detail-row"><strong>Additional Surgery Details:</strong> {{
+                                            item.surgeryDetails || '-'
+                                            }}</div>
                                         <div class="detail-row"><strong>Notes:</strong> {{ item.notes || '-' }}</div>
                                     </div>
 
@@ -460,7 +586,7 @@
                         </div>
                     </div>
 
-                    <div v-if="filter === FILTERS.PASS && passFilter === 'Cancelled'">
+                    <div v-if="!isSearchMode && filter === FILTERS.PASS && passFilter === 'Cancelled'">
                         <div v-if="cancelledCases.length === 0" class="empty-state">
                             <div class="icon-wrap">
                                 <span class="material-icons">cancel</span>
@@ -497,7 +623,8 @@
 
                                     <div class="grid-row single">
                                         <span><strong>Procedure:</strong> {{ item.procedure }}</span>
-                                        <span><strong>Additional Surgery Details:</strong> {{ item.surgeryDetails || '-' }}</span>
+                                        <span><strong>Additional Surgery Details:</strong> {{ item.surgeryDetails || '-'
+                                            }}</span>
                                     </div>
                                     <div class="grid-row single">
                                         <span>
@@ -517,7 +644,7 @@
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                        }}</div>
+                                            }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
                                             item.cxrNote || '-' }}</div>
@@ -527,7 +654,9 @@
                                             item.labNote || '-' }}</div>
                                         <div class="detail-row"><strong>Admission:</strong> {{ item.admDate || '-' }} |
                                             {{ item.admNote || '-' }}</div>
-                                        <div class="detail-row"><strong>Additional Surgery Details:</strong> {{ item.surgeryDetails || '-' }}</div>
+                                        <div class="detail-row"><strong>Additional Surgery Details:</strong> {{
+                                            item.surgeryDetails || '-'
+                                            }}</div>
                                         <div class="detail-row"><strong>Notes:</strong> {{ item.notes || '-' }}</div>
                                     </div>
 
@@ -610,7 +739,7 @@
                     <span class="sheet-option-text">
                         <strong>PDF</strong>
                         <small>{{ isExportingCase ? 'Generating file…' : 'Printable booking summary'
-                            }}</small>
+                        }}</small>
                     </span>
                 </button>
 
@@ -725,7 +854,8 @@
                             </label>
 
                             <p v-if="sortedDoctorList.length === 0" class="export-hint">No doctors available</p>
-                            <p v-else-if="filteredDoctorList.length === 0" class="export-hint">No matching doctors found</p>
+                            <p v-else-if="filteredDoctorList.length === 0" class="export-hint">No matching doctors found
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -818,6 +948,21 @@ const showMessage = (msg, type = 'info') => {
     isMessageModalOpen.value = true
 }
 const searchQuery = ref('')
+const isSearchMode = ref(false)
+const searchKeyword = ref('')
+
+const performGlobalSearch = () => {
+    const kw = searchQuery.value.trim()
+    if (!kw) { isSearchMode.value = false; return }
+    searchKeyword.value = kw
+    isSearchMode.value = true
+}
+
+const clearGlobalSearch = () => {
+    searchQuery.value = ''
+    searchKeyword.value = ''
+    isSearchMode.value = false
+}
 
 const toggleDetail = (id) => { expandedId.value = expandedId.value === id ? null : id }
 
@@ -863,54 +1008,52 @@ const adminRoomStats = computed(() => {
 })
 
 const adminAvailableRooms = computed(() => adminRoomStats.value.available)
-const matchSearch = (item) => {
+const normalizeSearchText = (text) =>
+    String(text ?? '').toLowerCase().replace(/[-\s]/g, '')
 
-    if (!searchQuery.value.trim()) return true
+const matchSearch = (item, keyword = searchQuery.value) => {
+    const q = normalizeSearchText(keyword)
+    if (!q) return true
 
-    const q = searchQuery.value
-        .toLowerCase()
-        .replace(/[-\s]/g, '')
-        .trim()
-
-    const doctorName =
-        doctorMap.value[item.doctorLicense] || ''
+    const doctorName = doctorMap.value[item.doctorLicense] || item.doctorName || ''
 
     const dateFormats = []
-
-    if (item.date) {
-        const d = new Date(item.date)
-
-        const yyyy = d.getFullYear()
-        const mm = String(d.getMonth() + 1).padStart(2, '0')
-        const dd = String(d.getDate()).padStart(2, '0')
-
+    const m = String(item.date || '').match(/^(\d{4})-(\d{2})-(\d{2})/)
+    if (m) {
+        const [, yyyy, mm, dd] = m
         dateFormats.push(
             `${yyyy}-${mm}-${dd}`,
             `${dd}/${mm}/${yyyy}`,
-            `${dd}-${mm}-${yyyy}`
+            `${dd}-${mm}-${yyyy}`,
+            `${dd}${mm}${yyyy}`,
+            `${yyyy}/${mm}/${dd}`,
+            `${yyyy}${mm}${dd}`
         )
     }
-    const roomText = item.room
-        ? item.room.toLowerCase().replace(/[-\s]/g, '')
-        : ''
 
-    const searchableText = [
+    const genderText =
+        item.gender === 'male'
+            ? 'male ชาย เพศชาย'
+            : 'female หญิง เพศหญิง'
+
+    const searchableText = normalizeSearchText([
         item.hn,
         item.fullName,
         item.procedure,
         item.age,
+        item.underlying,
+        item.diagnosis,
+        item.notes,
         item.room,
-        roomText,
-        item.gender === 'male'
-            ? 'male ชาย เพศชาย'
-            : 'female หญิง เพศหญิง',
+        genderText,
         doctorName,
         item.doctorLicense,
+        item.cxrNote,
+        item.ecgNote,
+        item.labNote,
+        item.admNote,
         ...dateFormats
-    ]
-        .join(' ')
-        .toLowerCase()
-        .replace(/[-\s]/g, '')
+    ].join(' '))
 
     return searchableText.includes(q)
 }
@@ -1581,48 +1724,58 @@ const CUTOFF_HOUR = 18
 const isPastCutoffToday = (item) =>
     item.date === todayStr && new Date().getHours() >= CUTOFF_HOUR
 
-const todayCases = computed(() =>
+const baseTodayCases = computed(() =>
     sortCases(
         bookings.value.filter(
             item =>
                 item.date === todayStr &&
                 (item.status === FILTERS.UPCOMING || !item.status) &&
-                !isPastCutoffToday(item) &&
-                matchSearch(item)
+                !isPastCutoffToday(item)
         )
     )
 )
-const upcomingCases = computed(() =>
+const baseUpcomingCases = computed(() =>
     sortCases(
         bookings.value.filter(
             item =>
                 item.date > todayStr &&
-                (item.status === FILTERS.UPCOMING || !item.status) &&
-                matchSearch(item)
+                (item.status === FILTERS.UPCOMING || !item.status)
         )
     )
 )
-
-const completedCases = computed(() =>
+const baseCompletedCases = computed(() =>
     sortCases(
         bookings.value.filter(
             item =>
                 (item.status === 'Completed' || isPastCutoffToday(item)) &&
-                item.status !== 'Cancelled' &&
-                matchSearch(item)
+                item.status !== 'Cancelled'
         )
+    )
+)
+const baseCancelledCases = computed(() =>
+    sortCases(
+        bookings.value.filter(item => item.status === 'Cancelled')
     )
 )
 
-const cancelledCases = computed(() =>
-    sortCases(
-        bookings.value.filter(
-            item =>
-                item.status === 'Cancelled' &&
-                matchSearch(item)
-        )
-    )
-)
+// Per-tab lists still narrow live while typing (same as the user side)
+const todayCases = computed(() => baseTodayCases.value.filter(item => matchSearch(item)))
+const upcomingCases = computed(() => baseUpcomingCases.value.filter(item => matchSearch(item)))
+const completedCases = computed(() => baseCompletedCases.value.filter(item => matchSearch(item)))
+const cancelledCases = computed(() => baseCancelledCases.value.filter(item => matchSearch(item)))
+
+// Global search: looks across every tab, each result tagged with its status
+const allTaggedCases = computed(() => [
+    ...baseTodayCases.value.map(item => ({ ...item, __statusLabel: 'Today' })),
+    ...baseUpcomingCases.value.map(item => ({ ...item, __statusLabel: 'Upcoming' })),
+    ...baseCompletedCases.value.map(item => ({ ...item, __statusLabel: 'Completed' })),
+    ...baseCancelledCases.value.map(item => ({ ...item, __statusLabel: 'Cancelled' }))
+])
+
+const searchResults = computed(() => {
+    if (!isSearchMode.value) return []
+    return allTaggedCases.value.filter(item => matchSearch(item, searchKeyword.value))
+})
 
 const deleteDoctor = (license, name) => {
     selectedDoctor.value = {
@@ -3155,5 +3308,267 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
 
 .btn-edit:hover {
     background: #eab308;
+}
+
+/* ===== Global search (matches the user-side HomeView) ===== */
+.search-box .search-icon {
+    color: #6b7280;
+    font-size: 22px;
+}
+
+.search-box button,
+.search-box button:hover,
+.search-box button:focus,
+.search-box button:active {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    outline: none !important;
+}
+
+.btn-clear-search {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    cursor: pointer;
+}
+
+.btn-clear-search .material-icons {
+    font-size: 20px;
+}
+
+.btn-search-confirm {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+
+    min-width: 72px;
+    height: 42px;
+    padding: 0 14px;
+
+    background: #1a3a5f;
+    color: white;
+    border: none;
+    border-radius: 12px;
+
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    box-sizing: border-box;
+}
+
+.btn-search-confirm .material-icons {
+    font-size: 19px;
+}
+
+.search-mode-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 15px;
+    background: #f8f9fa;
+    color: #1a3a5f;
+    font-weight: 700;
+    font-size: 15px;
+}
+
+.search-mode-header .material-icons {
+    font-size: 20px;
+}
+
+.btn-back-to-tabs {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+
+    background: #eef2f7;
+    color: #64748b;
+    border: 1px solid #d6e0ec;
+    border-radius: 8px;
+    padding: 6px 12px;
+
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.btn-back-to-tabs:hover {
+    background: #dde6f1;
+    color: #1a3a5f;
+}
+
+.btn-back-to-tabs .material-icons {
+    font-size: 15px;
+}
+
+.search-result-count {
+    margin: 4px 15px 12px;
+    font-size: 13px;
+    color: #64748b;
+}
+
+.search-result-item {
+    position: relative;
+}
+
+.search-result-item.card-cancelled {
+    border-left: 5px solid #c62828;
+    background: #fef2f2;
+}
+
+.search-result-item.card-cancelled:hover {
+    background: #fee2e2;
+}
+
+.search-result-item.card-completed {
+    border-left: 5px solid #16a34a;
+    background: #f0fdf4;
+}
+
+.search-result-item.card-completed:hover {
+    background: #ecfdf5;
+}
+
+.search-result-item .grid-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: flex-start;
+}
+
+.search-result-item .grid-row span {
+    min-width: 140px;
+    flex: 1;
+    word-break: break-word;
+}
+
+.search-result-item .grid-row.row-date-room {
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.search-result-item .grid-row.row-date-room span {
+    min-width: 0;
+    flex: none;
+}
+
+.status-badge {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+
+    display: inline-flex;
+    align-items: center;
+
+    padding: 4px 12px;
+    border-radius: 999px;
+
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+
+    background: #ffffff;
+    border: 1.5px solid currentColor;
+}
+
+.badge-today {
+    color: #1e3a8a;
+}
+
+.badge-upcoming {
+    color: #0d47a1;
+}
+
+.badge-completed {
+    color: #16a34a;
+}
+
+.badge-cancelled {
+    color: #c62828;
+}
+
+.room-tag-floating {
+    position: absolute;
+    top: 42px;
+    right: 25px;
+
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+
+    color: #1e3a8a;
+    font-weight: bold;
+    font-size: 11px;
+}
+
+.room-tag-floating .material-icons {
+    font-size: 16px;
+}
+
+.btn-restore {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    background: #ffc400;
+    color: rgb(0, 0, 0);
+
+    border: none;
+    border-radius: 10px;
+
+    padding: 8px 14px;
+
+    cursor: pointer;
+}
+
+.btn-restore .material-icons {
+    font-size: 18px;
+}
+
+@media (max-width: 768px) {
+    .top-toolbar {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 8px;
+        align-items: center;
+    }
+
+    .top-toolbar .btn-export {
+        grid-column: 1 / -1;
+        justify-self: end;
+    }
+
+    .top-toolbar .search-box {
+        grid-column: 1;
+        max-width: none;
+        min-width: 0;
+        height: 42px;
+        box-sizing: border-box;
+    }
+
+    .top-toolbar .btn-search-confirm {
+        grid-column: 2;
+    }
+
+    .search-result-item {
+        padding: 14px;
+    }
+
+    .search-result-item .grid-row:not(.row-date-room) {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .search-result-item .grid-row:not(.row-date-room) span {
+        width: 100%;
+        min-width: unset;
+    }
 }
 </style>
