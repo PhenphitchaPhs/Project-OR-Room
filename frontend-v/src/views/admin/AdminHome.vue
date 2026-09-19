@@ -187,15 +187,37 @@
                 <div class="tab-content-wrapper">
                     <div v-if="isSearchMode" class="global-search-results">
 
+                        <div class="search-result-bar">
+                            <p v-if="searchResults.length" class="search-result-count">{{ searchResults.length }}
+                                result(s) found</p>
+
+                            <div class="search-range-filters">
+                                <select v-model="dateRange" class="range-select" aria-label="Filter by surgery date">
+                                    <option value="all">All dates</option>
+                                    <option value="today">Today</option>
+                                    <option value="week">This week</option>
+                                    <option value="month">This month</option>
+                                    <option value="prev">Previous month</option>
+                                </select>
+
+                                <select v-if="dateRange === 'prev'" v-model="prevMonth" class="range-select"
+                                    aria-label="Choose month">
+                                    <option v-for="opt in prevMonthOptions" :key="opt.value" :value="opt.value">
+                                        {{ opt.label }} ({{ opt.count }})
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+
                         <div v-if="searchResults.length === 0" class="empty-state">
                             <div class="icon-wrap"><span class="material-icons">search_off</span></div>
                             <h3>No results found</h3>
-                            <p class="sub-text">Try searching by name, HN, procedure, or doctor</p>
+                            <p class="sub-text">{{ dateRange === 'all'
+                                ? 'Try searching by name, HN, procedure, or doctor'
+                                : 'Nothing in this date range. Try another range or choose All dates' }}</p>
                         </div>
 
                         <div v-else>
-                            <p class="search-result-count">{{ searchResults.length }} result(s) found</p>
-
                             <div v-for="item in searchResults" :key="item.id + '-' + item.__statusLabel"
                                 class="case-card search-result-item" :class="{
                                     'card-cancelled': item.__statusLabel === 'Cancelled',
@@ -922,7 +944,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
+import { ref, onMounted, onBeforeUnmount, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { normalizeBooking, statusLabel, useCsvExport } from '../../composables/useCsvExport'
 import {
@@ -950,6 +972,8 @@ const showMessage = (msg, type = 'info') => {
 const searchQuery = ref('')
 const isSearchMode = ref(false)
 const searchKeyword = ref('')
+const dateRange = ref('all') // all | today | week | month | prev
+const prevMonth = ref('')    // YYYY-MM, used when dateRange === 'prev'
 
 const performGlobalSearch = () => {
     const kw = searchQuery.value.trim()
@@ -961,6 +985,7 @@ const performGlobalSearch = () => {
 const clearGlobalSearch = () => {
     searchQuery.value = ''
     searchKeyword.value = ''
+    dateRange.value = 'all'
     isSearchMode.value = false
 }
 
@@ -1772,10 +1797,87 @@ const allTaggedCases = computed(() => [
     ...baseCancelledCases.value.map(item => ({ ...item, __statusLabel: 'Cancelled' }))
 ])
 
-const searchResults = computed(() => {
+// ----- Date-range filter for the search results (filters on surgery date) -----
+const WEEK_STARTS_ON = 1 // 0 = Sunday, 1 = Monday
+
+const dateKeyOf = (d) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+
+const monthKeyOf = (d) => dateKeyOf(d).slice(0, 7)
+
+const monthLabelOf = (key) => {
+    const [y, m] = key.split('-').map(Number)
+    return new Date(y, m - 1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+}
+
+const lastMonthKey = () => {
+    const now = new Date()
+    return monthKeyOf(new Date(now.getFullYear(), now.getMonth() - 1, 1))
+}
+
+const weekRange = () => {
+    const now = new Date()
+    const offset = (now.getDay() - WEEK_STARTS_ON + 7) % 7
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - offset)
+    const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 6)
+    return [dateKeyOf(start), dateKeyOf(end)]
+}
+
+const inDateRange = (dateStr) => {
+    if (dateRange.value === 'all') return true
+
+    const key = String(dateStr || '').slice(0, 10)
+    if (!key) return false
+
+    const now = new Date()
+    switch (dateRange.value) {
+        case 'today':
+            return key === dateKeyOf(now)
+        case 'week': {
+            const [start, end] = weekRange()
+            return key >= start && key <= end
+        }
+        case 'month':
+            return key.slice(0, 7) === monthKeyOf(now)
+        case 'prev':
+            return key.slice(0, 7) === prevMonth.value
+        default:
+            return true
+    }
+}
+
+// Keyword matches across all tabs, before the date range is applied
+const keywordResults = computed(() => {
     if (!isSearchMode.value) return []
     return allTaggedCases.value.filter(item => matchSearch(item, searchKeyword.value))
 })
+
+// "Previous month" dropdown: last month first (even if empty), then older months that have results
+const prevMonthOptions = computed(() => {
+    const currentKey = monthKeyOf(new Date())
+    const counts = new Map([[lastMonthKey(), 0]])
+
+    for (const item of keywordResults.value) {
+        const key = String(item.date || '').slice(0, 7)
+        if (/^\d{4}-\d{2}$/.test(key) && key < currentKey) {
+            counts.set(key, (counts.get(key) || 0) + 1)
+        }
+    }
+
+    return [...counts.entries()]
+        .sort((a, b) => b[0].localeCompare(a[0]))
+        .map(([value, count]) => ({ value, label: monthLabelOf(value), count }))
+})
+
+watch(prevMonthOptions, (opts) => {
+    if (!opts.some(o => o.value === prevMonth.value)) {
+        prevMonth.value = opts[0]?.value ?? ''
+    }
+}, { immediate: true })
+
+const searchResults = computed(() =>
+    keywordResults.value.filter(item => inDateRange(item.date))
+)
 
 const deleteDoctor = (license, name) => {
     selectedDoctor.value = {
@@ -3406,10 +3508,60 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
     font-size: 15px;
 }
 
-.search-result-count {
+.search-result-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
     margin: 4px 15px 12px;
+}
+
+.search-result-count {
+    margin: 0;
     font-size: 13px;
     color: #64748b;
+}
+
+.search-range-filters {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-left: auto;
+}
+
+.range-select {
+    height: 34px;
+    padding: 0 30px 0 12px;
+
+    background-color: #eef2f7;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24'%3E%3Cpath fill='%2364748b' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 16px;
+
+    color: #1a3a5f;
+    border: 1px solid #d6e0ec;
+    border-radius: 8px;
+
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+}
+
+.range-select:hover {
+    background-color: #dde6f1;
+}
+
+.range-select:focus {
+    outline: none;
+    border-color: #1a3a5f;
+    box-shadow: 0 0 0 3px rgba(26, 58, 95, .12);
 }
 
 .search-result-item {
