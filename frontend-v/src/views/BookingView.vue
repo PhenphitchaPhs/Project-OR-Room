@@ -69,7 +69,7 @@
                         <div style="display: flex; flex-direction: column;">
 
                             <label for="surgery-date" class="date-label surgery-field-label">
-                                📅 Surgery date (Gregorian calendar only)
+                                Surgery date (Gregorian calendar only)
                                 <span class="required">*</span>
                             </label>
                             <input id="surgery-date" type="date" v-model="form.date" :min="minDate" :max="maxDate" @blur="checkValidDate"
@@ -254,30 +254,6 @@ const procedureGroups = ref([
         options: [
             { name: "Colonoscopy (ส่องกล้องตรวจลำไส้ใหญ่) - 60 mins" },
             { name: "ERCP (ส่องกล้องตรวจรักษาท่อทางเดินน้ำดีและตับอ่อน) - 60 mins" }
-        ]
-    },
-    {
-        label: "สูตินรีเวช (OB/GYN)",
-        options: [
-            { name: "Cesarean Section / C-Section (ผ่าคลอด) - 60 mins" },
-            { name: "Total Abdominal Hysterectomy / TAH (ผ่าตัดมดลูก) - 120 mins" },
-            { name: "Tubal Resection / TR (ทำหมันหญิง) - 30 mins" }
-        ]
-    },
-    {
-        label: "กระดูกและข้อ (Orthopedics)",
-        options: [
-            { name: "Total Knee Arthroplasty / TKA (ผ่าตัดเปลี่ยนผิวข้อเข่า) - 180 mins" },
-            { name: "Total Hip Arthroplasty / THA (ผ่าตัดเปลี่ยนข้อสะโพก) - 180 mins" },
-            { name: "ORIF (ผ่าตัดใส่เหล็กดามกระดูกหัก) - 120 mins" }
-        ]
-    },
-    {
-        label: "เฉพาะทางอื่นๆ (Others)",
-        options: [
-            { name: "Cataract Surgery (ผ่าตัดต้อกระจก) - 30 mins" },
-            { name: "TURP (ผ่าตัดส่องกล้องต่อมลูกหมาก) - 90 mins" },
-            { name: "Tonsillectomy (ผ่าตัดทอนซิล) - 45 mins" }
         ]
     }
 ])
@@ -733,15 +709,11 @@ const goHome = () => {
 }
 
 .surgery-field-label {
-    display: block;
-    min-height: 38px;
-    line-height: 19px;
-}
-
-label.surgery-field-label {
     display: flex;
     align-items: flex-end;
     gap: 4px;
+    min-height: 38px;
+    line-height: 19px;
 }
 
 .surgery-details-label {
