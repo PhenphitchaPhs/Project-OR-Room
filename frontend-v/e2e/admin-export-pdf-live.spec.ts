@@ -106,7 +106,8 @@ test.describe(`Admin ${format} export — live admin007`, () => {
     }
   })
 
-  test(`${prefix}.5 ไม่พบข้อมูลและกลับมาดาวน์โหลด`, async ({ page, snapshot }) => {
+  test(`${prefix}.5 ไม่พบข้อมูลและการส่งออก PDF ไม่สำเร็จ`, async ({ page, snapshot }) => {
+    test.skip(!snapshot.rows.length, 'Bookings are required to exercise PDF failures and recovery.')
     let day = new Date('2099-01-01T00:00:00Z')
     while (snapshot.rows.some((row) => row.date.startsWith(day.toISOString().slice(0, 10)))) day = new Date(day.getTime() + 86400000)
     const dialog = await open(page, format)
@@ -118,7 +119,46 @@ test.describe(`Admin ${format} export — live admin007`, () => {
       await dialog.getByRole('button', { name: 'Clear all filters' }).click()
       await exportAndCheck(page, dialog, format, snapshot.rows, snapshot)
     } else coverageGap('Recovery download unavailable: live system has no bookings.')
-    coverageGap('No backend/font fault injection in this live suite; use staging for failure simulations.')
+    for (const scenario of [
+      { title: 'Export API returns HTTP 503', path: '/api/bookings/export', message: 'Failed to load data. Please try again.' },
+      { title: 'PDF creation fails when its font cannot load', path: '/fonts/Sarabun-Regular.ttf', message: 'Failed to create the PDF file. Please try again.' },
+    ]) {
+      await test.step(scenario.title, async () => {
+        const failedDialog = await open(page, format)
+        const target = (url: URL) => url.pathname === scenario.path
+        let intercepted = 0
+        let downloads = 0
+        const onDownload = () => { downloads += 1 }
+        // Only this page receives a simulated failure; no server or database changes.
+        const failRequest = async (route: import('@playwright/test').Route) => {
+          intercepted += 1
+          await route.fulfill({ status: 503, contentType: 'text/plain', body: 'Simulated E2E failure' })
+        }
+        page.on('download', onDownload)
+        await page.route(target, failRequest)
+        try {
+          const [response] = await Promise.all([
+            page.waitForResponse((r) => new URL(r.url()).pathname === '/api/bookings/export' && r.request().method() === 'GET'),
+            failedDialog.getByRole('button', { name: 'Download PDF', exact: true }).click(),
+          ])
+          // The font scenario still loads actual bookings from the real backend.
+          expect(response.status()).toBe(scenario.path === '/api/bookings/export' ? 503 : 200)
+          await expect(failedDialog.getByText(scenario.message, { exact: true })).toBeVisible()
+          await expect(failedDialog).toBeVisible()
+          await expect(failedDialog.getByText('Generating file…', { exact: true })).toBeHidden()
+          await expect(failedDialog.getByRole('button', { name: 'Download PDF', exact: true })).toBeEnabled()
+          await expect(page.getByRole('heading', { name: /^Downloaded / })).toHaveCount(0)
+          expect(intercepted, 'Failure injection must actually intercept a request').toBeGreaterThan(0)
+          expect(downloads, 'Failed export must not download a file').toBe(0)
+        } finally {
+          await page.unroute(target, failRequest)
+          page.off('download', onDownload)
+        }
+        await test.step('Remove failure and retry against the real backend', async () => {
+          await exportAndCheck(page, failedDialog, format, snapshot.rows, snapshot)
+        })
+      })
+    }
   })
 
   test(`${prefix}.6 ตรวจไฟล์ที่ดาวน์โหลดจากเว็บจริง`, async ({ page, snapshot }) => {

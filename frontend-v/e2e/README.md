@@ -24,7 +24,7 @@ npx.cmd playwright test --config=playwright.live.config.ts e2e/admin-export-pdf-
 
 Authentication state stays in memory. Reports and downloaded files are saved locally under ignored `playwright-report/live` and `test-results/live`. Each run replaces the live report; run both files together using the command above to retain both features in one report.
 
-Live checks do not change bookings or inject service failures. They cover the data currently available; `coverage-gap` and `manual-check-required` annotations identify unavailable boundary data, file-display review and failure scenarios still requiring staging/manual checks. Passing this suite does not certify scenarios marked as coverage gaps or manual checks. Concurrent changes between page load and download are reported as mismatches rather than silently accepted. Nothing has been executed on Production merely by creating this suite.
+Live checks do not change bookings. TC-A10.5 simulates an export API HTTP 503 and a font-loading HTTP 503 in the test page only, checks error messages, no download, and loading-state recovery, removes each route in finally, then retries against real services. They cover the data currently available; `coverage-gap` and `manual-check-required` annotations identify unavailable boundary data, file-display review still requiring manual checks. Passing this suite does not certify scenarios marked as coverage gaps or manual checks. Concurrent changes between page load and download are reported as mismatches rather than silently accepted. Nothing has been executed on Production merely by creating this suite.
 
 
 ## PDF Thai font regression

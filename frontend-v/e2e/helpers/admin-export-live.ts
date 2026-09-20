@@ -2,7 +2,8 @@ import { test as base, expect, type Page, type Locator, type BrowserContext } fr
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs'
 import { readFile } from 'node:fs/promises'
 
-// Live exports only. No seed, delete, edit, cancellation or simulated API responses.
+// Shared live export checks. No seed, delete, edit or cancellation.
+// TC-A10.5 separately intercepts requests in its own page to exercise failure handling.
 type Booking = Record<string, unknown> & { id: number | string; hn: string; fullName: string; date: string; room: string; doctorLicense: string; status: string }
 type Doctor = { license: string; doctorName: string; role: string }
 type Snapshot = { rows: Booking[]; doctors: Doctor[] }
