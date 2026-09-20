@@ -190,23 +190,28 @@
                                     <span v-if="item.room" class="room-tag-floating">
                                         <span class="material-icons">meeting_room</span>{{ item.room }}
                                     </span>
-                                    <div class="grid-row">
+                                    <div class="grid-row patient-summary-identity">
                                         <span><strong>HN:</strong> {{ item.hn }}</span>
                                         <span><strong>Age:</strong> {{ item.age }} years</span>
                                     </div>
-                                    <div class="grid-row"><span><strong>Patient:</strong> {{ item.fullName }}</span>
+                                    <div class="grid-row single">
+                                        <span><strong>Patient:</strong> {{ item.fullName }}</span>
                                     </div>
-                                    <div class="grid-row single"><span><strong>Procedure:</strong> {{ item.procedure
-                                            }}</span></div>
-                                    <div class="grid-row single"><span><strong>Additional Surgery Details:</strong>
-                                            {{ item.surgeryDetails || '-' }}</span></div>
+                                    <div class="grid-row single">
+                                        <span><strong>Diagnosis:</strong> {{ item.diagnosis || '-' }}</span>
+                                    </div>
+                                    <div class="grid-row single">
+                                        <span><strong>Procedure:</strong> {{ item.procedure }}</span>
+                                    </div>
                                 </div>
 
                                 <transition name="expand">
                                     <div v-if="expandedId === item.id" class="case-detail">
-                                        <div class="detail-row"><strong>HN:</strong> {{ item.hn }}</div>
+                                        <div class="detail-row patient-summary-identity">
+                                            <span><strong>HN:</strong> {{ item.hn }}</span>
+                                            <span><strong>Age:</strong> {{ item.age }} years</span>
+                                        </div>
                                         <div class="detail-row"><strong>Full Name:</strong> {{ item.fullName }}</div>
-                                        <div class="detail-row"><strong>Age:</strong> {{ item.age }}</div>
                                         <div class="detail-row"><strong>Gender:</strong> {{ item.gender === 'male' ?
                                             'Male' : 'Female' }}</div>
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
@@ -306,20 +311,18 @@
                                                     </span>
                                                 </div>
 
-                                                <div class="grid-row">
+                                                <div class="grid-row patient-summary-identity">
                                                     <span><strong>HN:</strong> {{ item.hn }}</span>
                                                     <span><strong>Age:</strong> {{ item.age }} years</span>
-
                                                 </div>
-
-                                                <div class="grid-row">
+                                                <div class="grid-row single">
                                                     <span><strong>Patient:</strong> {{ item.fullName }}</span>
                                                 </div>
-
+                                                <div class="grid-row single">
+                                                    <span><strong>Diagnosis:</strong> {{ item.diagnosis || '-' }}</span>
+                                                </div>
                                                 <div class="grid-row single">
                                                     <span><strong>Procedure:</strong> {{ item.procedure }}</span>
-                                                    <span><strong>Additional Surgery Details:</strong> {{
-                                                        item.surgeryDetails || '-' }}</span>
                                                 </div>
 
                                             </div>
@@ -328,17 +331,15 @@
 
                                                 <div v-if="expandedId === item.id" class="case-detail">
 
-                                                    <div class="detail-row">
-                                                        <strong>HN:</strong> {{ item.hn }}
+                                                    <div class="detail-row patient-summary-identity">
+                                                        <span><strong>HN:</strong> {{ item.hn }}</span>
+                                                        <span><strong>Age:</strong> {{ item.age }} years</span>
                                                     </div>
 
                                                     <div class="detail-row">
                                                         <strong>Full Name:</strong> {{ item.fullName }}
                                                     </div>
 
-                                                    <div class="detail-row">
-                                                        <strong>Age:</strong> {{ item.age }}
-                                                    </div>
 
                                                     <div class="detail-row">
                                                         <strong>Gender:</strong>
@@ -476,15 +477,16 @@
                                                     </span>
                                                 </div>
 
-                                                <div class="grid-row">
+                                                <div class="grid-row patient-summary-identity">
                                                     <span><strong>HN:</strong> {{ item.hn }}</span>
-                                                    <span><strong>Age:</strong> {{ item.age }} ปี</span>
+                                                    <span><strong>Age:</strong> {{ item.age }} years</span>
                                                 </div>
-
-                                                <div class="grid-row">
+                                                <div class="grid-row single">
                                                     <span><strong>Patient:</strong> {{ item.fullName }}</span>
                                                 </div>
-
+                                                <div class="grid-row single">
+                                                    <span><strong>Diagnosis:</strong> {{ item.diagnosis || '-' }}</span>
+                                                </div>
                                                 <div class="grid-row single">
                                                     <span><strong>Procedure:</strong> {{ item.procedure }}</span>
                                                 </div>
@@ -492,11 +494,13 @@
 
                                             <transition name="expand">
                                                 <div v-if="expandedId === item.id" class="case-detail">
-                                                    <div class="detail-row"><strong>HN:</strong> {{ item.hn }}</div>
+                                                    <div class="detail-row patient-summary-identity">
+                                                        <span><strong>HN:</strong> {{ item.hn }}</span>
+                                                        <span><strong>Age:</strong> {{ item.age }} years</span>
+                                                    </div>
                                                     <div class="detail-row"><strong>Full Name:</strong> {{ item.fullName
                                                         }}
                                                     </div>
-                                                    <div class="detail-row"><strong>Age:</strong> {{ item.age }}</div>
                                                     <div>
                                                         <strong>Gender:</strong>
                                                         {{ item.gender === 'male' ? 'Male' : 'Female' }}
@@ -619,19 +623,18 @@
                                                 </span>
                                             </div>
 
-                                            <div class="grid-row">
+                                            <div class="grid-row patient-summary-identity">
                                                 <span><strong>HN:</strong> {{ item.hn }}</span>
-                                                <span><strong>Age:</strong> {{ item.age }} ปี</span>
+                                                <span><strong>Age:</strong> {{ item.age }} years</span>
                                             </div>
-
-                                            <div class="grid-row">
+                                            <div class="grid-row single">
                                                 <span><strong>Patient:</strong> {{ item.fullName }}</span>
                                             </div>
-
+                                            <div class="grid-row single">
+                                                <span><strong>Diagnosis:</strong> {{ item.diagnosis || '-' }}</span>
+                                            </div>
                                             <div class="grid-row single">
                                                 <span><strong>Procedure:</strong> {{ item.procedure }}</span>
-                                                <span><strong>Additional Surgery Details:</strong> {{
-                                                    item.surgeryDetails || '-' }}</span>
                                             </div>
                                         </div>
                                         <div class="see-more-toggle">
@@ -647,17 +650,15 @@
 
                                             <div v-if="expandedId === item.id" class="case-detail">
 
-                                                <div class="detail-row">
-                                                    <strong>HN:</strong> {{ item.hn }}
+                                                <div class="detail-row patient-summary-identity">
+                                                    <span><strong>HN:</strong> {{ item.hn }}</span>
+                                                    <span><strong>Age:</strong> {{ item.age }} years</span>
                                                 </div>
 
                                                 <div class="detail-row">
                                                     <strong>Full Name:</strong> {{ item.fullName }}
                                                 </div>
 
-                                                <div class="detail-row">
-                                                    <strong>Age:</strong> {{ item.age }}
-                                                </div>
 
                                                 <div class="detail-row">
                                                     <strong>Gender:</strong>
@@ -767,20 +768,18 @@
                                                     </span>
                                                 </div>
 
-                                                <div class="grid-row">
+                                                <div class="grid-row patient-summary-identity">
                                                     <span><strong>HN:</strong> {{ item.hn }}</span>
-                                                    <span><strong>Age:</strong> {{ item.age }} ปี</span>
+                                                    <span><strong>Age:</strong> {{ item.age }} years</span>
                                                 </div>
-
-                                                <div class="grid-row">
+                                                <div class="grid-row single">
                                                     <span><strong>Patient:</strong> {{ item.fullName }}</span>
                                                 </div>
-
+                                                <div class="grid-row single">
+                                                    <span><strong>Diagnosis:</strong> {{ item.diagnosis || '-' }}</span>
+                                                </div>
                                                 <div class="grid-row single">
                                                     <span><strong>Procedure:</strong> {{ item.procedure }}</span>
-                                                    <span><strong>Additional Surgery Details:</strong> {{
-                                                        item.surgeryDetails || '-'
-                                                    }}</span>
                                                 </div>
                                             </div>
 
@@ -788,17 +787,15 @@
 
                                                 <div v-if="expandedId === item.id" class="case-detail">
 
-                                                    <div class="detail-row">
-                                                        <strong>HN:</strong> {{ item.hn }}
+                                                    <div class="detail-row patient-summary-identity">
+                                                        <span><strong>HN:</strong> {{ item.hn }}</span>
+                                                        <span><strong>Age:</strong> {{ item.age }} years</span>
                                                     </div>
 
                                                     <div class="detail-row">
                                                         <strong>Full Name:</strong> {{ item.fullName }}
                                                     </div>
 
-                                                    <div class="detail-row">
-                                                        <strong>Age:</strong> {{ item.age }}
-                                                    </div>
 
                                                     <div class="detail-row">
                                                         <strong>Gender:</strong>
@@ -3755,5 +3752,27 @@ input[type="checkbox"] {
     outline: none;
     border-color: #1a3a5f;
     box-shadow: 0 0 0 3px rgba(26, 58, 95, .12);
+}
+
+/* Keep the patient identifier and age together, including narrow cards. */
+.case-grid .grid-row.patient-summary-identity,
+.case-detail .detail-row.patient-summary-identity {
+    display: grid;
+    grid-template-columns: minmax(0, max-content) max-content;
+    justify-content: start;
+    gap: 12px;
+    align-items: baseline;
+}
+
+.case-grid .grid-row.patient-summary-identity > span,
+.case-detail .detail-row.patient-summary-identity > span {
+    min-width: 0;
+    width: auto;
+    overflow-wrap: anywhere;
+}
+
+.case-grid .grid-row.patient-summary-identity > span:last-child,
+.case-detail .detail-row.patient-summary-identity > span:last-child {
+    white-space: nowrap;
 }
 </style>
