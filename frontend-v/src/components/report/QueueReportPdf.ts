@@ -163,6 +163,19 @@ export function renderReport(
 ): any {
   const doc = new PDFDocument({ size: 'A4', margin: MARGIN, bufferPages: true })
 
+  // fontkit caches glyph Unicode values while measuring, before PDFKit encodes
+  // them. Its SARA AM decomposition can cache SARA AA with no code point,
+  // corrupting ToUnicode for subsequent text. Supply explicit Thai components
+  // to BOTH measurement and drawing so the cached glyphs have stable mappings.
+  // This preserves shaping/widths; source booking data is never modified.
+  for (const method of ['text', 'widthOfString', 'heightOfString'] as const) {
+    const original = doc[method]
+    doc[method] = function (text: unknown, ...args: unknown[]) {
+      const value = typeof text === 'string' ? text.replace(/\u0e33/gu, '\u0e4d\u0e32') : text
+      return original.call(this, value, ...args)
+    }
+  }
+
   doc.registerFont('TH', new Uint8Array(fonts.regular))
   doc.registerFont('TH-Bold', new Uint8Array(fonts.bold))
   doc.font('TH')
