@@ -1,9 +1,6 @@
-
-
 CREATE TABLE IF NOT EXISTS patients (
   hn TEXT PRIMARY KEY,              -- 👈 หมายเลข HN ห้ามซ้ำ
   fullName TEXT NOT NULL,
-  dob TEXT,
   gender TEXT,
   underlying TEXT,                  -- 👈 โรคประจำตัว
   createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -14,7 +11,6 @@ CREATE TABLE IF NOT EXISTS bookings (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   hn TEXT NOT NULL,
   fullName TEXT NOT NULL,
-  dob TEXT,
   age INTEGER,
   gender TEXT,
   procedure TEXT,

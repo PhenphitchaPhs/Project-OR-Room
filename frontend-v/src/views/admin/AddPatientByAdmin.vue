@@ -463,7 +463,6 @@ const submitForm = async () => {
         ecgDate: form.ecgDate, ecgNote: form.ecgNote,
         labDate: form.labDate, labNote: form.labNote,
         admDate: form.admDate, admNote: form.admNote,
-        dob: null,
         doctorLicense: form.doctorLicense
     }
 

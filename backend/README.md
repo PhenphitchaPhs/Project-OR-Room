@@ -28,6 +28,28 @@ For databases where `migrate-surgery-procedures.sql` was already applied, run `m
 
 For an existing database, run `migrate-add-surgery-details.sql` once before deploying the backend that saves Surgery Details. This adds the `surgeryDetails` column required to retain and return the value.
 
+## Remove unused date-of-birth columns
+
+`schema.sql` no longer defines `dob` in `patients` or `bookings`; use this updated
+schema for diagrams and new databases. `bookings.age` is still stored directly.
+
+For an existing database, deploy the updated backend first (it works with both
+the old and new schema), then back up the target database and apply
+`migrate-remove-dob.sql` once. This permanently removes stored birth dates only.
+Do not apply it to a fresh database created from the updated schema or repeat it
+after the columns have been removed. Changing `schema.sql` alone does not alter
+existing tables. Historical backup SQL files retain their original schema.
+
+From `backend`, for Production:
+
+```powershell
+npx.cmd wrangler d1 export or_room_db --remote --output=backup-before-remove-dob.sql
+npx.cmd wrangler d1 execute or_room_db --remote --file=./migrate-remove-dob.sql
+```
+
+For staging, use `or_room_staging` with `--env staging` and a separate backup;
+for local databases use `--local` instead of `--remote`.
+
 ## Isolated export E2E staging
 
 `wrangler.toml` has a separate `staging` Worker and D1 binding (`or_room_staging`). It does not share the production database, and staging has no cron trigger. Provision it with a Cloudflare-authenticated Wrangler CLI:

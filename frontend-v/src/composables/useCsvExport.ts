@@ -5,7 +5,6 @@ export interface Booking {
   hn?: string
   fullName?: string
 
-  dob?: string | null
   age?: number | string
   gender?: string
   procedure?: string

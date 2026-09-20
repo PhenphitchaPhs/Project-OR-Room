@@ -950,13 +950,13 @@ app.post('/api/bookings', async (c) => {
 
     await c.env.DB.prepare(`
       INSERT INTO bookings (
-        hn, fullName, dob, age, gender, procedure, durationMinutes, date, underlying, diagnosis, surgeryDetails,
+        hn, fullName, age, gender, procedure, durationMinutes, date, underlying, diagnosis, surgeryDetails,
         cxrDate, cxrNote, ecgDate, ecgNote, labDate, labNote, admDate, admNote,
         notes, status, room, doctorLicense, createdAt
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now', '+7 hours'))
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now', '+7 hours'))
     `).bind(
-      b.hn, b.fullName, b.dob, b.age, b.gender, b.procedure, durationMinutes,
+      b.hn, b.fullName, b.age, b.gender, b.procedure, durationMinutes,
       b.date, b.underlying, b.diagnosis, b.surgeryDetails || '',
       b.cxrDate, b.cxrNote, b.ecgDate, b.ecgNote, b.labDate, b.labNote, b.admDate, b.admNote,
       b.notes, 'Upcoming', b.room || 'OR-01', doctorLicense
@@ -964,15 +964,14 @@ app.post('/api/bookings', async (c) => {
 
     if (b.hn && b.fullName) {
       await c.env.DB.prepare(`
-        INSERT INTO patients (hn, fullName, dob, gender, underlying, updatedAt)
-        VALUES (?, ?, ?, ?, ?, datetime('now', '+7 hours'))
+        INSERT INTO patients (hn, fullName, gender, underlying, updatedAt)
+        VALUES (?, ?, ?, ?, datetime('now', '+7 hours'))
         ON CONFLICT(hn) DO UPDATE SET
           fullName = excluded.fullName,
-          dob = excluded.dob,
           gender = excluded.gender,
           underlying = excluded.underlying,
           updatedAt = excluded.updatedAt
-      `).bind(b.hn, b.fullName, b.dob ?? null, b.gender ?? null, b.underlying ?? null).run()
+      `).bind(b.hn, b.fullName, b.gender ?? null, b.underlying ?? null).run()
     }
 
     return c.json({ success: true }, 201)
@@ -1054,15 +1053,14 @@ app.put('/api/bookings/:id', async (c) => {
 
     if (b.hn && b.fullName) {
       await c.env.DB.prepare(`
-        INSERT INTO patients (hn, fullName, dob, gender, underlying, updatedAt)
-        VALUES (?, ?, ?, ?, ?, datetime('now', '+7 hours'))
+        INSERT INTO patients (hn, fullName, gender, underlying, updatedAt)
+        VALUES (?, ?, ?, ?, datetime('now', '+7 hours'))
         ON CONFLICT(hn) DO UPDATE SET
           fullName = excluded.fullName,
-          dob = excluded.dob,
           gender = excluded.gender,
           underlying = excluded.underlying,
           updatedAt = excluded.updatedAt
-      `).bind(b.hn, b.fullName, b.dob ?? null, b.gender ?? null, b.underlying ?? null).run()
+      `).bind(b.hn, b.fullName, b.gender ?? null, b.underlying ?? null).run()
     }
 
     return c.json({ success: true, message: 'อัปเดตคิวสำเร็จ' })
@@ -1097,13 +1095,13 @@ app.get('/api/patients/:hn', async (c) => {
 
   try {
     let patient = await c.env.DB.prepare(`
-      SELECT hn, fullName, dob, gender, underlying
+      SELECT hn, fullName, gender, underlying
       FROM patients WHERE hn = ?
     `).bind(hn).first()
 
     if (!patient) {
       patient = await c.env.DB.prepare(`
-        SELECT hn, fullName, dob, gender, underlying
+        SELECT hn, fullName, gender, underlying
         FROM bookings WHERE hn = ? ORDER BY createdAt DESC LIMIT 1
       `).bind(hn).first()
     }
