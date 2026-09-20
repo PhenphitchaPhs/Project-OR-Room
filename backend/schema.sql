@@ -41,7 +41,6 @@ CREATE TABLE IF NOT EXISTS users (
   email TEXT UNIQUE,                -- 👈 ใช้เข้าสู่ระบบและรับ OTP
   password TEXT NOT NULL,           -- เก็บเป็น hash (bcrypt)
   orNumber TEXT,                    -- 👈 หมายเลขห้องผ่าตัดประจำตัว (201-220)
-  day TEXT,
   role TEXT DEFAULT 'user',         -- user | admin
   reset_token TEXT,                 -- 👈 token สำหรับตั้งรหัสผ่านใหม่
   reset_token_expiry INTEGER,       -- 👈 เวลาหมดอายุของ token (epoch ms)

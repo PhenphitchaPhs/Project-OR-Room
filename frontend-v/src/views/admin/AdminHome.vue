@@ -2,25 +2,6 @@
     <div class="main-layout">
         <AdminSidebar />
         <Transition name="fade">
-            <div v-if="isDayModalOpen" class="modal-overlay-center">
-                <div class="day-modal-card">
-                    <h2 class="day-modal-title">Choose your day</h2>
-                    <div class="days-list">
-                        <div v-for="day in daysOfWeek" :key="day" class="day-option" @click="tempSelectedDay = day">
-                            <span :class="{ 'active-day-text': tempSelectedDay === day }">{{ day }}</span>
-                            <div class="checkbox-box">
-                                <span v-if="tempSelectedDay === day" class="material-icons check-icon">check</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="day-modal-footer">
-                        <button class="btn-confirm-day" @click="confirmDayChange">Confirm</button>
-                    </div>
-                </div>
-            </div>
-        </Transition>
-
-        <Transition name="fade">
             <div v-if="isLogoutModalOpen" class="modal-overlay-center">
                 <div class="white-modal-card">
                     <h2 class="modal-msg-title">Confirm Logout?</h2>
@@ -1991,13 +1972,8 @@ const onDrop = async (dropIndex) => {
 //     }
 // }
 
-const isDayModalOpen = ref(false)
 const isLogoutModalOpen = ref(false)
 const isDeleteAccModalOpen = ref(false)
-const selectedDay = ref('Monday')
-const tempSelectedDay = ref('Monday')
-const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
-const confirmDayChange = () => { selectedDay.value = tempSelectedDay.value; isDayModalOpen.value = false }
 const goAddPatient = () => { router.push({ name: 'admin-add-patient' }) }
 const handleLogout = () => { localStorage.clear(); router.push('/login') }
 const handleDeleteAccount = () => { localStorage.clear(); router.push('/login') }

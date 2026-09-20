@@ -50,6 +50,14 @@ npx.cmd wrangler d1 execute or_room_db --remote --file=./migrate-remove-dob.sql
 For staging, use `or_room_staging` with `--env staging` and a separate backup;
 for local databases use `--local` instead of `--remote`.
 
+The obsolete `users.day` preference is removed separately so databases that
+already ran the DOB migration can be upgraded safely. Back up the database,
+deploy the frontend/backend that no longer use this value, then run once:
+
+```powershell
+npx.cmd wrangler d1 execute or_room_db --remote --file=./migrate-remove-user-day.sql
+```
+
 ## Isolated export E2E staging
 
 `wrangler.toml` has a separate `staging` Worker and D1 binding (`or_room_staging`). It does not share the production database, and staging has no cron trigger. Provision it with a Cloudflare-authenticated Wrangler CLI:

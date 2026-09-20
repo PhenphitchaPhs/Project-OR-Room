@@ -16,6 +16,7 @@ export const clearSession = (): void => {
   localStorage.removeItem('userRole')
   localStorage.removeItem('userLicense')
   localStorage.removeItem('orNumber')
+  localStorage.removeItem('selectedDay')
 }
 
 export const SESSION_EXPIRED_KEY = 'sessionExpiredMessage'

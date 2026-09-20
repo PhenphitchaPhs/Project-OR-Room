@@ -133,7 +133,6 @@ const login = async () => {
     localStorage.setItem("userLicense", data.user.license);
     localStorage.setItem("doctorName", data.user.doctorName);
     localStorage.setItem("userRole", data.user.role || 'user');
-    localStorage.setItem("selectedDay", data.user.day || 'Monday');
 
     router.push("/home");
   } catch (error) {
