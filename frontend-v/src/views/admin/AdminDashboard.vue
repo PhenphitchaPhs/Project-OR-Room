@@ -40,10 +40,10 @@
         <Transition name="fade">
             <div v-if="isCancelledModalOpen" class="modal-overlay-center" @click.self="isCancelledModalOpen = false">
                 <div class="white-modal-card cancelled-modal-card">
-                        <h2 class="modal-msg-title">🗑️ Cancelled cases ({{ cancelledList.length }})</h2>
+                    <h2 class="modal-msg-title">🗑️ Cancelled cases ({{ cancelledList.length }})</h2>
 
                     <div v-if="cancelledList.length === 0" class="empty-state" style="padding: 20px">
-                            <p>No cancelled cases</p>
+                        <p>No cancelled cases</p>
                     </div>
 
                     <div v-else class="cancelled-list">
@@ -96,6 +96,12 @@
                     @click="activeSection = 'doctors'">
                     <span class="section-nav-emoji">👨‍⚕️</span>
                     <span>Doctor Accounts</span>
+                </button>
+
+                <button class="section-nav-btn" :class="{ active: activeSection === 'timeline' }"
+                    @click="activeSection = 'timeline'">
+                    <span class="section-nav-emoji">🕒</span>
+                    <span>Activity Timeline</span>
                 </button>
             </aside>
 
@@ -262,6 +268,81 @@
                     </div>
                 </div>
 
+                <div v-if="activeSection === 'timeline'">
+                    <h1 class="main-title">🕒 Activity Timeline</h1>
+
+                    <div class="doctor-section">
+                        <div class="section-header">
+                            <h2 class="section-title">Cases added by doctors</h2>
+                        </div>
+
+                        <div class="timeline-toolbar">
+                            <select v-model="timelineDoctor" class="timeline-select" aria-label="Filter by doctor"
+                                @change="timelineVisible = TIMELINE_PAGE">
+                                <option value="all">All doctors</option>
+                                <option v-for="d in timelineDoctorOptions" :key="d.license" :value="d.license">
+                                    {{ d.name }} ({{ d.count }})
+                                </option>
+                            </select>
+
+                            <select v-model="timelineRange" class="timeline-select" aria-label="Filter by date added"
+                                @change="timelineVisible = TIMELINE_PAGE">
+                                <option value="all">All time</option>
+                                <option value="today">Today</option>
+                                <option value="week">This week</option>
+                                <option value="month">This month</option>
+                            </select>
+
+                            <span v-if="!loading" class="timeline-total">{{ timelineEntries.length }} case(s)
+                                added</span>
+                        </div>
+
+                        <div v-if="loading" class="empty-state" style="padding: 30px">
+                            <p>กำลังโหลด...</p>
+                        </div>
+
+                        <div v-else-if="timelineEntries.length === 0" class="empty-state" style="padding: 30px">
+                            <p>No cases were added in this period.</p>
+                        </div>
+
+                        <div v-else class="timeline-body">
+                            <div v-for="group in timelineGroups" :key="group.date" class="timeline-day">
+                                <div class="timeline-day-label">
+                                    <span>{{ group.label }}</span>
+                                    <span class="timeline-day-count">{{ group.total }}</span>
+                                </div>
+
+                                <ul class="timeline-list">
+                                    <li v-for="item in group.items" :key="item.id" class="timeline-item">
+                                        <span class="timeline-dot"></span>
+                                        <div class="timeline-card" :class="{
+                                            'card-completed': item.statusText === 'Completed',
+                                            'card-cancelled': item.statusText === 'Cancelled'
+                                        }">
+                                            <div class="timeline-card-top">
+                                                <span class="timeline-time">{{ item.time }}</span>
+                                                <span class="timeline-status"
+                                                    :class="'st-' + item.statusText.toLowerCase()">{{ item.statusText
+                                                    }}</span>
+                                            </div>
+                                            <div class="timeline-title"><strong>{{ item.doctorName }}</strong> added a
+                                                case</div>
+                                            <div class="timeline-meta">HN {{ item.hn }} · {{ item.fullName }}</div>
+                                            <div class="timeline-meta">{{ item.procedure }}</div>
+                                            <div class="timeline-meta">Surgery {{ item.date }} · {{ item.room }}</div>
+                                        </div>
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <button v-if="timelineEntries.length > timelineVisible" class="timeline-more"
+                                @click="timelineVisible += TIMELINE_PAGE">
+                                Show more ({{ timelineEntries.length - timelineVisible }} left)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
 
@@ -274,6 +355,7 @@ import { useRouter } from 'vue-router'
 import { apiFetch } from '../../api/client'
 import FiscalYearStats from '../../components/report/FiscalYearStats.vue'
 import AdminSidebar from '../../components/AdminSidebar.vue'
+import { statusLabel } from '../../composables/useCsvExport'
 
 const router = useRouter()
 const userLicense = ref('Admin')
@@ -283,6 +365,125 @@ const bookings = ref([])
 const loading = ref(true)
 const isLogoutModalOpen = ref(false)
 const activeSection = ref('dashboard')
+
+// ----- Activity timeline: when each doctor added cases -----
+const TIMELINE_PAGE = 30
+const WEEK_STARTS_ON = 1 // 0 = Sunday, 1 = Monday
+
+const timelineDoctor = ref('all')
+const timelineRange = ref('all') // all | today | week | month
+const timelineVisible = ref(TIMELINE_PAGE)
+
+// bookings.createdAt is saved as Bangkok time (UTC+7), so "now" is compared in Bangkok time too
+const bangkokNow = () => new Date(Date.now() + 7 * 60 * 60 * 1000)
+const pad2 = (n) => String(n).padStart(2, '0')
+const keyOfUtc = (d) => `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}-${pad2(d.getUTCDate())}`
+const addDaysKey = (key, n) => {
+    const [y, m, d] = key.split('-').map(Number)
+    return keyOfUtc(new Date(Date.UTC(y, m - 1, d + n)))
+}
+
+const inTimelineRange = (dateKey) => {
+    if (timelineRange.value === 'all') return true
+
+    const now = bangkokNow()
+    const today = keyOfUtc(now)
+
+    if (timelineRange.value === 'today') return dateKey === today
+    if (timelineRange.value === 'week') {
+        const start = addDaysKey(today, -((now.getUTCDay() - WEEK_STARTS_ON + 7) % 7))
+        return dateKey >= start && dateKey <= today
+    }
+    if (timelineRange.value === 'month') return dateKey.slice(0, 7) === today.slice(0, 7)
+    return true
+}
+
+const parseCreatedAt = (value) => {
+    const text = String(value ?? '').trim().replace('T', ' ')
+    const m = text.match(/^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2})/)
+    return m ? { dateKey: m[1], time: m[2], sortKey: text } : null
+}
+
+const dayLabel = (key) => {
+    const today = keyOfUtc(bangkokNow())
+    if (key === today) return 'Today'
+    if (key === addDaysKey(today, -1)) return 'Yesterday'
+
+    const [y, m, d] = key.split('-').map(Number)
+    return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('en-GB', {
+        weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC'
+    })
+}
+
+// Every booking that has a createdAt, newest first
+const timelineAllEntries = computed(() => {
+    const rows = []
+
+    for (const b of bookings.value) {
+        const at = parseCreatedAt(b.createdAt)
+        if (!at) continue
+
+        rows.push({
+            id: b.id,
+            license: b.doctorLicense || '',
+            doctorName: doctorMap.value[b.doctorLicense] || b.doctorLicense || 'Unknown doctor',
+            hn: b.hn,
+            fullName: b.fullName,
+            procedure: b.procedure || '-',
+            date: b.date,
+            room: b.room || '-',
+            statusText: statusLabel(b.status) || 'Upcoming',
+            dateKey: at.dateKey,
+            time: at.time,
+            sortKey: at.sortKey
+        })
+    }
+
+    return rows.sort((a, b) => b.sortKey.localeCompare(a.sortKey) || b.id - a.id)
+})
+
+const timelineRangeEntries = computed(() =>
+    timelineAllEntries.value.filter(e => inTimelineRange(e.dateKey))
+)
+
+const timelineEntries = computed(() =>
+    timelineDoctor.value === 'all'
+        ? timelineRangeEntries.value
+        : timelineRangeEntries.value.filter(e => e.license === timelineDoctor.value)
+)
+
+// Doctor dropdown: every account (even with 0 cases), counts follow the selected period
+const timelineDoctorOptions = computed(() => {
+    const counts = new Map()
+
+    for (const d of doctorList.value) counts.set(d.license, 0)
+    for (const e of timelineAllEntries.value) {
+        if (e.license && !counts.has(e.license)) counts.set(e.license, 0)
+    }
+    for (const e of timelineRangeEntries.value) {
+        if (e.license) counts.set(e.license, (counts.get(e.license) || 0) + 1)
+    }
+
+    return [...counts.entries()]
+        .map(([license, count]) => ({ license, name: doctorMap.value[license] || license, count }))
+        .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+})
+
+const timelineGroups = computed(() => {
+    const totals = {}
+    for (const e of timelineEntries.value) totals[e.dateKey] = (totals[e.dateKey] || 0) + 1
+
+    const groups = []
+    for (const e of timelineEntries.value.slice(0, timelineVisible.value)) {
+        let g = groups[groups.length - 1]
+        if (!g || g.date !== e.dateKey) {
+            g = { date: e.dateKey, label: dayLabel(e.dateKey), total: totals[e.dateKey], items: [] }
+            groups.push(g)
+        }
+        g.items.push(e)
+    }
+    return groups
+})
 
 const searchQuery = ref('')
 
@@ -1508,5 +1709,208 @@ const changeRole = async (license, newRole) => {
     font-size: 12px;
     color: #666;
     margin-top: 2px;
+}
+
+/* ===== Activity timeline ===== */
+.timeline-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 20px;
+    border-bottom: 1px solid #edf2f7;
+}
+
+.timeline-select {
+    height: 36px;
+    padding: 0 30px 0 12px;
+
+    background-color: #eef2f7;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24'%3E%3Cpath fill='%2364748b' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 16px;
+
+    color: #1a3a5f;
+    border: 1px solid #d6e0ec;
+    border-radius: 8px;
+
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+}
+
+.timeline-select:hover {
+    background-color: #dde6f1;
+}
+
+.timeline-select:focus {
+    outline: none;
+    border-color: #1a3a5f;
+    box-shadow: 0 0 0 3px rgba(26, 58, 95, .12);
+}
+
+.timeline-total {
+    margin-left: auto;
+    font-size: 13px;
+    color: #64748b;
+}
+
+.timeline-body {
+    padding: 8px 20px 20px;
+}
+
+.timeline-day {
+    margin-top: 16px;
+}
+
+.timeline-day-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    color: #1a3a5f;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.timeline-day-count {
+    min-width: 22px;
+    padding: 1px 8px;
+    border-radius: 999px;
+    background: #eef2f7;
+    color: #4a5e75;
+    font-size: 12px;
+    font-weight: 700;
+    text-align: center;
+}
+
+.timeline-list {
+    position: relative;
+    margin: 0 0 0 6px;
+    padding: 0 0 0 20px;
+    list-style: none;
+    border-left: 2px solid #d6e0ec;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 12px;
+}
+
+.timeline-item:last-child {
+    margin-bottom: 0;
+}
+
+.timeline-dot {
+    position: absolute;
+    top: 16px;
+    left: -26px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #1a3a5f;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 1px #d6e0ec;
+}
+
+.timeline-card {
+    padding: 12px 14px;
+    background: #f8faff;
+    border: 1px solid #e6edf6;
+    border-radius: 12px;
+}
+
+.timeline-card.card-completed {
+    background: #f0fdf4;
+    border-color: #86efac;
+}
+
+.timeline-card.card-cancelled {
+    background: #fef2f2;
+    border-color: #fca5a5;
+}
+
+.timeline-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+}
+
+.timeline-time {
+    font-size: 12px;
+    font-weight: 700;
+    color: #64748b;
+}
+
+.timeline-status {
+    padding: 2px 10px;
+    border-radius: 999px;
+    background: #fff;
+    border: 1.5px solid currentColor;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.timeline-status.st-upcoming {
+    color: #0d47a1;
+}
+
+.timeline-status.st-completed {
+    color: #16a34a;
+}
+
+.timeline-status.st-cancelled {
+    color: #c62828;
+}
+
+.timeline-title {
+    color: #1a3a5f;
+    font-size: 14px;
+}
+
+.timeline-meta {
+    margin-top: 2px;
+    font-size: 12.5px;
+    color: #4a5e75;
+    word-break: break-word;
+}
+
+.timeline-more {
+    display: block;
+    margin: 18px auto 0;
+    padding: 9px 20px;
+    background: #eef2f7;
+    color: #1a3a5f;
+    border: 1px solid #d6e0ec;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.timeline-more:hover {
+    background: #dde6f1;
+}
+
+/* Four menu buttons no longer fit in one row on phones: let the row scroll */
+@media (max-width: 768px) {
+    .section-nav {
+        overflow-x: auto;
+    }
+
+    .section-nav-btn {
+        flex: 1 0 auto;
+        white-space: nowrap;
+    }
+
+    .timeline-body {
+        padding: 8px 14px 16px;
+    }
 }
 </style>
