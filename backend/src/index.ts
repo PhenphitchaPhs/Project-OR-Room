@@ -307,7 +307,8 @@ const hasAdminAccess = (role: string | null | undefined) => {
   return ADMIN_ROLES.includes(r) || r.includes('admin')
 }
 
-const TOKEN_TTL_SECONDS = 8 * 60 * 60
+// Sessions expire 48 hours after login, regardless of activity.
+const TOKEN_TTL_SECONDS = 48 * 60 * 60
 const JWT_ALG = 'HS256' as const
 
 const issueToken = async (secret: string, user: { license: string; role: string }) => {

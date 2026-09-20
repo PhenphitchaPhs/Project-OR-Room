@@ -3,6 +3,10 @@ npm install
 npm run dev
 ```
 
+## Login session lifetime
+
+User and admin sessions expire 48 hours after login. Activity does not extend this period. After deploying the backend change, users must log in again to receive a new 48-hour token; existing tokens retain their original expiry. The frontend redirects to login when an authenticated API request returns HTTP 401.
+
 ## Database setup and migrations
 
 Run the base schema first, then run each migration once against the target D1 database:
