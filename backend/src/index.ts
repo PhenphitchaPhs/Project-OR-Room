@@ -64,6 +64,7 @@ type CustomProcedure = {
   createdAt: string
   updatedAt: string
   createdByName?: string | null
+  activeBookingCount?: number
 }
 
 const customProcedureValue = (procedure: Pick<CustomProcedure, 'name' | 'durationMinutes'>) =>
@@ -652,15 +653,22 @@ app.get('/api/procedures', requireProcedureManager, async (c) => {
   try {
     const { results } = await c.env.DB.prepare(`
       SELECT p.id, p.name, p.durationMinutes, p.createdBy, p.createdAt, p.updatedAt,
-        u.doctorName as createdByName
+        u.doctorName as createdByName,
+        (
+          SELECT COUNT(*)
+          FROM bookings b
+          WHERE (b.procedure = p.name COLLATE NOCASE OR b.procedure LIKE p.name || ' - % mins')
+            AND LOWER(COALESCE(b.status, '')) = 'upcoming'
+        ) as activeBookingCount
       FROM surgery_procedures p
       LEFT JOIN users u ON p.createdBy = u.license
       ORDER BY name COLLATE NOCASE ASC
     `).all<CustomProcedure>()
 
-    return c.json(results.map((procedure) => ({
+    return c.json(results.map(({ activeBookingCount, ...procedure }) => ({
       ...procedure,
       value: customProcedureValue(procedure),
+      isActive: Number(activeBookingCount || 0) > 0,
     })))
   } catch (error) {
     console.error('GET /api/procedures failed:', error)

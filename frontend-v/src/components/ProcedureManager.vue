@@ -45,9 +45,12 @@
           </div>
           <p v-if="!procedures.length" class="empty-message">No additional surgery types yet.</p>
           <div v-for="procedure in procedures" :key="procedure.id" class="procedure-item">
-            <div>
-              <strong>{{ procedure.name }}</strong>
-              <span>{{ procedure.durationMinutes }} minutes · {{ ownerLabel(procedure) }}</span>
+            <div class="procedure-info">
+              <div class="procedure-title-row">
+                <strong>{{ procedure.name }}</strong>
+                <span v-if="procedure.isActive" class="active-badge">Active</span>
+              </div>
+              <span class="procedure-meta">{{ procedure.durationMinutes }} minutes · {{ ownerLabel(procedure) }}</span>
             </div>
             <div v-if="canManage(procedure)" class="item-actions">
               <button type="button" class="edit-btn" @click="startEdit(procedure)">Edit</button>
@@ -406,14 +409,33 @@ onMounted(async () => {
 }
 
 .procedure-item strong,
-.procedure-item span {
+.procedure-meta {
   display: block;
 }
 
-.procedure-item span {
+.procedure-meta {
   margin-top: 3px;
   color: #66809d;
   font-size: 13px;
+}
+
+.procedure-title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.active-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 3px 8px;
+  background: #dcfce7;
+  color: #15803d;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
 }
 
 .item-actions {
