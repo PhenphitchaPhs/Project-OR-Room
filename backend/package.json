@@ -8,15 +8,11 @@
     "deploy": "wrangler deploy"
   },
   "dependencies": {
-    "@hono/node-server": "^1.19.9",
     "bcryptjs": "^3.0.3",
-    "better-sqlite3": "^12.6.2",
     "hono": "^4.11.4"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260730.1",
-    "@types/bcryptjs": "^2.4.6",
-    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^20.11.17",
     "tsx": "^4.7.1",
     "typescript": "^5.8.3"
