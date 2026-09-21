@@ -97,6 +97,7 @@
                         <p><strong>Patient:</strong> {{ b.fullName }}</p>
                         <p><strong>HN:</strong> {{ b.hn }}</p>
                         <p><strong>Age / Gender:</strong> {{ b.age || '-' }} years · {{ b.gender === 'female' ? 'Female' : 'Male' }}</p>
+                        <p><strong>Diagnosis:</strong> {{ b.diagnosis || '-' }}</p>
                         <p><strong>Procedure:</strong> {{ b.procedure }}</p>
                         <hr style="border-color:#eee; margin: 8px 0" />
                     </div>
