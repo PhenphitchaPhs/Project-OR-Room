@@ -653,22 +653,29 @@ app.get('/api/procedures', requireProcedureManager, async (c) => {
   try {
     const { results } = await c.env.DB.prepare(`
       SELECT p.id, p.name, p.durationMinutes, p.createdBy, p.createdAt, p.updatedAt,
-        u.doctorName as createdByName,
-        (
-          SELECT COUNT(*)
-          FROM bookings b
-          WHERE (b.procedure = p.name COLLATE NOCASE OR b.procedure LIKE p.name || ' - % mins')
-            AND LOWER(COALESCE(b.status, '')) = 'upcoming'
-        ) as activeBookingCount
+        u.doctorName as createdByName
       FROM surgery_procedures p
       LEFT JOIN users u ON p.createdBy = u.license
       ORDER BY name COLLATE NOCASE ASC
     `).all<CustomProcedure>()
 
-    return c.json(results.map(({ activeBookingCount, ...procedure }) => ({
+    // Keep the active-booking lookup separate from the procedure query. A correlated
+    // COUNT for every procedure caused intermittent D1 failures as the live data grew.
+    const { results: activeBookings } = await c.env.DB.prepare(`
+      SELECT procedure
+      FROM bookings
+      WHERE LOWER(COALESCE(status, '')) = 'upcoming'
+        AND procedure IS NOT NULL
+    `).all<{ procedure: string }>()
+    const activeValues = activeBookings.map((booking) => String(booking.procedure).trim().toLowerCase())
+
+    return c.json(results.map((procedure) => ({
       ...procedure,
       value: customProcedureValue(procedure),
-      isActive: Number(activeBookingCount || 0) > 0,
+      isActive: activeValues.some((value) => {
+        const name = procedure.name.trim().toLowerCase()
+        return value === name || value.startsWith(`${name} - `)
+      }),
     })))
   } catch (error) {
     console.error('GET /api/procedures failed:', error)
@@ -774,8 +781,8 @@ app.delete('/api/procedures/:id', requireProcedureManager, async (c) => {
   try {
     const requester = c.get('user')
     const existing = await c.env.DB.prepare(
-      'SELECT name, createdBy FROM surgery_procedures WHERE id = ?',
-    ).bind(c.req.param('id')).first<{ name: string; createdBy: string }>()
+      'SELECT name, durationMinutes, createdBy FROM surgery_procedures WHERE id = ?',
+    ).bind(c.req.param('id')).first<Pick<CustomProcedure, 'name' | 'durationMinutes' | 'createdBy'>>()
     if (!existing) return c.json({ error: 'Additional surgery type not found' }, 404)
     if (!hasAdminAccess(requester.role) && existing.createdBy !== requester.license) {
       return c.json({ error: 'Only the creator or an administrator can delete this surgery type' }, 403)
@@ -784,9 +791,9 @@ app.delete('/api/procedures/:id', requireProcedureManager, async (c) => {
     const activeBooking = await c.env.DB.prepare(`
       SELECT COUNT(*) as count
       FROM bookings
-      WHERE (procedure = ? OR procedure LIKE ?)
+      WHERE (procedure = ? COLLATE NOCASE OR procedure = ? COLLATE NOCASE)
         AND status NOT IN ('Cancelled', 'Completed', 'Succeed')
-    `).bind(existing.name, `${existing.name} - % mins`).first<{ count: number }>()
+    `).bind(existing.name, customProcedureValue(existing)).first<{ count: number }>()
     if (Number(activeBooking?.count || 0) > 0) {
       return c.json({ error: 'This surgery type is used by an active booking and cannot be deleted' }, 409)
     }
