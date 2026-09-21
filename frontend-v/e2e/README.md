@@ -1,4 +1,85 @@
-# Export acceptance tests
+# End-to-end acceptance tests
+
+## Live surgery type permissions and audit history
+
+`surgery-procedure-permissions-audit-live.spec.ts` covers only TC-N02.1 through
+TC-N02.8. It verifies owner edit/delete controls, non-owner UI and API restrictions,
+Admin management of every user's additional types, created/updated/deleted audit
+events, Admin-only history access and rejected operations leaving no success log.
+
+All procedure names are unique and generated procedures are removed in cleanup.
+Audit entries remain because they are the permanent history required by this feature.
+TC-N02.7 adds `coverage-gap` annotations because the current audit schema does not
+store explicit before/after values or the actor role.
+
+Run from `frontend-v` after setting the Admin, User A and User B environment variables:
+
+```powershell
+npm.cmd run test:e2e:surgery-permissions-live
+npx.cmd playwright show-report playwright-report/live --port 9324
+```
+
+## Live additional surgery types
+
+`surgery-procedure-add-use-live.spec.ts` covers only TC-N01.1 through TC-N01.4.
+It checks creating an additional surgery type with a duration, visibility to User A,
+User B and Admin, selection while booking, invalid values, duplicate names, Refresh,
+reopening the manager and a fresh login session. Every generated surgery type has a
+unique E2E name and is deleted in test cleanup.
+
+TC-N01.2 creates one real temporary booking as User B to verify that the selected
+type and its 70-minute duration reach the live backend. Cleanup changes that booking
+to `Cancelled` before deleting the surgery type. The backend has no permanent booking
+delete endpoint, so the cancelled E2E booking and its patient record remain in the
+live database after the test.
+
+Run from `frontend-v` in PowerShell:
+
+```powershell
+$env:LIVE_ADMIN_USERNAME='admin007'
+$env:LIVE_ADMIN_PASSWORD=[System.Net.NetworkCredential]::new('', (Read-Host 'Admin password' -AsSecureString)).Password
+$env:LIVE_USER_EMAIL='qa.test01@example.com'
+$env:LIVE_USER_PASSWORD=[System.Net.NetworkCredential]::new('', (Read-Host 'User A password' -AsSecureString)).Password
+$env:LIVE_USER_B_EMAIL='qa.test02@example.com'
+$env:LIVE_USER_B_PASSWORD=[System.Net.NetworkCredential]::new('', (Read-Host 'User B password' -AsSecureString)).Password
+npm.cmd run test:e2e:surgery-types-live
+npx.cmd playwright show-report playwright-report/live --port 9324
+```
+
+## Live role-based access and security
+
+`admin-rbac-security-live.spec.ts` covers only TC-A08.1 through TC-A08.3.
+It checks Admin/User screen access, User A/User B booking isolation, direct
+Admin URL blocking, missing and tampered tokens, Admin-only APIs, foreign
+booking reads, Local Storage role spoofing and a rejected attempt to create a
+booking for another doctor. The suite does not edit or delete Production data.
+
+```powershell
+$env:LIVE_ADMIN_USERNAME='admin007'
+$env:LIVE_ADMIN_PASSWORD=[System.Net.NetworkCredential]::new('', (Read-Host 'Admin password' -AsSecureString)).Password
+$env:LIVE_USER_EMAIL='qa.test01@example.com'
+$env:LIVE_USER_PASSWORD=[System.Net.NetworkCredential]::new('', (Read-Host 'User A password' -AsSecureString)).Password
+$env:LIVE_USER_B_EMAIL='qa.test02@example.com'
+$env:LIVE_USER_B_PASSWORD=[System.Net.NetworkCredential]::new('', (Read-Host 'User B password' -AsSecureString)).Password
+npm.cmd run test:e2e:admin-rbac-live
+```
+
+## Live Admin Calendar
+
+`admin-calendar-live.spec.ts` covers only TC-A05.1 through TC-A05.6 from the
+Admin Calendar feature. It logs in as the real Admin account, reads bookings,
+doctors and holidays from the live backend, and never creates, edits or deletes
+data. Scenarios whose required live data does not exist are reported as skipped
+instead of being counted as passed.
+
+Run from `frontend-v` in PowerShell:
+
+```powershell
+$env:LIVE_ADMIN_USERNAME='admin007'
+$env:LIVE_ADMIN_PASSWORD=[System.Net.NetworkCredential]::new('', (Read-Host 'Password for admin007' -AsSecureString)).Password
+npm.cmd run test:e2e:admin-calendar-live
+npx.cmd playwright show-report playwright-report/live --port 9324
+```
 
 ## Live admin007 exports
 

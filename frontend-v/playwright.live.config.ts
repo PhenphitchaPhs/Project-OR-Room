@@ -24,6 +24,10 @@ export default defineConfig({
   testMatch: [
     '**/admin-export-csv-live.spec.ts',
     '**/admin-export-pdf-live.spec.ts',
+    '**/admin-calendar-live.spec.ts',
+    '**/admin-rbac-security-live.spec.ts',
+    '**/surgery-procedure-add-use-live.spec.ts',
+    '**/surgery-procedure-permissions-audit-live.spec.ts',
     '**/U04-calendar.spec.ts',
     '**/US07-edit-booking.spec.ts',
     '**/US08-cancel-booking.spec.ts',
