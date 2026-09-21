@@ -1,4 +1,4 @@
-# Admin CSV export acceptance tests
+# Export acceptance tests
 
 ## Live admin007 exports
 
@@ -26,6 +26,39 @@ Authentication state stays in memory. Reports and downloaded files are saved loc
 
 Live checks do not change bookings. TC-A10.5 simulates an export API HTTP 503 and a font-loading HTTP 503 in the test page only, checks error messages, no download, and loading-state recovery, removes each route in finally, then retries against real services. They cover the data currently available; `coverage-gap` and `manual-check-required` annotations identify unavailable boundary data, file-display review still requiring manual checks. Passing this suite does not certify scenarios marked as coverage gaps or manual checks. Concurrent changes between page load and download are reported as mismatches rather than silently accepted. Nothing has been executed on Production merely by creating this suite.
 
+## Live User CSV export
+
+`user-export-csv-live.spec.ts` covers only TC-U09.1–TC-U09.5 against the deployed website and the real User bookings API. Credentials stay in local environment variables. An optional second User account with no bookings exercises the complete empty-account branch in TC-U09.2.
+
+Run from `frontend-v` in PowerShell:
+
+```powershell
+$env:LIVE_USER_EMAIL='user@example.com'
+$env:LIVE_USER_PASSWORD=[System.Net.NetworkCredential]::new('', (Read-Host 'User password' -AsSecureString)).Password
+$env:LIVE_USER_B_EMAIL='second-user@example.com'
+$env:LIVE_USER_B_PASSWORD=[System.Net.NetworkCredential]::new('', (Read-Host 'Second User password' -AsSecureString)).Password
+
+# Optional real User account with no bookings
+$env:LIVE_EMPTY_USER_EMAIL='empty-user@example.com'
+$env:LIVE_EMPTY_USER_PASSWORD=[System.Net.NetworkCredential]::new('', (Read-Host 'Empty User password' -AsSecureString)).Password
+
+npx.cmd playwright test --config=playwright.live.config.ts e2e/user-export-csv-live.spec.ts
+npx.cmd playwright show-report playwright-report/live --port 9324
+```
+
+The suite does not create, edit, or delete bookings. It compares downloaded CSV rows with the bookings returned to the logged-in User, verifies ownership isolation, inclusive date filtering, disabled invalid and empty states, UTF-8 BOM, the required 17 columns, every exported field, and Excel-safe numeric HNs. Missing live boundary data is reported with a `coverage-gap` annotation instead of being treated as exercised.
+
+## Live User PDF export
+
+`user-export-pdf-live.spec.ts` covers only TC-U10.1 through TC-U10.5. It uses the same User A and User B environment variables shown above.
+
+```powershell
+npm.cmd run test:e2e:user-pdf-live
+npx.cmd playwright show-report playwright-report/live --port 9324
+```
+
+The suite downloads and parses the real PDF files. It checks single-booking and inclusive date-range exports, User A/User B isolation, invalid and empty states, report metadata, single-case fields, the 10 range-report columns, exact HN/name rows, A4 page size, page numbering, and recovery after invalid filters. A `coverage-gap` annotation identifies live data that cannot currently exercise multiple pages, a leading-zero HN, Thai text, long text, or a date containing only User B bookings. Visual clipping and Print Preview remain marked for manual review.
+
 
 ## PDF Thai font regression
 
@@ -35,4 +68,4 @@ The Thai mapping fix is in `src/components/report/QueueReportPdf.ts`, so it must
 
 ## Default command
 
-`npm.cmd run test:e2e` uses the live configuration and runs both Admin export features against the deployed website. Set `LIVE_ADMIN_PASSWORD` locally first. The staging Playwright suites have been removed.
+`npm.cmd run test:e2e` uses the live configuration and discovers the Admin export files plus the User CSV and User PDF export files. Set the credentials required by the files you run. The staging Playwright suites have been removed.

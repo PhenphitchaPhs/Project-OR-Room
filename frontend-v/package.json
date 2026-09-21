@@ -11,6 +11,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "test:e2e": "playwright test",
+    "test:e2e:user-csv-live": "playwright test --config=playwright.live.config.ts e2e/user-export-csv-live.spec.ts --workers=1",
+    "test:e2e:user-pdf-live": "playwright test --config=playwright.live.config.ts e2e/user-export-pdf-live.spec.ts --workers=1",
     "build-only": "vite build",
     "type-check": "vue-tsc --build",
     "lint": "eslint . --fix --cache",

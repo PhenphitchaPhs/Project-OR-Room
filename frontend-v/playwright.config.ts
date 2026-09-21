@@ -1,2 +1,2 @@
-// The default command runs the live Admin CSV and PDF suites.
+// The default command discovers the live Admin export and User CSV export suites.
 export { default } from './playwright.live.config'
