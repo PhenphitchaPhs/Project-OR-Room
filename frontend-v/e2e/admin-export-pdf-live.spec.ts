@@ -49,7 +49,7 @@ test.describe(`Admin ${format} export — live admin007`, () => {
     coverageGap('Month-edge fixtures are not created on live; available dates only are checked.')
   })
 
-  test(`${prefix}.4 กรองข้อมูลจริงและจัดกลุ่ม PDF`, async ({ page, snapshot }) => {
+  test(`${prefix}.4 กรองข้อมูลจริงและส่งออก PDF`, async ({ page, snapshot }) => {
     test.skip(!snapshot.rows.length, 'No live bookings for filter checks.')
     const rooms = [...new Set(snapshot.rows.map((row) => row.room).filter(Boolean))]
     for (const selected of [rooms.slice(0, 1), rooms.slice(0, 2)]) {
@@ -73,7 +73,7 @@ test.describe(`Admin ${format} export — live admin007`, () => {
       await exportAndCheck(page, dialog, format, snapshot.rows.filter((row) => row.doctorLicense === doctor.license), snapshot)
     } else coverageGap('No selectable doctor with live bookings.')
     const dialog = await open(page, format)
-    await dialog.getByRole('button', { name: 'By doctor', exact: true }).click()
+    await expect(dialog.getByRole('button', { name: /^By (room|doctor)$/ })).toHaveCount(0)
     await exportAndCheck(page, dialog, format, snapshot.rows, snapshot)
     const selectedDoctors = snapshot.doctors.filter((d) => d.role === 'user' && snapshot.rows.some((r) => r.doctorLicense === d.license)).slice(0, 2)
     if (selectedDoctors.length === 2) {
@@ -163,7 +163,7 @@ test.describe(`Admin ${format} export — live admin007`, () => {
 
   test(`${prefix}.6 ตรวจไฟล์ที่ดาวน์โหลดจากเว็บจริง`, async ({ page, snapshot }) => {
     await exportAndCheck(page, await open(page, format), format, snapshot.rows, snapshot)
-    test.info().annotations.push({ type: 'manual-check-required', description: 'Open PDF to review columns, glyphs, grouping, clipping and Print Preview.' })
+    test.info().annotations.push({ type: 'manual-check-required', description: 'Open PDF to review columns, glyphs, clipping and Print Preview.' })
     if (!snapshot.rows.some((row) => /^0/.test(row.hn))) coverageGap('Live data has no leading-zero HN.')
   })
 })

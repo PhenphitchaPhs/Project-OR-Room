@@ -881,19 +881,6 @@
                     </div>
                 </div>
 
-                <div v-if="exportFormat === 'pdf' && exportDateMode !== 'single'" class="export-section">
-                    <label class="export-label">Group report by (optional)</label>
-
-                    <div class="export-mode-switch">
-                        <button v-for="option in groupByOptions" :key="option.value"
-                            :class="{ active: exportGroupBy === option.value }"
-                            :aria-pressed="exportGroupBy === option.value"
-                            @click="exportGroupBy = exportGroupBy === option.value ? null : option.value">
-                            {{ option.label }}
-                        </button>
-                    </div>
-                </div>
-
                 <p class="export-preview" aria-live="polite">
                     {{ exportPreviewText }}
                 </p>
@@ -1197,7 +1184,6 @@ const isExporting = ref(false)
 const exportError = ref('')
 
 const exportFormat = ref('csv')
-const exportGroupBy = ref(null)
 const exportDateMode = ref('all')
 const exportDay = ref('')
 const exportMonth = ref('')
@@ -1212,11 +1198,6 @@ const selectedStatuses = ref([])
 const exportFormats = [
     { value: 'csv', label: 'CSV (Spreadsheet)', icon: 'table_view' },
     { value: 'pdf', label: 'PDF (Report)', icon: 'picture_as_pdf' }
-]
-
-const groupByOptions = [
-    { value: 'room', label: 'By room' },
-    { value: 'doctor', label: 'By doctor' }
 ]
 
 const exportFormatHint = computed(() =>
@@ -1499,7 +1480,6 @@ const openExportDialog = () => {
 
     resetExportFilters()
     exportFormat.value = 'csv'
-    exportGroupBy.value = null
     isExportModalOpen.value = true
 }
 
@@ -1585,7 +1565,6 @@ const confirmExport = async () => {
                     rangeLabel: exportFilterLabel.value,
                     filterLabel: exportFilterLabel.value,
                     printedBy: localStorage.getItem('userLicense') || '-',
-                    groupBy: exportGroupBy.value,
                     doctorNames: doctorMap.value
                 })
 

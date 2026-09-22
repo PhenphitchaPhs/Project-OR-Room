@@ -12,8 +12,6 @@ import {
 
 export type ReportMode = 'single' | 'range' | 'admin'
 
-export type ReportGroupBy = 'room' | 'doctor'
-
 export interface ReportMeta {
 
   mode: ReportMode
@@ -29,8 +27,6 @@ export interface ReportMeta {
   filterLabel?: string
 
   printedBy?: string
-
-  groupBy?: ReportGroupBy | null
 
   doctorNames?: Record<string, string>
 }
@@ -217,7 +213,6 @@ function drawHeader(doc: any, meta: ReportMeta) {
   const lines = isAdmin
     ? [
         `Filters: ${dash(meta.filterLabel)}`,
-        `Grouped by: ${meta.groupBy === 'doctor' ? 'Doctor' : meta.groupBy === 'room' ? 'Operating room' : 'None'}`,
         `Printed at: ${formatPrintedAt()}`,
         `Printed by: ${dash(meta.printedBy)}`,
       ]
@@ -319,35 +314,6 @@ function measureRowHeight(doc: any, cells: string[], widths: number[], font: str
   return tallest + CELL_PADDING * 2
 }
 
-function groupRows(
-  rows: ExportedRow[],
-  meta: ReportMeta,
-): { title: string; rows: ExportedRow[] }[] {
-  if (meta.mode !== 'admin' || !meta.groupBy) return [{ title: '', rows }]
-
-  const keyOf = (row: ExportedRow) =>
-    meta.groupBy === 'doctor' ? doctorNameOf(row, meta) : dash(row.room)
-
-  const buckets = new Map<string, ExportedRow[]>()
-  rows.forEach((row) => {
-    const key = keyOf(row)
-    if (!buckets.has(key)) buckets.set(key, [])
-    buckets.get(key)!.push(row)
-  })
-
-  const prefix = meta.groupBy === 'doctor' ? 'Doctor' : 'Room'
-  const entries = [...buckets.entries()].sort((a, b) =>
-    meta.groupBy === 'doctor'
-      ? a[0].localeCompare(b[0], 'th')
-      : a[0].localeCompare(b[0], 'en', { numeric: true }),
-  )
-
-  return entries.map(([key, groupRowList]) => ({
-    title: `${prefix} ${key}  ·  ${groupRowList.length} case(s)`,
-    rows: groupRowList,
-  }))
-}
-
 function drawDetailTable(doc: any, rows: ExportedRow[], meta: ReportMeta) {
   const columns = columnsFor(meta.mode)
   const totalWidth = columns.reduce((sum, column) => sum + column.width, 0)
@@ -385,46 +351,25 @@ function drawDetailTable(doc: any, rows: ExportedRow[], meta: ReportMeta) {
     doc.y = MARGIN
   }
 
-  groupRows(rows, meta).forEach((group, groupIndex) => {
-    const body = group.rows.map((row) => columns.map((column) => column.value(row, meta)))
-    const firstBodyRow = body[0]
-    if (!firstBodyRow) return
+  const body = rows.map((row) => columns.map((column) => column.value(row, meta)))
+  let chunk: string[][] = []
+  let usedHeight = doc.y + headerHeight
 
-    if (group.title) {
-      const titleHeight = 18
-      const firstRowHeight = measureRowHeight(doc, firstBodyRow, widths, 'TH')
+  body.forEach((row) => {
+    const rowHeight = measureRowHeight(doc, row, widths, 'TH')
 
-      if (doc.y + titleHeight + headerHeight + firstRowHeight > bottomLimit) {
-        newPage()
-      } else if (groupIndex > 0) {
-        doc.moveDown(0.8)
-      }
-
-      doc.font('TH-Bold').fontSize(11).fillColor(NAVY)
-      doc.text(group.title, MARGIN, doc.y, { width: CONTENT_WIDTH })
-      doc.moveDown(0.3)
-      doc.fillColor(INK)
+    if (usedHeight + rowHeight > bottomLimit) {
+      renderChunk(chunk)
+      chunk = []
+      newPage()
+      usedHeight = MARGIN + headerHeight
     }
 
-    let chunk: string[][] = []
-    let usedHeight = doc.y + headerHeight
-
-    body.forEach((row) => {
-      const rowHeight = measureRowHeight(doc, row, widths, 'TH')
-
-      if (usedHeight + rowHeight > bottomLimit && chunk.length > 0) {
-        renderChunk(chunk)
-        chunk = []
-        newPage()
-        usedHeight = MARGIN + headerHeight
-      }
-
-      chunk.push(row)
-      usedHeight += rowHeight
-    })
-
-    renderChunk(chunk)
+    chunk.push(row)
+    usedHeight += rowHeight
   })
+
+  renderChunk(chunk)
 }
 
 function drawSingleCase(doc: any, row: ExportedRow) {

@@ -185,7 +185,7 @@ The suite downloads and parses the real PDF files. It checks single-booking and 
 
 ## PDF Thai font regression
 
-Run `node --test tests/pdf-font.test.mjs` from `frontend-v` to generate and parse synthetic multi-page PDFs locally. These checks exercise Thai SARA AM, SARA AA, tone marks, duplicate/overlapping names and both report grouping modes without contacting the live backend.
+Run `node --test tests/pdf-font.test.mjs` from `frontend-v` to generate and parse synthetic multi-page PDFs locally. These checks exercise Thai SARA AM, SARA AA, tone marks, duplicate/overlapping names and the combined report table without contacting the live backend.
 
 The Thai mapping fix is in `src/components/report/QueueReportPdf.ts`, so it must be deployed before live PDF tests can exercise it. The E2E reader accepts equivalent composed/decomposed Thai text, but no longer removes duplicated vowels or replaces incorrect Latin characters. Existing downloaded PDFs retain their original mapping errors.
 
