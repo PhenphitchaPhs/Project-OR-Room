@@ -166,6 +166,7 @@
 import { reactive, ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { apiFetch } from '../api/client'
+import { toDateKey } from '../composables/useCsvExport'
 import ProcedureManager from '../components/ProcedureManager.vue'
 import ProcedureSelect from '../components/ProcedureSelect.vue'
 
@@ -264,12 +265,12 @@ const setCustomProcedures = (procedures) => {
 }
 
 const today = new Date()
-const todayStr = today.toISOString().split('T')[0]
+const todayStr = toDateKey(today)
 const minDate = ref(todayStr)
 
 const max = new Date()
 max.setDate(max.getDate() + 90)
-const maxDate = ref(max.toISOString().split('T')[0])
+const maxDate = ref(toDateKey(max))
 
 onMounted(async () => {
     const myLicense = localStorage.getItem('userLicense')
@@ -543,7 +544,7 @@ const submitForm = async () => {
             showAlert(bookingId ? 'Booking updated successfully!' : 'Booking created successfully!', true)
             setTimeout(() => {
                 const isAdmin = localStorage.getItem('userRole') === 'admin'
-                const today = new Date().toISOString().split('T')[0]
+                const today = toDateKey(new Date())
                 const targetTab = form.date > today ? '?tab=upcoming' : ''
                 if (isAdmin) {
                     router.push(`/admin-home${targetTab}`)

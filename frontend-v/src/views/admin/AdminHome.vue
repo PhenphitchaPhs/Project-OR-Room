@@ -928,7 +928,7 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { normalizeBooking, statusLabel, useCsvExport } from '../../composables/useCsvExport'
+import { normalizeBooking, statusLabel, toDateKey, useCsvExport } from '../../composables/useCsvExport'
 import {
     buildQueueReportPdf,
     buildReportFileName,
@@ -1003,7 +1003,7 @@ const getUsedMinutesForRoom = (todayStr, roomNum) => {
 }
 
 const adminRoomStats = computed(() => {
-    const todayStr = new Date().toISOString().slice(0, 10)
+    const todayStr = toDateKey(new Date())
     let available = 0, partial = 0, full = 0
     OR_ROOMS.forEach(r => {
         const used = getUsedMinutesForRoom(todayStr, r)
@@ -1174,25 +1174,6 @@ onMounted(async () => {
             users.forEach(u => { doctorMap.value[u.license] = u.doctorName })
         }
     } catch (e) { console.error('ดึงรายชื่อหมอไม่สำเร็จ', e) }
-    for (const item of bookings.value) {
-        const shouldComplete =
-            (item.date < todayStr || isPastCutoffToday(item)) &&
-            item.status !== 'Cancelled' &&
-            item.status !== 'Completed'
-
-        if (shouldComplete) {
-            item.status = 'Completed'
-
-            await apiFetch(
-                `/api/bookings/${item.id}/status`,
-                {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ status: 'Completed' })
-                }
-            )
-        }
-    }
 })
 
 const {
@@ -1725,19 +1706,14 @@ const sortCases = (arr) => {
         return 0
     })
 }
-const todayStr = new Date().toISOString().split('T')[0]
-
-const CUTOFF_HOUR = 18
-const isPastCutoffToday = (item) =>
-    item.date === todayStr && new Date().getHours() >= CUTOFF_HOUR
+const todayStr = toDateKey(new Date())
 
 const baseTodayCases = computed(() =>
     sortCases(
         bookings.value.filter(
             item =>
                 item.date === todayStr &&
-                (item.status === FILTERS.UPCOMING || !item.status) &&
-                !isPastCutoffToday(item)
+                (item.status === FILTERS.UPCOMING || !item.status)
         )
     )
 )
@@ -1754,8 +1730,7 @@ const baseCompletedCases = computed(() =>
     sortCases(
         bookings.value.filter(
             item =>
-                (item.status === 'Completed' || isPastCutoffToday(item)) &&
-                item.status !== 'Cancelled'
+                item.status === 'Completed'
         )
     )
 )

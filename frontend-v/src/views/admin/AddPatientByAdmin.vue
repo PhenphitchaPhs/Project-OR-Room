@@ -167,6 +167,7 @@
 import { reactive, ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { apiFetch } from '../../api/client'
+import { toDateKey } from '../../composables/useCsvExport'
 import ProcedureManager from '../../components/ProcedureManager.vue'
 import ProcedureSelect from '../../components/ProcedureSelect.vue'
 
@@ -259,12 +260,12 @@ const setCustomProcedures = (procedures) => {
 }
 
 const today = new Date()
-const todayStr = today.toISOString().split('T')[0]
+const todayStr = toDateKey(today)
 const minDate = ref(todayStr)
 
 const max = new Date()
 max.setDate(max.getDate() + 90)
-const maxDate = ref(max.toISOString().split('T')[0])
+const maxDate = ref(toDateKey(max))
 
 const showAlert = (message, isSuccess = false) => {
     alertMessage.value = message
@@ -479,7 +480,7 @@ const submitForm = async () => {
         if (res.ok) {
             showAlert('Booking added successfully by admin!', true)
             setTimeout(() => {
-                const today = new Date().toISOString().split('T')[0]
+                const today = toDateKey(new Date())
                 router.push(form.date > today ? '/admin-home?tab=upcoming' : '/admin-home')
             }, 1500)
         } else {
