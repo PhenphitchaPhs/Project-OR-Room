@@ -30,7 +30,7 @@ export interface ReportMeta {
 
   printedBy?: string
 
-  groupBy?: ReportGroupBy
+  groupBy?: ReportGroupBy | null
 
   doctorNames?: Record<string, string>
 }
@@ -217,7 +217,7 @@ function drawHeader(doc: any, meta: ReportMeta) {
   const lines = isAdmin
     ? [
         `Filters: ${dash(meta.filterLabel)}`,
-        `Grouped by: ${meta.groupBy === 'doctor' ? 'Doctor' : 'Operating room'}`,
+        `Grouped by: ${meta.groupBy === 'doctor' ? 'Doctor' : meta.groupBy === 'room' ? 'Operating room' : 'None'}`,
         `Printed at: ${formatPrintedAt()}`,
         `Printed by: ${dash(meta.printedBy)}`,
       ]
@@ -323,7 +323,7 @@ function groupRows(
   rows: ExportedRow[],
   meta: ReportMeta,
 ): { title: string; rows: ExportedRow[] }[] {
-  if (meta.mode !== 'admin') return [{ title: '', rows }]
+  if (meta.mode !== 'admin' || !meta.groupBy) return [{ title: '', rows }]
 
   const keyOf = (row: ExportedRow) =>
     meta.groupBy === 'doctor' ? doctorNameOf(row, meta) : dash(row.room)

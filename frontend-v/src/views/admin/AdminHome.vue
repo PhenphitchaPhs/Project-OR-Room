@@ -882,11 +882,13 @@
                 </div>
 
                 <div v-if="exportFormat === 'pdf' && exportDateMode !== 'single'" class="export-section">
-                    <label class="export-label">Group report by</label>
+                    <label class="export-label">Group report by (optional)</label>
 
                     <div class="export-mode-switch">
                         <button v-for="option in groupByOptions" :key="option.value"
-                            :class="{ active: exportGroupBy === option.value }" @click="exportGroupBy = option.value">
+                            :class="{ active: exportGroupBy === option.value }"
+                            :aria-pressed="exportGroupBy === option.value"
+                            @click="exportGroupBy = exportGroupBy === option.value ? null : option.value">
                             {{ option.label }}
                         </button>
                     </div>
@@ -1195,7 +1197,7 @@ const isExporting = ref(false)
 const exportError = ref('')
 
 const exportFormat = ref('csv')
-const exportGroupBy = ref('room')
+const exportGroupBy = ref(null)
 const exportDateMode = ref('all')
 const exportDay = ref('')
 const exportMonth = ref('')
@@ -1497,7 +1499,7 @@ const openExportDialog = () => {
 
     resetExportFilters()
     exportFormat.value = 'csv'
-    exportGroupBy.value = 'room'
+    exportGroupBy.value = null
     isExportModalOpen.value = true
 }
 
