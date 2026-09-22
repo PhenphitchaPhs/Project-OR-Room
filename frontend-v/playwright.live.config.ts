@@ -28,6 +28,8 @@ export default defineConfig({
     '**/admin-rbac-security-live.spec.ts',
     '**/surgery-procedure-add-use-live.spec.ts',
     '**/surgery-procedure-permissions-audit-live.spec.ts',
+    '**/surgery-procedure-active-delete-live.spec.ts',
+    '**/surgery-procedure-search-select-live.spec.ts',
     '**/U04-calendar.spec.ts',
     '**/US07-edit-booking.spec.ts',
     '**/US08-cancel-booking.spec.ts',

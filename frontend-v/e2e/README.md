@@ -1,5 +1,47 @@
 # End-to-end acceptance tests
 
+## Live surgery type search and selection
+
+`surgery-procedure-search-select-live.spec.ts` covers only TC-N04.1 through
+TC-N04.4. It verifies the searchable surgery-type dropdown on the booking page,
+built-in and Additional groups, partial and case-insensitive searches, trimmed
+queries, empty results, similar names and the exact procedure/duration saved in
+a real booking.
+
+The suite creates real temporary bookings. Cleanup changes active test bookings
+to `Cancelled` before removing their generated additional surgery types. The
+historical booking records remain because the backend has no booking delete API.
+
+```powershell
+$env:LIVE_ADMIN_USERNAME='admin007'
+$env:LIVE_ADMIN_PASSWORD=[System.Net.NetworkCredential]::new('', (Read-Host 'Admin password' -AsSecureString)).Password
+$env:LIVE_USER_EMAIL='qa.test01@example.com'
+$env:LIVE_USER_PASSWORD=[System.Net.NetworkCredential]::new('', (Read-Host 'User A password' -AsSecureString)).Password
+npm.cmd run test:e2e:surgery-search-live
+npx.cmd playwright show-report playwright-report/live --port 9324
+```
+
+## Live active surgery type deletion protection
+
+`surgery-procedure-active-delete-live.spec.ts` covers only TC-N03.1 through
+TC-N03.3. It verifies that an `Upcoming` booking marks its additional surgery
+type as Active and blocks deletion, while types referenced only by `Succeed` or
+`Cancelled` bookings can be deleted. It also checks the dropdown, retained
+booking history and procedure audit logs against the live backend.
+
+The suite creates real temporary bookings. Because the backend has no booking
+delete endpoint, cleanup moves any remaining active test booking to `Cancelled`;
+the resulting historical E2E booking records remain in the live database.
+
+```powershell
+$env:LIVE_ADMIN_USERNAME='admin007'
+$env:LIVE_ADMIN_PASSWORD=[System.Net.NetworkCredential]::new('', (Read-Host 'Admin password' -AsSecureString)).Password
+$env:LIVE_USER_EMAIL='qa.test01@example.com'
+$env:LIVE_USER_PASSWORD=[System.Net.NetworkCredential]::new('', (Read-Host 'User A password' -AsSecureString)).Password
+npm.cmd run test:e2e:surgery-active-delete-live
+npx.cmd playwright show-report playwright-report/live --port 9324
+```
+
 ## Live surgery type permissions and audit history
 
 `surgery-procedure-permissions-audit-live.spec.ts` covers only TC-N02.1 through
