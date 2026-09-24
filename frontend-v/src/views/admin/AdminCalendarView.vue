@@ -187,7 +187,7 @@ const isWeekend = (d) => {
 const isClosedDay = (d) => isWeekend(d) || isOfficialHoliday(d)
 
 const getBookingsForDate = (d) => bookings.value.filter(
-    b => b.date === d && b.status !== 'Completed' && b.status !== 'Cancelled'
+    b => b.date === d && b.status !== 'Cancelled'
 )
 const hasBooking = (d) => getBookingsForDate(d).length > 0
 

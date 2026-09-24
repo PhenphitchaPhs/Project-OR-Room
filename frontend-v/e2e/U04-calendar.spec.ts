@@ -112,6 +112,7 @@ async function installFixtures(page: Page, options: FixtureOptions = {}) {
   await page.route('**/api/**', async (route) => {
     const request = route.request()
     const url = new URL(request.url())
+    if (!url.pathname.startsWith('/api/')) return route.continue()
 
     if (url.pathname === '/api/schedule') {
       return route.fulfill({
@@ -184,6 +185,33 @@ async function clickDate(page: Page, isoDate: string) {
 }
 
 test.describe('U-04 ปฏิทินการจอง', () => {
+  for (const role of ['user', 'admin']) {
+    test(`Completed bookings remain visible in the previous month (${role})`, async ({ page }) => {
+      const pastDate = dateString(new Date(currentYear, currentMonth - 1, 15, 12))
+      await installFixtures(page, {
+        schedule: [
+          baseBooking({ date: pastDate, status: 'Completed' }),
+          baseBooking({ id: 'cancelled-past', date: pastDate, status: 'Cancelled', room: 'OR-202' }),
+        ],
+      })
+      await page.goto('/login')
+      await page.evaluate((userRole) => {
+        localStorage.setItem('isLoggedIn', 'true')
+        localStorage.setItem('userRole', userRole)
+        localStorage.setItem('userLicense', 'DR-E2E-001')
+        localStorage.setItem('authToken', 'playwright-e2e-token')
+      }, role)
+      await page.goto(role === 'admin' ? '/admin-calendar' : '/calendar')
+      await page.locator('.ctrl-btn').first().click()
+      const cell = dayCell(page, pastDate)
+      await expect(cell.locator('.dot')).toHaveCount(1)
+      await cell.click()
+      await expect(page.locator('.booking-item')).toHaveCount(1)
+      await expect(page.locator('.booking-item')).toContainText('Somchai Jaidee')
+      await expect(page.locator('.booking-item')).toContainText('OR-201')
+    })
+  }
+
   test('TC-U04-001 แสดงปฏิทินการจอง', async ({ page }) => {
     await openCalendar(page)
 
@@ -260,7 +288,7 @@ test.describe('U-04 ปฏิทินการจอง', () => {
       baseBooking({ id: 'booking-001', room: 'OR-201' }),
       baseBooking({ id: 'booking-002', room: 'OR-202' }),
       baseBooking({ id: 'booking-003', room: 'OR-203' }),
-      // Completed ต้องไม่ถูกนับ
+      // Completed bookings remain visible in the calendar.
       baseBooking({ id: 'booking-completed', room: 'OR-204', status: 'Completed' }),
       // Cancelled ต้องไม่ถูกนับ
       baseBooking({ id: 'booking-cancelled', room: 'OR-205', status: 'Cancelled' }),
@@ -270,13 +298,16 @@ test.describe('U-04 ปฏิทินการจอง', () => {
 
     const cell = dayCell(page, bookingDate)
 
-    // มี 3 booking ที่ยัง active จึงแสดง 3 dots
+    // Show at most three dots and a count for additional bookings.
     await expect(cell.locator('.dot')).toHaveCount(3)
+    await expect(cell.locator('.more-count')).toHaveText('+1')
 
     await cell.click()
 
-    // ใน modal ต้องเหลือเฉพาะ 3 active bookings
-    await expect(page.locator('.booking-item')).toHaveCount(3)
+    // Show active and completed bookings, but exclude cancelled bookings.
+    await expect(page.locator('.booking-item')).toHaveCount(4)
+    await expect(page.locator('.booking-item').filter({ hasText: 'OR-204' })).toBeVisible()
+    await expect(page.locator('.booking-item').filter({ hasText: 'OR-205' })).toHaveCount(0)
 
   })
 

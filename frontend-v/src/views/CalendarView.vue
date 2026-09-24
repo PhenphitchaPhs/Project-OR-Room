@@ -204,7 +204,7 @@ const sortByAgeThenFemaleFirst = (arr) => {
 
 const getBookingsForDate = (d) => {
     return scheduleData.value.filter(
-        b => b.date === d && b.status !== 'Completed' && b.status !== 'Cancelled'
+        b => b.date === d && b.status !== 'Cancelled'
     )
 }
 const hasBooking = (d) => getBookingsForDate(d).length > 0
@@ -243,9 +243,7 @@ const roomStatusColor = (d, roomStr) => {
 }
 
 const selectedDateBookings = computed(() => {
-    const base = scheduleData.value.filter(
-        b => b.date === selectedFullDate.value && b.status !== 'Completed' && b.status !== 'Cancelled'
-    )
+    const base = getBookingsForDate(selectedFullDate.value)
     return base.map(b => {
         const my = myBookingsMap.value.get(b.id)
         if (my) {
