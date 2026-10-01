@@ -58,8 +58,15 @@
                     <div class="grid-2-col">
                         <div style="min-width: 0;">
                             <div class="date-label surgery-field-label">Surgery type <span class="required">*</span></div>
-                            <ProcedureSelect v-model="form.procedure" :groups="procedureGroups"
-                                :custom-procedures="customProcedures" @change="checkValidDate" />
+                            <div class="procedure-duration-row">
+                                <ProcedureSelect v-model="form.procedure" :groups="procedureGroups"
+                                    :custom-procedures="customProcedures" @change="onProcedureChange" />
+                                <label class="duration-field">Surgery duration (minutes)
+                                    <input v-model.number="form.durationMinutes" type="number" min="1" max="1440" step="1"
+                                        class="input-field green-theme" aria-label="Surgery duration (minutes)" required @input="checkValidDate" />
+                                </label>
+                            </div>
+                            <small v-if="form.procedure">Standard duration: {{ standardProcedureDuration(form.procedure) }} minutes. You can adjust this case's duration.</small>
                             <select v-model="form.room" class="input-field green-theme room-select" @change="checkValidDate" required>
                                 <option value="" disabled>Select OR Room</option>
                                 <option v-for="n in orRooms" :key="n" :value="`OR-${n}`">OR-{{ n }}</option>
@@ -163,6 +170,7 @@
 </template>
 
 <script setup>
+import { standardProcedureDuration } from "../utils/procedure"
 import { reactive, ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { apiFetch } from '../api/client'
@@ -193,7 +201,7 @@ const showAlert = (message, isSuccess = false) => {
 
 const form = reactive({
     hn: '', fullName: '', age: '', gender: '', disease: '', diagnosis: '',
-    procedure: '', date: '', room: '', surgeryDetails: '', notes: '',
+    durationMinutes: '', procedure: '', date: '', room: '', surgeryDetails: '', notes: '',
     cxrDate: '', cxrNote: '',
     ecgDate: '', ecgNote: '',
     labDate: '', labNote: '',
@@ -201,6 +209,11 @@ const form = reactive({
 })
 
 const orRooms = Array.from({ length: 20 }, (_, i) => 201 + i)
+
+const onProcedureChange = () => {
+    form.durationMinutes = standardProcedureDuration(form.procedure) || ''
+    checkValidDate()
+}
 
 const procedureGroups = ref([
     {
@@ -289,6 +302,7 @@ onMounted(async () => {
                 form.disease = booking.underlying || ''
                 form.diagnosis = booking.diagnosis || ''
                 form.procedure = booking.procedure || ''
+                form.durationMinutes = booking.durationMinutes ?? (standardProcedureDuration(form.procedure) || '')
                 form.date = booking.date || ''
                 form.room = booking.room || ''
                 form.surgeryDetails = booking.surgeryDetails || ''
@@ -466,8 +480,7 @@ const checkValidDate = async () => {
             }
 
             if (form.procedure) {
-                const matchProc = form.procedure.match(/(\d+)\s*min/)
-                const newProcMin = matchProc ? parseInt(matchProc[1]) : 0
+                const newProcMin = Number(form.durationMinutes) || 0
 
                 const totalAfterAdd = usedMinutes + newProcMin
 
@@ -502,8 +515,12 @@ const submitForm = async () => {
 
     if (!validateHolidayAndWeekend(form.date)) return
 
-    const matchProc = form.procedure.match(/(\d+)\s*min/)
-    const durationMinutes = matchProc ? parseInt(matchProc[1]) : 0
+    if (!Number.isInteger(Number(form.durationMinutes)) || Number(form.durationMinutes) < 1 || Number(form.durationMinutes) > 1440) {
+        showAlert('Surgery duration must be a whole number from 1 to 1440 minutes')
+        return
+    }
+
+    const durationMinutes = Number(form.durationMinutes)
 
     const payload = {
         hn: form.hn,
@@ -569,6 +586,11 @@ const goHome = () => {
 </script>
 
 <style scoped>
+.procedure-duration-row { display: flex; align-items: start; gap: 12px; }
+.procedure-duration-row > :first-child { flex: 1; min-width: 0; }
+.duration-field { flex: 0 0 140px; font-size: 12px; }
+@media (max-width: 480px) { .procedure-duration-row { flex-direction: column; } .duration-field { flex: auto; width: 100%; } }
+
 .page-wrapper {
     display: flex;
     justify-content: center;

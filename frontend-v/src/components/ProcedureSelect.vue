@@ -33,6 +33,7 @@
 </template>
 
 <script setup>
+import { procedureName } from '../utils/procedure'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, useId, watch } from 'vue'
 
 const props = defineProps({
@@ -51,15 +52,15 @@ const activeIndex = ref(-1)
 const allGroups = computed(() => [
   ...props.groups.map(group => ({
     label: group.label,
-    options: group.options.map(option => ({ label: option.name, value: option.value || option.name })),
+    options: group.options.map(option => ({ label: procedureName(option.name), value: option.value || option.name })),
   })),
   { label: 'Additional', options: props.customProcedures.map(procedure => ({
-    label: `${procedure.name} - ${procedure.durationMinutes} mins`,
+    label: procedureName(procedure.name),
     value: procedure.value || `${procedure.name} - ${procedure.durationMinutes} mins`,
   })) },
 ])
 const selectedLabel = computed(() => allGroups.value.flatMap(group => group.options)
-  .find(option => option.value === props.modelValue)?.label || props.modelValue || 'Select Procedure')
+  .find(option => option.value === props.modelValue)?.label || procedureName(props.modelValue) || 'Select Procedure')
 const filteredGroups = computed(() => {
   const term = query.value.trim().toLowerCase()
   return allGroups.value.map(group => ({ ...group, options: group.options.filter(option =>

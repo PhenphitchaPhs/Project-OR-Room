@@ -98,7 +98,8 @@
                         <p><strong>HN:</strong> {{ b.hn }}</p>
                         <p><strong>Age / Gender:</strong> {{ b.age || '-' }} years · {{ b.gender === 'female' ? 'Female' : 'Male' }}</p>
                         <p><strong>Diagnosis:</strong> {{ b.diagnosis || '-' }}</p>
-                        <p><strong>Procedure:</strong> {{ b.procedure }}</p>
+                        <p><strong>Procedure:</strong> {{ procedureName(b.procedure) }}</p>
+                        <p><strong>Surgery duration:</strong> {{ bookingDuration(b) }} minutes</p>
                         <hr style="border-color:#eee; margin: 8px 0" />
                     </div>
 
@@ -120,6 +121,7 @@
 </template>
 
 <script setup>
+import { procedureName, bookingDuration } from "../../utils/procedure"
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { apiFetch } from '../../api/client'
@@ -203,8 +205,7 @@ const getUsedMinutesForRoom = (d, roomNum) => {
     return bookings.value
         .filter(b => b.date === d && getRoomNumber(b.room) === roomNum && b.status !== 'Completed' && b.status !== 'Cancelled')
         .reduce((sum, b) => {
-            const match = b.procedure?.match(/(\d+)\s*min/)
-            return sum + (match ? parseInt(match[1]) : 0)
+            return sum + (bookingDuration(b))
         }, 0)
 }
 const isRoomFull = (d, roomNum) => getUsedMinutesForRoom(d, roomNum) >= MAX_MINUTES

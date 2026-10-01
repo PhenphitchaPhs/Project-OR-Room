@@ -328,7 +328,7 @@
                                             <div class="timeline-title"><strong>{{ item.doctorName }}</strong> added a
                                                 case</div>
                                             <div class="timeline-meta">HN {{ item.hn }} · {{ item.fullName }}</div>
-                                            <div class="timeline-meta">{{ item.procedure }}</div>
+                                            <div class="timeline-meta">{{ procedureName(item.procedure) }}</div>
                                             <div class="timeline-meta">Surgery {{ item.date }} · {{ item.room }}</div>
                                         </div>
                                     </li>
@@ -350,6 +350,7 @@
 </template>
 
 <script setup>
+import { procedureName, bookingDuration } from "../../utils/procedure"
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { apiFetch } from '../../api/client'
@@ -615,9 +616,7 @@ const roomQueues = computed(() => {
         .forEach(b => {
             const roomKey = String(b.room || '').match(/(\d+)/)?.[1]
             if (!roomKey) return
-
-            const durationMatch = b.procedure?.match(/(\d+)\s*min/)
-            const duration = durationMatch ? parseInt(durationMatch[1]) : null
+            const duration = bookingDuration(b)
             const procedureName = (b.procedure || '-').replace(/\s*-\s*\d+\s*min[s]?.*$/i, '')
 
             if (!groups[roomKey]) groups[roomKey] = []

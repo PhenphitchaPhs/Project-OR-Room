@@ -233,7 +233,12 @@
                                         <span><strong>Diagnosis:</strong> {{ item.diagnosis || '-' }}</span>
                                     </div>
                                     <div class="grid-row single">
-                                        <span><strong>Procedure:</strong> {{ item.procedure }}</span>
+                                        <span><strong>Procedure:</strong> {{ procedureName(item.procedure) }}</span>
+                                        <span><strong>Surgery duration:</strong> {{ bookingDuration(item) }} minutes</span>
+                                        <button v-if="item.date === toDateKey(new Date()) && (!item.status || item.status === 'Upcoming')"
+                                            type="button" class="btn-completed" :disabled="completingIds.includes(item.id)" @click.stop="markAsSucceed(item.id)">
+                                            {{ completingIds.includes(item.id) ? 'Saving...' : 'Completed' }}
+                                        </button>
                                     </div>
                                 </div>
 
@@ -250,8 +255,7 @@
                                             item.underlying || '-' }}</div>
                                         <div class="detail-row"><strong>Diagnosis:</strong> {{
                                             item.diagnosis || '-' }}</div>
-                                        <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                            }}</div>
+                                        <div class="detail-row"><strong>Proposed Procedure:</strong> {{ procedureName(item.procedure) }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
                                             item.cxrNote || '-' }}</div>
@@ -338,7 +342,12 @@
                                         <span><strong>Diagnosis:</strong> {{ item.diagnosis || '-' }}</span>
                                     </div>
                                     <div class="grid-row single">
-                                        <span><strong>Procedure:</strong> {{ item.procedure }}</span>
+                                        <span><strong>Procedure:</strong> {{ procedureName(item.procedure) }}</span>
+                                        <span><strong>Surgery duration:</strong> {{ bookingDuration(item) }} minutes</span>
+                                        <button v-if="item.date === toDateKey(new Date()) && (!item.status || item.status === 'Upcoming')"
+                                            type="button" class="btn-completed" :disabled="completingIds.includes(item.id)" @click.stop="markAsSucceed(item.id)">
+                                            {{ completingIds.includes(item.id) ? 'Saving...' : 'Completed' }}
+                                        </button>
                                     </div>
 
                                 </div>
@@ -353,8 +362,7 @@
                                         </div>
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
-                                        <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                        }}</div>
+                                        <div class="detail-row"><strong>Proposed Procedure:</strong> {{ procedureName(item.procedure) }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
                                             item.cxrNote || '-' }}</div>
@@ -443,7 +451,12 @@
                                         <span><strong>Diagnosis:</strong> {{ item.diagnosis || '-' }}</span>
                                     </div>
                                     <div class="grid-row single">
-                                        <span><strong>Procedure:</strong> {{ item.procedure }}</span>
+                                        <span><strong>Procedure:</strong> {{ procedureName(item.procedure) }}</span>
+                                        <span><strong>Surgery duration:</strong> {{ bookingDuration(item) }} minutes</span>
+                                        <button v-if="item.date === toDateKey(new Date()) && (!item.status || item.status === 'Upcoming')"
+                                            type="button" class="btn-completed" :disabled="completingIds.includes(item.id)" @click.stop="markAsSucceed(item.id)">
+                                            {{ completingIds.includes(item.id) ? 'Saving...' : 'Completed' }}
+                                        </button>
                                     </div>
 
                                 </div>
@@ -458,8 +471,7 @@
                                         </div>
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
-                                        <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                        }}</div>
+                                        <div class="detail-row"><strong>Proposed Procedure:</strong> {{ procedureName(item.procedure) }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
                                             item.cxrNote || '-' }}</div>
@@ -544,7 +556,12 @@
                                         <span><strong>Diagnosis:</strong> {{ item.diagnosis || '-' }}</span>
                                     </div>
                                     <div class="grid-row single">
-                                        <span><strong>Procedure:</strong> {{ item.procedure }}</span>
+                                        <span><strong>Procedure:</strong> {{ procedureName(item.procedure) }}</span>
+                                        <span><strong>Surgery duration:</strong> {{ bookingDuration(item) }} minutes</span>
+                                        <button v-if="item.date === toDateKey(new Date()) && (!item.status || item.status === 'Upcoming')"
+                                            type="button" class="btn-completed" :disabled="completingIds.includes(item.id)" @click.stop="markAsSucceed(item.id)">
+                                            {{ completingIds.includes(item.id) ? 'Saving...' : 'Completed' }}
+                                        </button>
                                     </div>
 
                                 </div>
@@ -559,8 +576,7 @@
                                         </div>
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
-                                        <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                        }}</div>
+                                        <div class="detail-row"><strong>Proposed Procedure:</strong> {{ procedureName(item.procedure) }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
                                             item.cxrNote || '-' }}</div>
@@ -632,7 +648,12 @@
                                         <span><strong>Diagnosis:</strong> {{ item.diagnosis || '-' }}</span>
                                     </div>
                                     <div class="grid-row single">
-                                        <span><strong>Procedure:</strong> {{ item.procedure }}</span>
+                                        <span><strong>Procedure:</strong> {{ procedureName(item.procedure) }}</span>
+                                        <span><strong>Surgery duration:</strong> {{ bookingDuration(item) }} minutes</span>
+                                        <button v-if="item.date === toDateKey(new Date()) && (!item.status || item.status === 'Upcoming')"
+                                            type="button" class="btn-completed" :disabled="completingIds.includes(item.id)" @click.stop="markAsSucceed(item.id)">
+                                            {{ completingIds.includes(item.id) ? 'Saving...' : 'Completed' }}
+                                        </button>
                                     </div>
 
                                 </div>
@@ -647,8 +668,7 @@
                                         </div>
                                         <div class="detail-row"><strong>Underlying Disease(s):</strong> {{
                                             item.underlying || '-' }}</div>
-                                        <div class="detail-row"><strong>Proposed Procedure:</strong> {{ item.procedure
-                                            }}</div>
+                                        <div class="detail-row"><strong>Proposed Procedure:</strong> {{ procedureName(item.procedure) }}</div>
                                         <div class="detail-row"><strong>Date:</strong> {{ item.date }}</div>
                                         <div class="detail-row"><strong>CXR:</strong> {{ item.cxrDate || '-' }} | {{
                                             item.cxrNote || '-' }}</div>
@@ -915,6 +935,7 @@
 </template>
 
 <script setup>
+import { procedureName, bookingDuration } from "../../utils/procedure"
 import { ref, onMounted, onBeforeUnmount, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { normalizeBooking, statusLabel, toDateKey, useCsvExport } from '../../composables/useCsvExport'
@@ -986,8 +1007,7 @@ const getUsedMinutesForRoom = (todayStr, roomNum) => {
                 b.status !== 'Completed' && b.status !== 'Cancelled'
         })
         .reduce((sum, b) => {
-            const match = b.procedure?.match(/(\d+)\s*min/)
-            return sum + (match ? parseInt(match[1]) : 0)
+            return sum + (bookingDuration(b))
         }, 0)
 }
 
@@ -1887,20 +1907,25 @@ const onDrop = async (dropIndex) => {
     } catch (e) { console.error("❌ อัปเดตคิวไม่สำเร็จ", e) }
 }
 
-// const markAsSucceed = async (id) => {
-//     try {
-//         await apiFetch(`/api/bookings/${id}/status`, {
-//             method: 'PATCH',
-//             headers: { 'Content-Type': 'application/json' },
-//             body: JSON.stringify({ status: 'Completed' })
-//         })
-//         const target = bookings.value.find(item => item.id === id)
-//         if (target) {
-//             target.status = 'Completed'; filter.value = FILTERS.PASS
-//             passFilter.value = 'Completed'
-//         }
-//     } catch (e) { showMessage('❌ อัปเดต status ไม่สำเร็จ') }
-// }
+const completingIds = ref([])
+const markAsSucceed = async (id) => {
+    if (completingIds.value.includes(id)) return
+    completingIds.value.push(id)
+    try {
+        const res = await apiFetch(`/api/bookings/${id}/status`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'Completed' })
+        })
+        if (!res.ok) throw new Error('Completion failed')
+        const target = bookings.value.find(item => item.id === id)
+        if (target) target.status = 'Completed'
+    } catch (e) {
+        showMessage('Unable to complete this case. Please try again.')
+    } finally {
+        completingIds.value = completingIds.value.filter(value => value !== id)
+    }
+}
 
 // const deleteCase = async (id) => {
 //     if (!confirm('ยืนยันการยกเลิกเคสนี้?')) return
@@ -1940,6 +1965,9 @@ const openCaseDetail = (item) => { selectedCase.value = item; isDetailModalOpen.
 
 <style scoped>
 @import url('https://fonts.googleapis.com/icon?family=Material+Icons');
+.btn-completed { background: #15803d; color: white; border: 0; border-radius: 8px; padding: 8px 14px; cursor: pointer; }
+.btn-completed:disabled { opacity: .6; cursor: wait; }
+
 
 .main-layout {
     min-height: 100vh;

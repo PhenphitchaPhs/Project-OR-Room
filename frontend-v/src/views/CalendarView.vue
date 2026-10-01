@@ -80,7 +80,8 @@
                             <p><strong>HN:</strong> {{ b.hn }}</p>
                             <p><strong>Age / Gender:</strong> {{ b.age || '-' }} years · {{ b.gender === 'female' ? 'Female'
                                 : 'Male' }}</p>
-                            <p><strong>Procedure:</strong> {{ b.procedure }}</p>
+                            <p><strong>Procedure:</strong> {{ procedureName(b.procedure) }}</p>
+                        <p><strong>Surgery duration:</strong> {{ bookingDuration(b) }} minutes</p>
                             <p><strong>Diagnosis:</strong> {{ b.diagnosis || '-' }}</p>
                             <button class="btn-edit-booking" @click="goToEditBooking(b.id)">✏️ Edit
                                 (change date or room)</button>
@@ -111,6 +112,7 @@
 </template>
 
 <script setup>
+import { procedureName, bookingDuration } from "../utils/procedure"
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { apiFetch } from '../api/client'
@@ -217,7 +219,7 @@ const getRoomNumber = (roomStr) => {
 const getUsedMinutesForRoom = (d, roomNum) => {
     return scheduleData.value
         .filter(b => b.date === d && getRoomNumber(b.room) === roomNum && b.status !== 'Completed' && b.status !== 'Cancelled')
-        .reduce((sum, b) => sum + (b.durationMinutes || 0), 0)
+        .reduce((sum, b) => sum + bookingDuration(b), 0)
 }
 const isRoomFull = (d, roomNum) => getUsedMinutesForRoom(d, roomNum) >= MAX_MINUTES
 const isRoomEmpty = (d, roomNum) => getUsedMinutesForRoom(d, roomNum) === 0

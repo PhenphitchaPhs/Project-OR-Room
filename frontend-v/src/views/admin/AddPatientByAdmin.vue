@@ -67,8 +67,15 @@
 
                         <div style="display: flex; flex-direction: column; min-width: 0;">
                             <div class="date-label surgery-field-label">Surgery type <span class="required">*</span></div>
-                            <ProcedureSelect v-model="form.procedure" :groups="procedureGroups"
-                                :custom-procedures="customProcedures" @change="checkValidDate" />
+                            <div class="procedure-duration-row">
+                                <ProcedureSelect v-model="form.procedure" :groups="procedureGroups"
+                                    :custom-procedures="customProcedures" @change="onProcedureChange" />
+                                <label class="duration-field">Surgery duration (minutes)
+                                    <input v-model.number="form.durationMinutes" type="number" min="1" max="1440" step="1"
+                                        class="input-field green-theme" aria-label="Surgery duration (minutes)" required @input="checkValidDate" />
+                                </label>
+                            </div>
+                            <small v-if="form.procedure">Standard duration: {{ standardProcedureDuration(form.procedure) }} minutes. You can adjust this case's duration.</small>
 
                             <div v-if="form.procedure === 'OTHER_PROCEDURE'" class="custom-procedure-row">
                                 <input type="text" v-model="form.customProcedure" placeholder="Procedure Name" class="input-field green-theme" required />
@@ -164,6 +171,7 @@
 </template>
 
 <script setup>
+import { standardProcedureDuration } from "../../utils/procedure"
 import { reactive, ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { apiFetch } from '../../api/client'
@@ -187,7 +195,7 @@ const customProcedures = ref([])
 
 const form = reactive({
     hn: '', fullName: '', age: '', gender: '', disease: '', diagnosis: '',
-    procedure: '', customProcedure: '', customProcedureMinutes: '',
+    durationMinutes: '', procedure: '', customProcedure: '', customProcedureMinutes: '',
     date: '', room: '', surgeryDetails: '', notes: '', doctorLicense: '',
     cxrDate: '', cxrNote: '',
     ecgDate: '', ecgNote: '',
@@ -196,6 +204,11 @@ const form = reactive({
 })
 
 const orRooms = Array.from({ length: 20 }, (_, i) => 201 + i)
+
+const onProcedureChange = () => {
+    form.durationMinutes = standardProcedureDuration(form.procedure) || ''
+    checkValidDate()
+}
 
 const procedureGroups = ref([
     {
@@ -381,7 +394,7 @@ const checkValidDate = async () => {
 
         const usedMinutes = sameDayBookings.reduce((sum, b) => {
             const match = b.procedure?.match(/(\d+)\s*min/)
-            return sum + (match ? parseInt(match[1]) : 0)
+            return sum + (b.durationMinutes ?? (match ? parseInt(match[1]) : 0))
         }, 0)
 
         const MAX_MINUTES = 420
@@ -407,8 +420,7 @@ const checkValidDate = async () => {
             if (form.procedure === 'OTHER_PROCEDURE') {
                 newProcMin = parseInt(form.customProcedureMinutes || 0)
             } else {
-                const matchProc = form.procedure.match(/(\d+)\s*min/)
-                newProcMin = matchProc ? parseInt(matchProc[1]) : 0
+                newProcMin = Number(form.durationMinutes) || 0
             }
 
             const totalAfterAdd = usedMinutes + newProcMin
@@ -448,12 +460,18 @@ const submitForm = async () => {
         ? `${form.customProcedure} - ${form.customProcedureMinutes} mins`
         : form.procedure
 
+    if (!Number.isInteger(Number(form.durationMinutes)) || Number(form.durationMinutes) < 1 || Number(form.durationMinutes) > 1440) {
+        showAlert('Surgery duration must be a whole number from 1 to 1440 minutes')
+        return
+    }
+
     const payload = {
         hn: form.hn,
         fullName: form.fullName,
         age: form.age,
         gender: form.gender || '',
         procedure: finalProcedure,
+        durationMinutes: Number(form.durationMinutes),
         date: form.date,
         room: form.room,
         surgeryDetails: form.surgeryDetails || '',
@@ -499,6 +517,11 @@ const goHome = () => {
 </script>
 
 <style scoped>
+.procedure-duration-row { display: flex; align-items: start; gap: 12px; }
+.procedure-duration-row > :first-child { flex: 1; min-width: 0; }
+.duration-field { flex: 0 0 140px; font-size: 12px; }
+@media (max-width: 480px) { .procedure-duration-row { flex-direction: column; } .duration-field { flex: auto; width: 100%; } }
+
 
 .page-wrapper {
     display: flex;

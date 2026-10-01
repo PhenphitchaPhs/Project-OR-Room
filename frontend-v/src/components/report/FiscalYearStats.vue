@@ -441,7 +441,7 @@ const roomKeyOf = (b) => {
 
 const minutesOf = (b) => {
     const match = b.procedure?.match(/(\d+)\s*min/)
-    return match ? parseInt(match[1]) : 0
+    return b.durationMinutes ?? (match ? parseInt(match[1]) : 0)
 }
 
 const roomMonthlyUsage = computed(() => {

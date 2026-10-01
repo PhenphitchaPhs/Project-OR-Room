@@ -91,6 +91,15 @@ const getStoredProcedureDuration = async (db: D1Database, procedure: unknown): P
   }
 }
 
+const getBookingDuration = async (db: D1Database, procedure: unknown, requested: unknown): Promise<number> => {
+  const standard = await getStoredProcedureDuration(db, procedure)
+  if (requested === undefined || requested === null) return standard
+  if (typeof requested !== 'number' || !Number.isInteger(requested) || requested < 1 || requested > 1440) {
+    throw new Error('Surgery duration must be a whole number from 1 to 1440 minutes')
+  }
+  return requested
+}
+
 const recordProcedureAudit = async (
   db: D1Database,
   procedureId: number | null,
@@ -956,7 +965,7 @@ app.post('/api/bookings', async (c) => {
   let durationMinutes: number
 
   try {
-    durationMinutes = await getStoredProcedureDuration(c.env.DB, b.procedure)
+    durationMinutes = await getBookingDuration(c.env.DB, b.procedure, b.durationMinutes)
   } catch (error) {
     return c.json({ error: error instanceof Error ? error.message : 'Invalid procedure' }, 400)
   }
@@ -1049,7 +1058,7 @@ app.put('/api/bookings/:id', async (c) => {
 
     let durationMinutes: number
     try {
-      durationMinutes = await getStoredProcedureDuration(c.env.DB, b.procedure)
+      durationMinutes = await getBookingDuration(c.env.DB, b.procedure, b.durationMinutes)
     } catch (error) {
       return c.json({ error: error instanceof Error ? error.message : 'Invalid procedure' }, 400)
     }
