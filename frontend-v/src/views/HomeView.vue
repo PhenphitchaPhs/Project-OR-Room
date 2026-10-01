@@ -203,10 +203,6 @@
                                     <div class="grid-row single">
                                         <span><strong>Procedure:</strong> {{ procedureName(item.procedure) }}</span>
                                         <span><strong>Surgery duration:</strong> {{ bookingDuration(item) }} minutes</span>
-                                        <button v-if="item.date === toDateKey(new Date()) && (!item.status || item.status === 'Upcoming')"
-                                            type="button" class="btn-completed" :disabled="completingIds.includes(item.id)" @click.stop="markAsSucceed(item.id)">
-                                            {{ completingIds.includes(item.id) ? 'Saving...' : 'Completed' }}
-                                        </button>
                                     </div>
                                 </div>
 
@@ -243,6 +239,10 @@
                                     <template
                                         v-if="item.__statusLabel === 'Today' || item.__statusLabel === 'Upcoming'">
                                         <button class="btn-edit" @click.stop="editCase(item.id)">Edit</button>
+                                        <button v-if="item.date === toDateKey(new Date()) && (!item.status || item.status === 'Upcoming')"
+                                            type="button" class="btn-completed" :disabled="completingIds.includes(item.id)" @click.stop="markAsSucceed(item.id)">
+                                            {{ completingIds.includes(item.id) ? 'Saving...' : 'Completed' }}
+                                        </button>
                                         <button class="btn-delete" @click.stop="deleteCase(item.id)">Cancel</button>
                                     </template>
                                     <button v-if="item.__statusLabel === 'Cancelled'" class="btn-restore"
@@ -328,10 +328,6 @@
                                                 <div class="grid-row single">
                                                     <span><strong>Procedure:</strong> {{ procedureName(item.procedure) }}</span>
                                         <span><strong>Surgery duration:</strong> {{ bookingDuration(item) }} minutes</span>
-                                        <button v-if="item.date === toDateKey(new Date()) && (!item.status || item.status === 'Upcoming')"
-                                            type="button" class="btn-completed" :disabled="completingIds.includes(item.id)" @click.stop="markAsSucceed(item.id)">
-                                            {{ completingIds.includes(item.id) ? 'Saving...' : 'Completed' }}
-                                        </button>
                                                 </div>
 
                                             </div>
@@ -416,6 +412,10 @@
                                                     @click.stop="router.push(`/booking/${item.id}`)">
                                                     Edit
                                                 </button>
+                                                <button v-if="item.date === toDateKey(new Date()) && (!item.status || item.status === 'Upcoming')"
+                                                    type="button" class="btn-completed" :disabled="completingIds.includes(item.id)" @click.stop="markAsSucceed(item.id)">
+                                                    {{ completingIds.includes(item.id) ? 'Saving...' : 'Completed' }}
+                                                </button>
 
                                                 <button class="btn-delete" @click.stop="deleteCase(item.id)">
                                                     Cancel
@@ -499,10 +499,6 @@
                                                 <div class="grid-row single">
                                                     <span><strong>Procedure:</strong> {{ procedureName(item.procedure) }}</span>
                                         <span><strong>Surgery duration:</strong> {{ bookingDuration(item) }} minutes</span>
-                                        <button v-if="item.date === toDateKey(new Date()) && (!item.status || item.status === 'Upcoming')"
-                                            type="button" class="btn-completed" :disabled="completingIds.includes(item.id)" @click.stop="markAsSucceed(item.id)">
-                                            {{ completingIds.includes(item.id) ? 'Saving...' : 'Completed' }}
-                                        </button>
                                                 </div>
                                             </div>
 
@@ -557,6 +553,10 @@
                                             <div class="case-actions">
                                                 <button class="btn-edit" @click.stop="editCase(item.id)">
                                                     Edit
+                                                </button>
+                                                <button v-if="item.date === toDateKey(new Date()) && (!item.status || item.status === 'Upcoming')"
+                                                    type="button" class="btn-completed" :disabled="completingIds.includes(item.id)" @click.stop="markAsSucceed(item.id)">
+                                                    {{ completingIds.includes(item.id) ? 'Saving...' : 'Completed' }}
                                                 </button>
 
                                                 <button class="btn-delete" @click.stop="deleteCase(item.id)">
